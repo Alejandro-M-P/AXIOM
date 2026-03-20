@@ -14,7 +14,8 @@ Sigue estos 4 pasos para inicializar tu entorno:
 
 2. **Ejecutar el instalador:**
    ```bash
-   ./install.sh
+   chmod +x install.sh
+./install.sh
    ```
    Sigue el asistente para proveer tus datos de GitHub, tu token y tu directorio de desarrollo base preferido.
 
