@@ -1,7 +1,4 @@
-# =======================================================
-# SISTEMA DE BÚNKER v25.7 - VISUAL OVERDRIVE
-# GPU RDNA 4 | Modelo Compartido | Interfaz Pro
-# =======================================================
+
 
 BASE_DEV="$HOME/Documentos/dev"
 BASE_ENV="$BASE_DEV/.entorno"
@@ -9,6 +6,94 @@ AI_GLOBAL="$HOME/ai_config"
 TUTOR_PATH="$AI_GLOBAL/teams/tutor.md"
 GFX_VERSION="12.0.1"
 AI_CONFIG="$BASE_DEV/ai_config"
+
+# — 🧠 CEREBRO DE HARDWARE (GPU) —
+
+detect_gpu() {
+    echo "🔍 Detectando hardware gráfico..."
+    local HAS_RDNA4=0
+    local HAS_RDNA3=0
+    local HAS_NVIDIA=0
+    local HAS_INTEL=0
+
+    # Valores por defecto de GFX (ROCm)
+    local GFX_RDNA4="12.0.1"
+    local GFX_RDNA3="11.0.0" 
+
+    # Iterar línea por línea para soportar sistemas con múltiples GPUs (Laptops Híbridos)
+    while IFS= read -r line; do
+        # Extraer el Vendor ID usando sed (busca el patrón [XXXX:YYYY])
+        local VENDOR
+        VENDOR=$(echo "$line" | sed -n 's/.*\[\([0-9a-fA-F]\{4\}\):.*/\1/p')
+        
+        # Eliminar la dirección del bus (ej. 07:00.0) para evitar falsos positivos
+        local DESC
+        DESC=$(echo "$line" | cut -d ' ' -f 2-)
+
+        case "${VENDOR,,}" in
+            10de) # Vendor ID de NVIDIA
+                HAS_NVIDIA=1
+                ;;
+            1002) # Vendor ID de AMD
+                if echo "$DESC" | grep -iqE '(8[0-9]{3}|9[0-9]{3})'; then
+                    HAS_RDNA4=1
+                elif echo "$DESC" | grep -iqE '(6[0-9]{3}|7[0-9]{3})'; then
+                    # Agrupamos RDNA 2 y 3 por compatibilidad base de ROCm
+                    HAS_RDNA3=1 
+                fi
+                ;;
+            8086) # Intel (Añadido detección automática)
+                if echo "$DESC" | grep -iqE '(Arc|Graphics|Data Center GPU)'; then
+                    HAS_INTEL=1
+                fi
+                ;;
+        esac
+    done < <(lspci -nn | grep -iE 'vga|3d|display|accelerator')
+
+    # Asignación de Perfil y GFX_VERSION
+    if [ "$HAS_RDNA4" -eq 1 ]; then
+        export GPU_TYPE="rdna4"
+        export GFX_VAL="$GFX_RDNA4"
+        echo "✅ GPU detectada: AMD RDNA 4 -> GFX: $GFX_VAL"
+    elif [ "$HAS_RDNA3" -eq 1 ]; then
+        export GPU_TYPE="rdna3"
+        export GFX_VAL="$GFX_RDNA3"
+        echo "✅ GPU detectada: AMD RDNA 3/2 -> GFX: $GFX_VAL"
+    elif [ "$HAS_NVIDIA" -eq 1 ]; then
+        export GPU_TYPE="nvidia"
+        export GFX_VAL=""
+        echo "✅ GPU detectada: NVIDIA (No requiere GFX Override)"
+    elif [ "$HAS_INTEL" -eq 1 ]; then
+        export GPU_TYPE="intel"
+        export GFX_VAL=""
+        echo "✅ GPU detectada: Intel (Arc/OneAPI)"
+    else
+        echo "⚠️ Detección automática no concluyente."
+        echo "Menú de selección manual:"
+        echo "1. RDNA 4 (Serie 8000/9000)"
+        echo "2. RDNA 3 | RDNA 2 (Serie 6000/7000)"
+        echo "3. NVIDIA"
+        echo "4. INTEL"
+        echo "5. Generic / CPU Only"
+        read -rp "Selecciona una opción [1-5]: " GPU_OPT
+        
+        case "$GPU_OPT" in
+            1) export GPU_TYPE="rdna4"; export GFX_VAL="$GFX_RDNA4" ;;
+            2) export GPU_TYPE="rdna3"; export GFX_VAL="$GFX_RDNA3" ;;
+            3) export GPU_TYPE="nvidia"; export GFX_VAL="" ;;
+            4) export GPU_TYPE="intel"; export GFX_VAL="" ;;
+            *) export GPU_TYPE="generic"; export GFX_VAL="" ;;
+        esac
+
+        # — LA CLAVE: El Override Manual —
+        if [[ "$GPU_TYPE" == rdna* ]]; then
+            read -rp "📝 ¿Deseas cambiar el GFX Override? (Enter para $GFX_VAL): " MANUAL_GFX
+            [ -n "$MANUAL_GFX" ] && export GFX_VAL="$MANUAL_GFX"
+        fi
+        
+        echo "✅ Perfil: $GPU_TYPE | GFX_VERSION: ${GFX_VAL:-N/A}"
+    fi
+}
 
 # — ❓ AYUDA HOST —
 
@@ -84,6 +169,17 @@ cd ~ && rm -rf /tmp/paru
 
 echo "⚡ Instalando paquetes con paru..."
 paru -S --noconfirm starship rocm-hip-sdk
+SCRIPT
+
+    if [[ "${GPU_TYPE:-}" == "nvidia" ]]; then
+        echo "paru -S --noconfirm starship nvidia-utils cuda" >> "$R_ENTORNO/setup.sh"
+    elif [[ "${GPU_TYPE:-}" == rdna* ]]; then
+        echo "paru -S --noconfirm starship rocm-hip-sdk mesa-vdpau" >> "$R_ENTORNO/setup.sh"
+    else
+        echo "paru -S --noconfirm starship" >> "$R_ENTORNO/setup.sh"
+    fi
+
+    cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
 
 # 🎨 ESTÉTICA VISUAL — Tokyo Night Extended
 
