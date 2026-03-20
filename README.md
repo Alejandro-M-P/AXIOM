@@ -38,6 +38,10 @@ Sigue estos 4 pasos para inicializar tu entorno:
 | `crear [nombre]` | Crea un nuevo búnker o entra en uno existente si ya está configurado. | **Host** |
 | `borrar [nombre]` | Solicita razón técnica y destruye el búnker y sus dependencias de memoria local por completo. | **Host** |
 | `parar [nombre]` | Detiene la ejecución del contenedor del búnker sin eliminar sus datos. | **Host** |
+| `open` | Sincroniza leyes y abre el entorno inteligente `opencode`. | **Búnker** |
+| `sync-agents` | Sincroniza la ley global de `tutor.md` a la configuración local del agente. | **Búnker** |
+| `save-rule [regla]` | Guarda una nueva regla/razón técnica y la sincroniza con todos los búnkeres. | **Búnker** |
+| `git-clone [u/r]` | Clona un repositorio de GitHub utilizando el token securizado en memoria y limpia los origin. | **Búnker** |
 | `push` | Envía cambios a GitHub utilizando el token securizado del `.env`. | **Búnker** |
 | `diagnostico` | Realiza un diagnóstico de salud del búnker (GPU, Ollama, Token Git). | **Búnker** |
 | `ayuda` | Muestra el menú de ayuda en pantalla. | **Host / Búnker** |

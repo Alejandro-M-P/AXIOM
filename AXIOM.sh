@@ -332,15 +332,15 @@ export AXIOM_GIT_USER="$AXIOM_GIT_USER"
 export AXIOM_GIT_EMAIL="$AXIOM_GIT_EMAIL"
 export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
 export OLLAMA_HOST="$AXIOM_OLLAMA_HOST"
+export OLLAMA_MODELS="${AXIOM_MODELS_DIR:-/ai_config/models}"
 BASH_VARS
     cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
-export OLLAMA_MODELS="/ai_config/models"
 export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
 eval "$(starship init bash)"
 
 _ollama_ensure() {
     local i=0
-    pgrep -x ollama > /dev/null || (export OLLAMA_MODELS="/ai_config/models"; ollama serve > /tmp/ollama.log 2>&1 &)
+    pgrep -x ollama > /dev/null || (ollama serve > /tmp/ollama.log 2>&1 &)
     until ollama list &>/dev/null 2>&1; do
         sleep 1; i=$((i+1))
         [ $i -ge 30 ] && echo "❌ ollama no respondió en 30s" && return 1
