@@ -140,7 +140,10 @@ crear() {
 
     detect_gpu
     echo "⚡ Construyendo infraestructura…"
-    mkdir -p "$R_PROYECTO" "$R_ENTORNO" "$AI_GLOBAL/models" "$AI_GLOBAL/teams" "$AI_CONFIG/models"
+    mkdir -p "$R_PROYECTO" "$R_ENTORNO" "$AI_CONFIG/models"
+    mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams" 2>/dev/null || \
+        sudo mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams"
+    sudo chown -R "$USER:$USER" "$AI_GLOBAL"
     [ ! -f "$TUTOR_PATH" ] && echo "- Protocolo de razón técnica activo." > "$TUTOR_PATH"
 
     distrobox-create --name "$NOMBRE" \
@@ -151,7 +154,7 @@ crear() {
         --volume $AI_CONFIG:/ai_config \
         --device /dev/kfd --device /dev/dri \
         --security-opt label=disable --group-add video --group-add render" \
-        --yes 2>/dev/null
+        --yes
 
     # 7. SCRIPT DE INSTALACIÓN DENTRO DEL CONTENEDOR
     cat > "$R_ENTORNO/setup.sh" << 'SCRIPT'
@@ -183,22 +186,23 @@ SCRIPT
     cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
 
 mkdir -p ~/.config && cat << 'EOF' > ~/.config/starship.toml
+# Configuración "Professional Developer" - Tokyo Night
 format = """
-[](fg:#1a1b26)\
+[](fg:#1a1b26)\
 $os\
 $custom\
-[](fg:#1a1b26 bg:#24283b)\
+[](fg:#1a1b26 bg:#24283b)\
 $directory\
-[](fg:#24283b bg:#414868)\
+[](fg:#24283b bg:#414868)\
 $git_branch\
 $git_status\
 $git_state\
 $git_metrics\
 $time\
-[](fg:#414868) \
-$python$nodejs$rust$golang$c$docker_context$memory_usage$battery\
+[](fg:#414868) \
+$python$nodejs$rust$golang$c\
 $fill\
-$python$nodejs$rust$golang$c$docker_context$memory_usage$battery\
+$memory_usage\
 $cmd_duration\
 $jobs\
 $status\
@@ -214,12 +218,12 @@ style = "bg:#1a1b26 fg:#7aa2f7"
 format = "[ $symbol ]($style)"
 
 [os.symbols]
-Arch = " "
-Ubuntu = " "
-Fedora = " "
-Debian = " "
-Linux = " "
-Macos = " "
+Arch = " "
+Ubuntu = " "
+Fedora = " "
+Debian = " "
+Linux = " "
+Macos = " "
 Windows = "󰍲 "
 
 [custom.distrobox]
@@ -237,111 +241,47 @@ truncation_length = 3
 fish_style_pwd_dir_length = 1
 
 [git_branch]
-symbol = " "
+symbol = " "
 style = "bg:#414868 fg:#bb9af7"
 format = '[[ $symbol$branch ]($style)]($style)'
+truncation_length = 20
+truncation_symbol = "…"
 
 [git_status]
 style = "bg:#414868 fg:#f7768e"
-format = '[[($all_status$ahead_behind )]($style)]($style)'
+format = '[[( $all_status$ahead_behind )]($style)]($style)'
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+staged = "[+${count}](bold green)"
+modified = "[~${count}](bold yellow)"
+untracked = "[?${count}](bold red)"
+deleted = "[-${count}](bold red)"
+conflicted = "[=${count}](bold red)"
+stashed = "[󰏗 ${count}](bold blue)"
 
 [git_state]
 style = "bg:#414868 fg:#f7768e"
-format = '[[($state( $progress_current/$progress_total))]($style)]($style)'
+format = '[[( $state $progress_current/$progress_total)]($style)]($style)'
+rebase = "REBASE"
+merge = "MERGE"
+revert = "REVERT"
+cherry_pick = " PICK"
+bisect = "BISECT"
 
-[time]
 [git_metrics]
-disabled = false
-time_format = "%R"
-style = "bg:#414868 fg:#7dcfff"
-format = '[[  $time ]($style)]($style)'
-added_style = "bg:#414868 fg:#9ece6a"
-deleted_style = "bg:#414868 fg:#f7768e"
-format = '[\[+$added]($added_style)[/-$deleted\]]($deleted_style) '
-
-[python]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-[nodejs]
-symbol = "󰎙 "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-[rust]
-symbol = "🦀 "
-format = 'via [${symbol}${version} ](bold #ff7b72)'
-[golang]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-[c]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-
-[docker_context]
-symbol = " "
-style = "fg:#0db7ed"
-format = "[$symbol$context]($style) "
-
-[memory_usage]
-symbol = "󰍛 "
-threshold = 75
-style = "fg:#e0af68"
-format = "[$symbol${ram}]($style) "
+added_style = "bold #9ece6a"
+deleted_style = "bold #f7768e"
+format = '([+$added]($added_style) )([-$deleted]($deleted_style) )'
 disabled = false
 
-[battery]
-󰁔  # Configuración "Professional Developer" - Tokyo Night
-format = """
-[](fg:#1a1b26)\
-$os\
-$custom\
-[](fg:#1a1b26 bg:#24283b)\
-$directory\
-[](fg:#24283b bg:#414868)\
-$git_branch\
-$git_status\
-$time\
-[](fg:#414868) \
-$python$nodejs$rust$golang\
-$fill\
-$cmd_duration\
-$jobs\
-$status\
-$line_break\
-$character"""
-[fill]
-symbol = " "
-[os]
-disabled = false
-style = "bg:#1a1b26 fg:#7aa2f7"
-format = "[ $symbol ]($style)"
-[os.symbols]
-Arch = " "
-Ubuntu = " "
-Fedora = " "
-Debian = " "
-Linux = " "
-Macos = " "
-Windows = "󰍲 "
-[directory]
-style = "bg:#24283b fg:#e0af68"
-format = "[ $path ]($style)"
-truncation_length = 3
-fish_style_pwd_dir_length = 1
-[git_branch]
-symbol = " "
-style = "bg:#414868 fg:#bb9af7"
-format = '[[ $symbol$branch ]($style)]($style)'
-[git_status]
-style = "bg:#414868 fg:#f7768e"
-format = '[[($all_status$ahead_behind )]($style)]($style)'
 [time]
 disabled = false
 time_format = "%R"
 style = "bg:#414868 fg:#7dcfff"
-format = '[[  $time ]($style)]($style)'
-# --- EXTRAS PARA DESARROLLADORES ---
+format = '[[  $time ]($style)]($style)'
 
 [cmd_duration]
-min_time = 2_000 # Solo aparece si el comando tarda más de 2s
 min_time = 2_000
 format = "took [󱎫 $duration]($style) "
 style = "fg:#e0af68"
@@ -353,190 +293,40 @@ symbol = "✖"
 style = "fg:#f7768e"
 
 [jobs]
-symbol = " "
+symbol = " "
 style = "fg:#bb9af7"
 format = "[$symbol$number]($style) "
 
-[character]
-success_symbol = "[󰁔](bold #9ece6a) "
-error_symbol = "[󰁔](bold #f7768e) "
-[custom.distrobox]
-description = "Distrobox"
-when = 'test -f /run/.containerenv'
-command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
-symbol = "📦"
-style = "bg:#1a1b26 fg:#bb9af7"
-format = '[$symbol $output ]($style)'
-
-[python]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-
-[nodejs]
-symbol = "󰎙 "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-
-[rust]
-symbol = "🦀 "
-format = 'via [${symbol}${version} ](bold #ff7b72)'
-bash: format: command not found
-bash: [fill]: command not found
-󰁔  # Configuración "Professional Developer" - Tokyo Night
-format = """
-[](fg:#1a1b26)\
-$os\
-$custom\
-[](fg:#1a1b26 bg:#24283b)\
-$directory\
-[](fg:#24283b bg:#414868)\
-$git_branch\
-$git_status\
-$time\
-[](fg:#414868) \
-$python$nodejs$rust$golang\
-$fill\
-$cmd_duration\
-$jobs\
-$status\
-$line_break\
-$chformat = 'via [${symbol}${version} ](bold #ff7b72)'
-
-[golang]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-
-[c]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-
-[docker_context]
-symbol = " "
-style = "fg:#0db7ed"
-format = "[$symbol$context]($style) "
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-󰁔  # Configuración "Professional Developer" - Tokyo Night
-format = """
-[](fg:#1a1b26)\
-$os\
-$custom\
-[](fg:#1a1b26 bg:#24283b)\
-$directory\
-[](fg:#24283b bg:#414868)\
-$git_branch\
-$git_status\
-$time\
-[](fg:#414868) \
-$python$nodejs$rust$golang\
-$fill\
-$cmd_duration\
-$jobs\
-$status\
-$line_break\
-$character"""
-[fill]
-symbol = " "
-[os]
-∙ # Configuración "Professional Developer" - Tokyo Night
-format = """
-[](fg:#1a1b26)\
-$os\
-$custom\
-[](fg:#1a1b26 bg:#24283b)\
-$directory\
-[](fg:#24283b bg:#414868)\
-$git_branch\
-$git_status\
-$time\
-[](fg:#414868) \
-$python$nodejs$rust$golang\
-$fill\
-$cmd_duration\
-$jobs\
-$status\
-$line_break\
-$character"""
-[fill]
-symbol = " "
-[os]
-disabled = false
-style = "bg:#1a1b26 fg:#7aa2f7"
-format = "[ $symbol ]($style)"
-[os.symbols]
-Arch = " "
-Ubuntu = " "
-Fedora = " "
-Debian = " "
-Linux = " "
-Macos = " "
-Windows = "󰍲 "
-[directory]
-style = "bg:#24283b fg:#e0af68"
-format = "[ $path ]($style)"
-truncation_length = 3
-fish_style_pwd_dir_length = 1
-[git_branch]
-symbol = " "
-style = "bg:#414868 fg:#bb9af7"
-format = '[[ $symbol$branch ]($style)]($style)'
-[git_status]
-style = "bg:#414868 fg:#f7768e"
-format = '[[($all_status$ahead_behind )]($style)]($style)'
-[time]
-disabled = false
-time_format = "%R"
-style = "bg:#414868 fg:#7dcfff"
-format = '[[  $time ]($style)]($style)'
-# --- EXTRAS PARA DESARROLLADORES ---
-[cmd_duration]
-min_time = 2_000 # Solo aparece si el comando tarda más de 2s
-format = "took [󱎫 $duration]($style) "
 [memory_usage]
 symbol = "󰍛 "
 threshold = 75
 style = "fg:#e0af68"
-[status]
 format = "[$symbol${ram}]($style) "
 disabled = false
-format = '[\[$symbol $common_meaning$exit_code\]]($style) '
-symbol = "✖"
-style = "fg:#f7768e"
-[jobs]
-symbol = " "
-style = "fg:#bb9af7"
-format = "[$symbol$number]($style) "
+
 [character]
 success_symbol = "[󰁔](bold #9ece6a) "
 error_symbol = "[󰁔](bold #f7768e) "
-[custom.distrobox]
-description = "Distrobox"
-when = 'test -f /run/.containerenv'
-command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
-symbol = "📦"
-style = "bg:#1a1b26 fg:#bb9af7"
-format = '[$symbol $output ]($style)'
+
 [python]
-symbol = " "
+symbol = " "
 format = 'via [${symbol}${version} ](bold #79c0ff)'
+
 [nodejs]
 symbol = "󰎙 "
 format = 'via [${symbol}${version} ](bold #79c0ff)'
+
 [rust]
 symbol = "🦀 "
 format = 'via [${symbol}${version} ](bold #ff7b72)'
-∙ EOF
+
+[golang]
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
+
+[c]
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
 EOF
 
 echo "⚡ Instalando herramientas IA en serie..."
@@ -558,9 +348,6 @@ command -v gentle-ai >/dev/null && echo "✅ gentle-ai listo" || echo "❌ gentl
 curl -fsSL https://ollama.com/install.sh | sh
 command -v ollama >/dev/null && echo "✅ ollama listo" || echo "❌ ollama falló"
 
-ollama serve > /tmp/ollama.log 2>&1 &
-sleep 5
-ollama pull llama3.2 && echo "✅ modelo base descargado" || echo "❌ fallo descarga modelo"
 
 # agent-teams-lite — al final porque depende de los anteriores
 git clone https://github.com/Gentleman-Programming/agent-teams-lite.git ~/agent-teams
