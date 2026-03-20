@@ -142,8 +142,8 @@ crear() {
     echo "⚡ Construyendo infraestructura…"
     mkdir -p "$R_PROYECTO" "$R_ENTORNO" "$AI_CONFIG/models"
     mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams" 2>/dev/null || \
-        sudo mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams" && \
-        sudo chown -R "$USER:$USER" "$AI_GLOBAL"
+        sudo mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams"
+    sudo chown -R "$USER:$USER" "$AI_GLOBAL"
     [ ! -f "$TUTOR_PATH" ] && echo "- Protocolo de razón técnica activo." > "$TUTOR_PATH"
 
     distrobox-create --name "$NOMBRE" \
@@ -348,9 +348,6 @@ command -v gentle-ai >/dev/null && echo "✅ gentle-ai listo" || echo "❌ gentl
 curl -fsSL https://ollama.com/install.sh | sh
 command -v ollama >/dev/null && echo "✅ ollama listo" || echo "❌ ollama falló"
 
-ollama serve > /tmp/ollama.log 2>&1 &
-sleep 5
-ollama pull llama3.2 && echo "✅ modelo base descargado" || echo "❌ fallo descarga modelo"
 
 # agent-teams-lite — al final porque depende de los anteriores
 git clone https://github.com/Gentleman-Programming/agent-teams-lite.git ~/agent-teams
