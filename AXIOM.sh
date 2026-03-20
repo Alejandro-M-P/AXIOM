@@ -42,7 +42,7 @@ detect_gpu() {
     local HAS_INTEL=0
 
     local GFX_RDNA4="12.0.1"
-    local GFX_RDNA3="11.0.0" 
+    local GFX_RDNA3="11.0.0"
 
     while IFS= read -r line; do
         local VENDOR=$(echo "$line" | sed -n 's/.*\[\([0-9a-fA-F]\{4\}\):.*/\1/p')
@@ -54,7 +54,7 @@ detect_gpu() {
                 if echo "$DESC" | grep -iqE '(8[0-9]{3}|9[0-9]{3})'; then
                     HAS_RDNA4=1
                 elif echo "$DESC" | grep -iqE '(6[0-9]{3}|7[0-9]{3})'; then
-                    HAS_RDNA3=1 
+                    HAS_RDNA3=1
                 fi
                 ;;
             8086) HAS_INTEL=1 ;;
@@ -81,7 +81,7 @@ detect_gpu() {
         echo "4. INTEL"
         echo "5. Generic / CPU Only"
         read -rp "Selecciona una opción [1-5]: " GPU_OPT
-        
+
         case "$GPU_OPT" in
             1) export GPU_TYPE="rdna4"; export GFX_VAL="$GFX_RDNA4" ;;
             2) export GPU_TYPE="rdna3"; export GFX_VAL="$GFX_RDNA3" ;;
@@ -102,13 +102,13 @@ sync-agents() {
     [ ! -f "$TUTOR_PATH" ] && return 0
     local CAJAS
     mapfile -t CAJAS < <(distrobox-list --no-color | awk -F'|' 'NR>1 && $2!~/^\s*(ID)?\s*$/ {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
-    
+
     for CAJA in "${CAJAS[@]}"; do
-        if podman ps --format "{{.Names}}" | grep -qx "$CAJA"; then
+        if podman ps --format '{{.Names}}' | grep -qx "$CAJA"; then
             [ ! -d "$BASE_ENV/$CAJA" ] && continue
             local DEST="$BASE_ENV/$CAJA/.config/opencode/AGENTS.md"
             mkdir -p "$(dirname "$DEST")"
-            
+
             if [ ! -f "$DEST" ]; then
                 cat "$TUTOR_PATH" > "$DEST"
             else
@@ -159,7 +159,7 @@ crear() {
     # 7. SCRIPT DE INSTALACIÓN DENTRO DEL CONTENEDOR
     cat > "$R_ENTORNO/setup.sh" << 'SCRIPT'
 #!/bin/bash
-set -euo pipefail
+set -u
 
 echo "⚡ Actualizando sistema base e instalando utilidades..."
 sudo pacman -Syu --noconfirm base-devel git curl jq wget nodejs npm go
@@ -180,161 +180,240 @@ SCRIPT
     echo "echo '⚡ Instalando paquetes específicos de GPU...'" >> "$R_ENTORNO/setup.sh"
     echo "paru -S --noconfirm $PKGS" >> "$R_ENTORNO/setup.sh"
 
-
     cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
 
+export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
+
 mkdir -p ~/.config && cat << 'EOF' > ~/.config/starship.toml
+
 # Configuración "Professional Developer" - Tokyo Night
+
 format = """
-[](fg:#1a1b26)\
+
+[](fg:
+
+#1a1b26)\
+
 $os\
+
 $custom\
-[](fg:#1a1b26 bg:#24283b)\
+
+[](fg:
+
+#1a1b26 bg:
+
+#24283b)\
+
 $directory\
-[](fg:#24283b bg:#414868)\
+
+[](fg:
+
+#24283b bg:
+
+#414868)\
+
 $git_branch\
+
 $git_status\
-$git_state\
-$git_metrics\
+
 $time\
-[](fg:#414868) \
-$python$nodejs$rust$golang$c\
+
+[](fg:
+
+#414868) \
+
+$python$nodejs$rust$golang\
+
 $fill\
-$memory_usage\
+
 $cmd_duration\
+
 $jobs\
+
 $status\
+
 $line_break\
+
 $character"""
 
 [fill]
+
 symbol = " "
 
 [os]
+
 disabled = false
-style = "bg:#1a1b26 fg:#7aa2f7"
+
+style = "bg:
+
+#1a1b26 fg:
+
+#7aa2f7"
+
 format = "[ $symbol ]($style)"
 
 [os.symbols]
-Arch = " "
-Ubuntu = " "
-Fedora = " "
-Debian = " "
-Linux = " "
-Macos = " "
+
+Arch = " "
+
+Ubuntu = " "
+
+Fedora = " "
+
+Debian = " "
+
+Linux = " "
+
+Macos = " "
+
 Windows = "󰍲 "
 
-[custom.distrobox]
-description = "Distrobox"
-when = 'test -f /run/.containerenv'
-command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
-symbol = "📦"
-style = "bg:#1a1b26 fg:#bb9af7"
-format = '[$symbol $output ]($style)'
-
 [directory]
-style = "bg:#24283b fg:#e0af68"
+
+style = "bg:
+
+#24283b fg:
+
+#e0af68"
+
 format = "[ $path ]($style)"
+
 truncation_length = 3
+
 fish_style_pwd_dir_length = 1
 
 [git_branch]
-symbol = " "
-style = "bg:#414868 fg:#bb9af7"
+
+symbol = " "
+
+style = "bg:
+
+#414868 fg:
+
+#bb9af7"
+
 format = '[[ $symbol$branch ]($style)]($style)'
-truncation_length = 20
-truncation_symbol = "…"
 
 [git_status]
-style = "bg:#414868 fg:#f7768e"
-format = '[[( $all_status$ahead_behind )]($style)]($style)'
-ahead = "⇡${count}"
-behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-staged = "[+${count}](bold green)"
-modified = "[~${count}](bold yellow)"
-untracked = "[?${count}](bold red)"
-deleted = "[-${count}](bold red)"
-conflicted = "[=${count}](bold red)"
-stashed = "[󰏗 ${count}](bold blue)"
 
-[git_state]
-style = "bg:#414868 fg:#f7768e"
-format = '[[( $state $progress_current/$progress_total)]($style)]($style)'
-rebase = "REBASE"
-merge = "MERGE"
-revert = "REVERT"
-cherry_pick = " PICK"
-bisect = "BISECT"
+style = "bg:
 
-[git_metrics]
-added_style = "bold #9ece6a"
-deleted_style = "bold #f7768e"
-format = '([+$added]($added_style) )([-$deleted]($deleted_style) )'
-disabled = false
+#414868 fg:
+
+#f7768e"
+
+format = '[[($all_status$ahead_behind )]($style)]($style)'
 
 [time]
+
 disabled = false
+
 time_format = "%R"
-style = "bg:#414868 fg:#7dcfff"
-format = '[[  $time ]($style)]($style)'
+
+style = "bg:
+
+#414868 fg:
+
+#7dcfff"
+
+format = '[[  $time ]($style)]($style)'
+
+# --- EXTRAS PARA DESARROLLADORES ---
 
 [cmd_duration]
-min_time = 2_000
+
+min_time = 2_000 # Solo aparece si el comando tarda más de 2s
+
 format = "took [󱎫 $duration]($style) "
-style = "fg:#e0af68"
+
+style = "fg:
+
+#e0af68"
 
 [status]
+
 disabled = false
+
 format = '[\[$symbol $common_meaning$exit_code\]]($style) '
+
 symbol = "✖"
-style = "fg:#f7768e"
+
+style = "fg:
+
+#f7768e"
 
 [jobs]
-symbol = " "
-style = "fg:#bb9af7"
+
+symbol = " "
+
+style = "fg:
+
+#bb9af7"
+
 format = "[$symbol$number]($style) "
 
-[memory_usage]
-symbol = "󰍛 "
-threshold = 75
-style = "fg:#e0af68"
-format = "[$symbol${ram}]($style) "
-disabled = false
-
 [character]
-success_symbol = "[󰁔](bold #9ece6a) "
-error_symbol = "[󰁔](bold #f7768e) "
+
+success_symbol = "[󰁔](bold 
+
+#9ece6a) "
+
+error_symbol = "[󰁔](bold 
+
+#f7768e) "
+
+[custom.distrobox]
+
+description = "Distrobox"
+
+when = 'test -f /run/.containerenv'
+
+command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
+
+symbol = "📦"
+
+style = "bg:
+
+#1a1b26 fg:
+
+#bb9af7"
+
+format = '[$symbol $output ]($style)'
 
 [python]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
+
+symbol = " "
+
+format = 'via [${symbol}${version} ](bold 
+
+#79c0ff)'
 
 [nodejs]
+
 symbol = "󰎙 "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
+
+format = 'via [${symbol}${version} ](bold 
+
+#79c0ff)'
 
 [rust]
+
 symbol = "🦀 "
-format = 'via [${symbol}${version} ](bold #ff7b72)'
 
-[golang]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
+format = 'via [${symbol}${version} ](bold 
 
-[c]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
+#ff7b72)'
+
 EOF
 
 echo "⚡ Instalando herramientas IA en serie..."
-export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
 
 # opencode
 curl -fsSL https://opencode.ai/install | bash
+export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
 command -v opencode >/dev/null && echo "✅ opencode listo" || echo "❌ opencode falló"
 
-# engram — asegurarse de que go/bin está en PATH antes
+# engram
 go install github.com/Gentleman-Programming/engram/cmd/engram@latest
 command -v engram >/dev/null && echo "✅ engram listo" || echo "❌ engram falló"
 
@@ -343,11 +422,12 @@ curl -fsSL https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/mai
 command -v gentle-ai >/dev/null && echo "✅ gentle-ai listo" || echo "❌ gentle-ai falló"
 
 # ollama
-curl -fsSL https://ollama.com/install.sh | sh
+curl -fsSL https://ollama.com/install.sh | sh || true
 command -v ollama >/dev/null && echo "✅ ollama listo" || echo "❌ ollama falló"
 
-
-# agent-teams-lite — al final porque depende de los anteriores
+# agent-teams-lite
+ollama serve > /tmp/ollama.log 2>&1 &
+sleep 3
 git clone https://github.com/Gentleman-Programming/agent-teams-lite.git ~/agent-teams
 cd ~/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams listo" || echo "❌ agent-teams falló"
 cd ~
@@ -435,11 +515,11 @@ diagnostico() {
     echo "🔍 [DIAGNÓSTICO DE SALUD: AXIOM]"
     echo "---------------------------------"
     echo "1️⃣  Visibilidad de GPU:"
-    if command -v nvidia-smi &>/dev/null; then 
+    if command -v nvidia-smi &>/dev/null; then
         nvidia-smi | grep "Driver Version" || echo "❌ Falla en nvidia-smi"
-    elif command -v rocminfo &>/dev/null; then 
+    elif command -v rocminfo &>/dev/null; then
         rocminfo | grep "Agent 1" -A 2 || echo "❌ Falla en rocminfo"
-    else 
+    else
         echo "⚠️ No se encontraron herramientas de GPU."
     fi
 
