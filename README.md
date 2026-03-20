@@ -8,7 +8,7 @@ Sigue estos 4 pasos para inicializar tu entorno:
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone <https://github.com/Alejandro-M-P/AXIOM> ~/AXIOM
+   git clone https://github.com/Alejandro-M-P/AXIOM ~/AXIOM
    cd ~/AXIOM
    ```
 
