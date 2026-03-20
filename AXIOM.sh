@@ -193,8 +193,10 @@ $directory\
 $git_branch\
 $git_status\
 $git_state\
+$git_metrics\
 $time\
 [](fg:#414868) \
+$python$nodejs$rust$golang$c$docker_context$memory_usage$battery\
 $fill\
 $python$nodejs$rust$golang$c$docker_context$memory_usage$battery\
 $cmd_duration\
@@ -213,6 +215,12 @@ format = "[ $symbol ]($style)"
 
 [os.symbols]
 Arch = " "
+Ubuntu = " "
+Fedora = " "
+Debian = " "
+Linux = " "
+Macos = " "
+Windows = "󰍲 "
 
 [custom.distrobox]
 description = "Distrobox"
@@ -225,6 +233,8 @@ format = '[$symbol $output ]($style)'
 [directory]
 style = "bg:#24283b fg:#e0af68"
 format = "[ $path ]($style)"
+truncation_length = 3
+fish_style_pwd_dir_length = 1
 
 [git_branch]
 symbol = " "
@@ -240,10 +250,14 @@ style = "bg:#414868 fg:#f7768e"
 format = '[[($state( $progress_current/$progress_total))]($style)]($style)'
 
 [time]
+[git_metrics]
 disabled = false
 time_format = "%R"
 style = "bg:#414868 fg:#7dcfff"
 format = '[[  $time ]($style)]($style)'
+added_style = "bg:#414868 fg:#9ece6a"
+deleted_style = "bg:#414868 fg:#f7768e"
+format = '[\[+$added]($added_style)[/-$deleted\]]($deleted_style) '
 
 [python]
 symbol = " "
@@ -325,19 +339,24 @@ time_format = "%R"
 style = "bg:#414868 fg:#7dcfff"
 format = '[[  $time ]($style)]($style)'
 # --- EXTRAS PARA DESARROLLADORES ---
+
 [cmd_duration]
 min_time = 2_000 # Solo aparece si el comando tarda más de 2s
+min_time = 2_000
 format = "took [󱎫 $duration]($style) "
 style = "fg:#e0af68"
+
 [status]
 disabled = false
 format = '[\[$symbol $common_meaning$exit_code\]]($style) '
 symbol = "✖"
 style = "fg:#f7768e"
+
 [jobs]
 symbol = " "
 style = "fg:#bb9af7"
 format = "[$symbol$number]($style) "
+
 [character]
 success_symbol = "[󰁔](bold #9ece6a) "
 error_symbol = "[󰁔](bold #f7768e) "
@@ -348,12 +367,15 @@ command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
 symbol = "📦"
 style = "bg:#1a1b26 fg:#bb9af7"
 format = '[$symbol $output ]($style)'
+
 [python]
 symbol = " "
 format = 'via [${symbol}${version} ](bold #79c0ff)'
+
 [nodejs]
 symbol = "󰎙 "
 format = 'via [${symbol}${version} ](bold #79c0ff)'
+
 [rust]
 symbol = "🦀 "
 format = 'via [${symbol}${version} ](bold #ff7b72)'
@@ -379,8 +401,18 @@ $status\
 $line_break\
 $chformat = 'via [${symbol}${version} ](bold #ff7b72)'
 
+[golang]
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
 
+[c]
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
 
+[docker_context]
+symbol = " "
+style = "fg:#0db7ed"
+format = "[$symbol$context]($style) "
 
 
 
@@ -471,8 +503,12 @@ format = '[[  $time ]($style)]($style)'
 [cmd_duration]
 min_time = 2_000 # Solo aparece si el comando tarda más de 2s
 format = "took [󱎫 $duration]($style) "
+[memory_usage]
+symbol = "󰍛 "
+threshold = 75
 style = "fg:#e0af68"
 [status]
+format = "[$symbol${ram}]($style) "
 disabled = false
 format = '[\[$symbol $common_meaning$exit_code\]]($style) '
 symbol = "✖"
@@ -501,6 +537,7 @@ format = 'via [${symbol}${version} ](bold #79c0ff)'
 symbol = "🦀 "
 format = 'via [${symbol}${version} ](bold #ff7b72)'
 ∙ EOF
+EOF
 
 echo "⚡ Instalando herramientas IA en serie..."
 export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
