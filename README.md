@@ -19,7 +19,7 @@ Sigue estos 4 pasos para inicializar tu entorno:
    Sigue el asistente para proveer tus datos de GitHub, tu token y tu directorio de desarrollo base preferido.
 ```
 
-Un solo comando, más limpio. Commit:
+
 ```
 docs: combinar chmod e install.sh en un solo comando en README
 
