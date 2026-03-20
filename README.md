@@ -17,11 +17,9 @@ Sigue estos 4 pasos para inicializar tu entorno:
    chmod +x install.sh && ./install.sh
 ```
    Sigue el asistente para proveer tus datos de GitHub, tu token y tu directorio de desarrollo base preferido.
-```
-
 
 ```
-docs: combinar chmod e install.sh en un solo comando en README
+
 
 3. **Añadir source a tu shell:**
    ```bash
