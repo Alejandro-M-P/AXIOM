@@ -51,7 +51,11 @@ detect_gpu() {
     done < <(lspci -nn | grep -iE 'vga|3d|display|accelerator')
 
     # Asignación de Perfil y GFX_VERSION
-    if [ "$HAS_RDNA4" -eq 1 ]; then
+    if [ "$HAS_NVIDIA" -eq 1 ]; then
+        export GPU_TYPE="nvidia"
+        export GFX_VAL=""
+        echo "✅ GPU detectada: NVIDIA (No requiere GFX Override)"
+    elif [ "$HAS_RDNA4" -eq 1 ]; then
         export GPU_TYPE="rdna4"
         export GFX_VAL="$GFX_RDNA4"
         echo "✅ GPU detectada: AMD RDNA 4 -> GFX: $GFX_VAL"
@@ -59,10 +63,6 @@ detect_gpu() {
         export GPU_TYPE="rdna3"
         export GFX_VAL="$GFX_RDNA3"
         echo "✅ GPU detectada: AMD RDNA 3/2 -> GFX: $GFX_VAL"
-    elif [ "$HAS_NVIDIA" -eq 1 ]; then
-        export GPU_TYPE="nvidia"
-        export GFX_VAL=""
-        echo "✅ GPU detectada: NVIDIA (No requiere GFX Override)"
     elif [ "$HAS_INTEL" -eq 1 ]; then
         export GPU_TYPE="intel"
         export GFX_VAL=""
@@ -168,16 +168,18 @@ cd /tmp/paru && makepkg -si --noconfirm
 cd ~ && rm -rf /tmp/paru
 
 echo "⚡ Instalando paquetes con paru..."
-paru -S --noconfirm starship rocm-hip-sdk
 SCRIPT
 
-    if [[ "${GPU_TYPE:-}" == "nvidia" ]]; then
-        echo "paru -S --noconfirm starship nvidia-utils cuda" >> "$R_ENTORNO/setup.sh"
-    elif [[ "${GPU_TYPE:-}" == rdna* ]]; then
-        echo "paru -S --noconfirm starship rocm-hip-sdk mesa-vdpau" >> "$R_ENTORNO/setup.sh"
-    else
-        echo "paru -S --noconfirm starship" >> "$R_ENTORNO/setup.sh"
-    fi
+    local PKGS="starship"
+
+    case "${GPU_TYPE:-}" in
+        nvidia) PKGS="$PKGS nvidia-utils cuda" ;;
+        rdna*)  PKGS="$PKGS rocm-hip-sdk mesa-vdpau" ;;
+        intel)  PKGS="$PKGS intel-compute-runtime onevpl-intel-gpu" ;;
+    esac
+
+    echo "echo '⚡ Instalando paquetes específicos para ${GPU_TYPE:-generic}...'" >> "$R_ENTORNO/setup.sh"
+    echo "paru -S --noconfirm $PKGS" >> "$R_ENTORNO/setup.sh"
 
     cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
 
@@ -444,8 +446,12 @@ SCRIPT
 
     # Nombre del proyecto se expande desde el host
     cat >> "$R_ENTORNO/setup.sh" << SCRIPT
+
+if [[ -n "$GFX_VAL" ]]; then
+    echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> ~/.bashrc
+fi
+
 cat >> ~/.bashrc << 'BASH'
-export HSA_OVERRIDE_GFX_VERSION=12.0.1
 export OLLAMA_MODELS="/ai_config/models"
 export PATH="\$HOME/.local/bin:\$HOME/go/bin:/usr/local/bin:\$PATH"
 eval "\$(starship init bash)"
@@ -515,8 +521,13 @@ SCRIPT
 
 # — 🗑️ COMANDO BORRAR —
 
-borrar() {
-    if [ -z "${1:-}" ]; then echo "❌ Uso: borrar [nombre]"; return 1; fi
+axiom:borrar() {
+    if [ -z "${1:-}" ]; then echo "❌ Uso: axiom:borrar [nombre]"; return 1; fi
+    read -rp "📝 Razón técnica obligatoria para borrar: " REASON
+    if [ -z "$REASON" ]; then
+        echo "❌ Operación cancelada: Se requiere justificar la eliminación."
+        return 1
+    fi
     read -rp "❗ ¿Borrar búnker '$1'? (s/N): " CONFIRM
     if [[ "$CONFIRM" =~ ^[sS]$ ]]; then
         distrobox-rm "$1" --force
@@ -530,8 +541,8 @@ borrar() {
 
 # — ⏹️ COMANDO PARAR —
 
-parar() {
-    if [ -z "${1:-}" ]; then echo "❌ Uso: parar [nombre]"; return 1; fi
+axiom:parar() {
+    if [ -z "${1:-}" ]; then echo "❌ Uso: axiom:parar [nombre]"; return 1; fi
     if ! distrobox-list --no-color | grep -qw "$1"; then
         echo "❌ Búnker '$1' no existe."
         return 1
