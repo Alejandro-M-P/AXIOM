@@ -170,12 +170,15 @@ SCRIPT
     local PKGS="starship"
     case "${GPU_TYPE:-}" in
         nvidia) PKGS="$PKGS nvidia-utils cuda" ;;
-        rdna*)  PKGS="$PKGS rocm-hip-sdk mesa-vdpau" ;;
+        rdna*)  PKGS="$PKGS rocm-hip-sdk" ;;
         intel)  PKGS="$PKGS intel-compute-runtime onevpl-intel-gpu" ;;
     esac
 
     echo "echo '⚡ Instalando paquetes específicos de GPU...'" >> "$R_ENTORNO/setup.sh"
     echo "paru -S --noconfirm $PKGS" >> "$R_ENTORNO/setup.sh"
+    if [[ "${GPU_TYPE:-}" == rdna* ]]; then
+        echo "sudo pacman -S --noconfirm mesa-vdpau" >> "$R_ENTORNO/setup.sh"
+    fi
 
     cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
 
@@ -271,50 +274,258 @@ format = "[$symbol${ram}]($style) "
 disabled = false
 
 [battery]
-full_symbol = "󰁹 "
-charging_symbol = "󰂄 "
-discharging_symbol = "󰂃 "
-[[battery.display]]
-threshold = 20
-style = "bold #f7768e"
-
+󰁔  # Configuración "Professional Developer" - Tokyo Night
+format = """
+[](fg:#1a1b26)\
+$os\
+$custom\
+[](fg:#1a1b26 bg:#24283b)\
+$directory\
+[](fg:#24283b bg:#414868)\
+$git_branch\
+$git_status\
+$time\
+[](fg:#414868) \
+$python$nodejs$rust$golang\
+$fill\
+$cmd_duration\
+$jobs\
+$status\
+$line_break\
+$character"""
+[fill]
+symbol = " "
+[os]
+disabled = false
+style = "bg:#1a1b26 fg:#7aa2f7"
+format = "[ $symbol ]($style)"
+[os.symbols]
+Arch = " "
+Ubuntu = " "
+Fedora = " "
+Debian = " "
+Linux = " "
+Macos = " "
+Windows = "󰍲 "
+[directory]
+style = "bg:#24283b fg:#e0af68"
+format = "[ $path ]($style)"
+truncation_length = 3
+fish_style_pwd_dir_length = 1
+[git_branch]
+symbol = " "
+style = "bg:#414868 fg:#bb9af7"
+format = '[[ $symbol$branch ]($style)]($style)'
+[git_status]
+style = "bg:#414868 fg:#f7768e"
+format = '[[($all_status$ahead_behind )]($style)]($style)'
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:#414868 fg:#7dcfff"
+format = '[[  $time ]($style)]($style)'
+# --- EXTRAS PARA DESARROLLADORES ---
 [cmd_duration]
-min_time = 2_000
+min_time = 2_000 # Solo aparece si el comando tarda más de 2s
 format = "took [󱎫 $duration]($style) "
 style = "fg:#e0af68"
-
-[jobs]
-symbol = " "
-style = "fg:#bb9af7"
-format = "[$symbol$number]($style) "
-
 [status]
 disabled = false
 format = '[\[$symbol $common_meaning$exit_code\]]($style) '
 symbol = "✖"
 style = "fg:#f7768e"
-
+[jobs]
+symbol = " "
+style = "fg:#bb9af7"
+format = "[$symbol$number]($style) "
 [character]
 success_symbol = "[󰁔](bold #9ece6a) "
 error_symbol = "[󰁔](bold #f7768e) "
-EOF
+[custom.distrobox]
+description = "Distrobox"
+when = 'test -f /run/.containerenv'
+command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
+symbol = "📦"
+style = "bg:#1a1b26 fg:#bb9af7"
+format = '[$symbol $output ]($style)'
+[python]
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
+[nodejs]
+symbol = "󰎙 "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
+[rust]
+symbol = "🦀 "
+format = 'via [${symbol}${version} ](bold #ff7b72)'
+bash: format: command not found
+bash: [fill]: command not found
+󰁔  # Configuración "Professional Developer" - Tokyo Night
+format = """
+[](fg:#1a1b26)\
+$os\
+$custom\
+[](fg:#1a1b26 bg:#24283b)\
+$directory\
+[](fg:#24283b bg:#414868)\
+$git_branch\
+$git_status\
+$time\
+[](fg:#414868) \
+$python$nodejs$rust$golang\
+$fill\
+$cmd_duration\
+$jobs\
+$status\
+$line_break\
+$chformat = 'via [${symbol}${version} ](bold #ff7b72)'
 
-echo "⚡ Instalando herramientas IA en paralelo..."
-curl -fsSL https://ollama.com/install.sh | sh &
-PID_OLLAMA=$!
-curl -fsSL https://opencode.ai/install | bash &
-PID_OPENCODE=$!
-curl -fsSL https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/scripts/install.sh | bash &
-PID_GENTLE=$!
-go install github.com/Gentleman-Programming/engram/cmd/engram@latest &
-PID_ENGRAM=$!
 
-wait $PID_OLLAMA   && echo "✅ ollama listo"    || echo "❌ ollama falló"
-wait $PID_OPENCODE && echo "✅ opencode listo"  || echo "❌ opencode falló"
-wait $PID_GENTLE   && echo "✅ gentle-ai listo" || echo "❌ gentle-ai falló"
-wait $PID_ENGRAM   && echo "✅ engram listo"    || echo "❌ engram falló"
 
-echo "⚡ Instalando agent-teams-lite en serie..."
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+󰁔  # Configuración "Professional Developer" - Tokyo Night
+format = """
+[](fg:#1a1b26)\
+$os\
+$custom\
+[](fg:#1a1b26 bg:#24283b)\
+$directory\
+[](fg:#24283b bg:#414868)\
+$git_branch\
+$git_status\
+$time\
+[](fg:#414868) \
+$python$nodejs$rust$golang\
+$fill\
+$cmd_duration\
+$jobs\
+$status\
+$line_break\
+$character"""
+[fill]
+symbol = " "
+[os]
+∙ # Configuración "Professional Developer" - Tokyo Night
+format = """
+[](fg:#1a1b26)\
+$os\
+$custom\
+[](fg:#1a1b26 bg:#24283b)\
+$directory\
+[](fg:#24283b bg:#414868)\
+$git_branch\
+$git_status\
+$time\
+[](fg:#414868) \
+$python$nodejs$rust$golang\
+$fill\
+$cmd_duration\
+$jobs\
+$status\
+$line_break\
+$character"""
+[fill]
+symbol = " "
+[os]
+disabled = false
+style = "bg:#1a1b26 fg:#7aa2f7"
+format = "[ $symbol ]($style)"
+[os.symbols]
+Arch = " "
+Ubuntu = " "
+Fedora = " "
+Debian = " "
+Linux = " "
+Macos = " "
+Windows = "󰍲 "
+[directory]
+style = "bg:#24283b fg:#e0af68"
+format = "[ $path ]($style)"
+truncation_length = 3
+fish_style_pwd_dir_length = 1
+[git_branch]
+symbol = " "
+style = "bg:#414868 fg:#bb9af7"
+format = '[[ $symbol$branch ]($style)]($style)'
+[git_status]
+style = "bg:#414868 fg:#f7768e"
+format = '[[($all_status$ahead_behind )]($style)]($style)'
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:#414868 fg:#7dcfff"
+format = '[[  $time ]($style)]($style)'
+# --- EXTRAS PARA DESARROLLADORES ---
+[cmd_duration]
+min_time = 2_000 # Solo aparece si el comando tarda más de 2s
+format = "took [󱎫 $duration]($style) "
+style = "fg:#e0af68"
+[status]
+disabled = false
+format = '[\[$symbol $common_meaning$exit_code\]]($style) '
+symbol = "✖"
+style = "fg:#f7768e"
+[jobs]
+symbol = " "
+style = "fg:#bb9af7"
+format = "[$symbol$number]($style) "
+[character]
+success_symbol = "[󰁔](bold #9ece6a) "
+error_symbol = "[󰁔](bold #f7768e) "
+[custom.distrobox]
+description = "Distrobox"
+when = 'test -f /run/.containerenv'
+command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
+symbol = "📦"
+style = "bg:#1a1b26 fg:#bb9af7"
+format = '[$symbol $output ]($style)'
+[python]
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
+[nodejs]
+symbol = "󰎙 "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
+[rust]
+symbol = "🦀 "
+format = 'via [${symbol}${version} ](bold #ff7b72)'
+∙ EOF
+
+echo "⚡ Instalando herramientas IA en serie..."
+export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
+
+# opencode
+curl -fsSL https://opencode.ai/install | bash
+command -v opencode >/dev/null && echo "✅ opencode listo" || echo "❌ opencode falló"
+
+# engram — asegurarse de que go/bin está en PATH antes
+go install github.com/Gentleman-Programming/engram/cmd/engram@latest
+command -v engram >/dev/null && echo "✅ engram listo" || echo "❌ engram falló"
+
+# gentle-ai
+curl -fsSL https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/scripts/install.sh | bash
+command -v gentle-ai >/dev/null && echo "✅ gentle-ai listo" || echo "❌ gentle-ai falló"
+
+# ollama
+curl -fsSL https://ollama.com/install.sh | sh
+command -v ollama >/dev/null && echo "✅ ollama listo" || echo "❌ ollama falló"
+
+ollama serve > /tmp/ollama.log 2>&1 &
+sleep 5
+ollama pull llama3.2 && echo "✅ modelo base descargado" || echo "❌ fallo descarga modelo"
+
+# agent-teams-lite — al final porque depende de los anteriores
 git clone https://github.com/Gentleman-Programming/agent-teams-lite.git ~/agent-teams
 cd ~/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams listo" || echo "❌ agent-teams falló"
 cd ~
