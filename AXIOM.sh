@@ -179,9 +179,7 @@ SCRIPT
 
     echo "echo '⚡ Instalando paquetes específicos de GPU...'" >> "$R_ENTORNO/setup.sh"
     echo "paru -S --noconfirm $PKGS" >> "$R_ENTORNO/setup.sh"
-    if [[ "${GPU_TYPE:-}" == rdna* ]]; then
-        echo "sudo pacman -S --noconfirm mesa-vdpau" >> "$R_ENTORNO/setup.sh"
-    fi
+
 
     cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
 
