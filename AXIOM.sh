@@ -61,22 +61,7 @@ detect_gpu() {
     elif [ "$HAS_RDNA3"  -eq 1 ]; then export GPU_TYPE="rdna3";  export GFX_VAL="$GFX_RDNA3"
     elif [ "$HAS_INTEL"  -eq 1 ]; then export GPU_TYPE="intel";  export GFX_VAL=""
     else
-        echo "⚠️ Detección no concluyente. Selecciona:"
-        echo "1. RDNA 4 (8000/9000)  2. RDNA 3/2 (6000/7000)"
-        echo "3. NVIDIA              4. INTEL"
-        echo "5. Generic / CPU Only"
-        read -rp "Opción [1-5]: " GPU_OPT
-        case "$GPU_OPT" in
-            1) export GPU_TYPE="rdna4";   export GFX_VAL="$GFX_RDNA4" ;;
-            2) export GPU_TYPE="rdna3";   export GFX_VAL="$GFX_RDNA3" ;;
-            3) export GPU_TYPE="nvidia";  export GFX_VAL="" ;;
-            4) export GPU_TYPE="intel";   export GFX_VAL="" ;;
-            *) export GPU_TYPE="generic"; export GFX_VAL="" ;;
-        esac
-        if [[ "$GPU_TYPE" == rdna* ]]; then
-            read -rp "📝 GFX Override (Enter para $GFX_VAL): " MANUAL_GFX
-            [ -n "$MANUAL_GFX" ] && export GFX_VAL="$MANUAL_GFX"
-        fi
+        export GPU_TYPE="generic"; export GFX_VAL=""
     fi
     echo "✅ GPU: $GPU_TYPE ${GFX_VAL:+(GFX: $GFX_VAL)}"
 }
@@ -118,87 +103,59 @@ _init_tutor() {
     [ -f "$TUTOR_PATH" ] && return 0
     mkdir -p "$(dirname "$TUTOR_PATH")"
 
-    local DISTRO GPU_INFO GFX_INFO
-    DISTRO=$(grep ^NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"')
-    [ -z "$DISTRO" ] && DISTRO="Linux"
-
-    if [ -n "${GPU_TYPE:-}" ]; then
-        GPU_INFO="${GPU_NAME:-$GPU_TYPE}"
-        case "${GPU_TYPE}" in
-            rdna*) GPU_INFO="AMD ${GPU_NAME:-RDNA} con ROCm" ;;
-            nvidia) GPU_INFO="NVIDIA ${GPU_NAME:-} con CUDA" ;;
-            intel) GPU_INFO="Intel ${GPU_NAME:-} con OneAPI" ;;
-            *) GPU_INFO="${GPU_NAME:-Generic / CPU Only}" ;;
-        esac
-        GFX_INFO="${GFX_VAL:+ (HSA_OVERRIDE_GFX_VERSION=$GFX_VAL)}"
-    else
-        GPU_INFO="desconocida"
-        GFX_INFO=""
-    fi
-
     cat > "$TUTOR_PATH" << TUTOR
 # 🤖 ROL: COPILOTO DE EJECUCIÓN (Junior Coder / Senior Mind)
 
 ## 👤 Identidad
-Eres el brazo ejecutor del desarrollador. Tu misión es generar código limpio,
-funcional y profesional a máxima velocidad, pero filtrado por un criterio de
-Arquitecto Senior.
-
-## 🌍 Contexto del Entorno
-- Sistema: $DISTRO (atómico)
-- Contenedor: Arch Linux via Distrobox (AXIOM)
-- GPU: $GPU_INFO$GFX_INFO
-- Modelos IA: Ollama en /ai_config/models
-- Memoria persistente: /ai_global/teams/tutor.md
+Eres el brazo ejecutor de Alejandro. Tu misión es generar código limpio, funcional y profesional a máxima velocidad, pero filtrado por un criterio de Arquitecto Senior.
 
 ## 🛡️ Protocolo de Acción (Skeptic-to-Code)
-1. **Skeptic First**: Antes de codear, pregunta el "porqué". Si la idea es mala
-   o el código será basura, adviértelo. No seas un robot sumiso, sé un socio crítico.
-2. **Explain & Validate**: Para tareas complejas, explica el diseño brevemente y
-   espera el "OK". Para tareas simples y directas, ejecuta sin preguntar.
-3. **High-Speed Execution**: Una vez recibas el "OK", genera el código completo.
-   No des fragmentos inútiles; entrega bloques listos para ser probados o integrados.
-4. **No Assumptions**: Si falta información para completar el código, pídela.
-   Es mejor preguntar una vez que corregir diez.
+1. **Skeptic First**: Antes de codear, pregunta el "porqué". Si la idea es mala, adviértelo. No seas un robot sumiso, sé un socio crítico.
+2. **Pausa Activa**: Cuando hagas una pregunta, DETENETE y esperá la respuesta. No asumas nada.
+3. **Efectividad**: Generá código completo y listo para probar una vez recibas el "OK".
 
-## 🏛️ Estándares de Calidad
-- **Clean Code & Pro Naming**: El código debe hablar por sí solo.
-- **Detección de Errores**: Al entregar código, indica los 2 puntos más probables
-  por donde podría fallar.
-- **Git Ready**: Sugiere el momento del commit tras entregar un bloque funcional. El usuario decidirá el mensaje.
+## 🎯 Reglas de Operación Crítica
+- **COMMITS**: NUNCA añadas "Co-Authored-By". Usá Conventional Commits.
+- **SKEPTICISM**: No estés de acuerdo por compromiso. Decí "dejame verificar" primero.
+- **EVIDENCIA**: Si Alejandro se equivoca, explicá POR QUÉ con pruebas técnicas.
 
-## 💾 Gestión del Entorno
-- **Engram**: Registra archivos creados y decisiones técnicas para mantener contexto.
-- **Save-Rule**: Si detectas una preferencia de código del desarrollador, sugiere
-  grabarla con \`save-rule\` para que persista en todos los búnkeres.
-
-## 📋 Cuándo guardar una regla
-- Cuando se toma una decisión de arquitectura no obvia
-- Cuando se resuelve un bug con una solución no trivial
-- Cuando se establece un patrón que debe repetirse
-- Cuando se descarta una tecnología con razón clara
+## 🎭 Personalidad y Tono (Senior Architect)
+Sos un mentor apasionado (Arquitecto Senior, GDE & MVP). Te importa el crecimiento de Alejandro.
+- **Idioma**: Español Rioplatense (voseo), cálido y natural ("che", "loco", "fantástico", "ponete las pilas").
+- **Tono**: Directo y apasionado. Usá MAYÚSCULAS para enfatizar puntos clave.
 
 ## Reglas
 - Protocolo de razón técnica activo.
 TUTOR
-    echo "✅ tutor.md inicializado con datos del sistema."
+    echo "✅ tutor.md maestro inicializado en $TUTOR_PATH"
 }
 
-# ─── 7. SYNC-AGENTS ─────────────────────────────────
+# ─── 7. SYNC-AGENTS  ────────────────
 sync-agents() {
-    _init_tutor
-    local SYNCED=0
-    while IFS= read -r CAJA; do
-        [ -d "$BASE_ENV/$CAJA" ] || continue
-        local DEST="$BASE_ENV/$CAJA/.config/opencode/AGENTS.md"
-        mkdir -p "$(dirname "$DEST")"
-        cp "$TUTOR_PATH" "$DEST"
-        SYNCED=$((SYNCED+1))
-    done < <(podman ps --format '{{.Names}}' 2>/dev/null)
-    [ $SYNCED -gt 0 ] && echo "✅ Ley Global sincronizada en $SYNCED búnker(es)."
-    return 0
-}
+    local MAESTRO="/ai_global/teams/tutor.md"
+    local DEST="\$HOME/.config/opencode/AGENTS.md"
+    local MARCA="# 🌍 LEY GLOBAL AXIOM"
 
+    [ ! -f "\$MAESTRO" ] && return 0
+    mkdir -p "\$(dirname "\$DEST")"
+    [ ! -f "\$DEST" ] && touch "\$DEST"
+
+    # 🚀 PROTECCIÓN: Borramos solo de la marca para abajo
+    sed -i "/\$MARCA/,\$d" "\$DEST" 2>/dev/null
+
+    {
+        echo ""
+        echo "\$MARCA"
+        echo "> _Sincronizado: \$(date +'%d/%m/%Y %H:%M')_"
+        echo "---"
+        echo "## 🌍 Contexto del Entorno"
+        echo "- **GPU**: \${GPU_TYPE:-desconocida}"
+        echo "- **GFX**: \${HSA_OVERRIDE_GFX_VERSION:-N/A}"
+        echo ""
+        cat "\$MAESTRO"
+    } >> "\$DEST"
+    echo "✅ AGENTS.md actualizado (notas locales preservadas)."
+}
 # ─── 8. BUILD ───────────────────────────────────────
 build() {
     mostrar_logo
@@ -349,8 +306,20 @@ SCRIPT
 # ─── 9. CREAR ───────────────────────────────────────
 crear() {
     mostrar_logo
-    if [ -z "${1:-}" ]; then echo "❌ Uso: crear [nombre]"; return 1; fi
-    local NOMBRE="$1"
+    local NOMBRE="${1:-}"
+
+    # 🛡️ FILTRO DE SEGURIDAD: Evitar nombres prohibidos
+    if [[ -z "$NOMBRE" ]]; then
+        echo "❌ Uso: crear [nombre]"
+        return 1
+    fi
+
+    if [[ "$NOMBRE" =~ ^(exit|quit|build|rebuild|crear|borrar|parar|resetear|ayuda|axiom|test)$ ]]; then
+        echo "❌ ¡Epa, loco! '$NOMBRE' es un comando reservado o un nombre prohibido."
+        echo "   Elegí un nombre que no rompa el sistema, dale."
+        return 1
+    fi
+
     local R_PROYECTO="$BASE_DEV/$NOMBRE"
     local R_ENTORNO="$BASE_ENV/$NOMBRE"
 
@@ -559,15 +528,15 @@ ayuda() {
     echo ""
     echo "🤖  BÚNKER — Comandos disponibles"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  open               Sincronizar leyes y abrir opencode"
-    echo "  sync-agents        Copiar tutor.md a AGENTS.md"
+    echo "  open                Sincronizar leyes y abrir opencode"
+    echo "  sync-agents         Copiar tutor.md a AGENTS.md"
     echo "  save-rule [regla]  Guardar regla en tutor.md"
     echo "  diagnostico        Diagnóstico de salud"
     echo ""
     echo "  git-clone [u/r]    Clonar repo de forma segura"
-    echo "  rama               Crear rama nueva (interactivo)"
+    echo "  rama                Crear rama nueva (interactivo)"
     echo "  commit [mensaje]   Añadir todo y commitear"
-    echo "  push               Push seguro a GitHub"
+    echo "  push                Push seguro a GitHub"
     echo ""
 }
 BASH_RC
@@ -622,6 +591,8 @@ BASH_RC
       "git push": "ask",
       "git push *": "ask",
       "git push --force *": "ask",
+      "git rebase *": "ask",
+      "git rebase *": "ask",
       "git rebase *": "ask",
       "git reset --hard *": "ask"
     },
