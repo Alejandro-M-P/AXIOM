@@ -255,31 +255,25 @@ export PATH="\$HOME/.local/bin:\$HOME/go/bin:/usr/local/bin:\$PATH"
 
 GPU_PKGS="$GPU_PKGS"
 
-echo "⚡ [1/5] Sistema base..."
+echo "⚡ [1/4] Sistema base..."
 sudo pacman -Sy --needed --noconfirm base-devel git curl jq wget nodejs npm go
 
-echo "⚡ [2/5] Instalando paru..."
-if ! command -v paru &>/dev/null; then
-    git clone https://aur.archlinux.org/paru.git /tmp/paru
-    cd /tmp/paru && makepkg -si --noconfirm
-    cd ~ && rm -rf /tmp/paru
-fi
-
-echo "⚡ [3/5] Paquetes base + starship..."
-paru -S --noconfirm --needed starship
+echo "⚡ [2/4] Starship + GPU..."
+curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir /usr/local/bin
 if [ -n "\$GPU_PKGS" ]; then
     echo "⚡ Instalando GPU: \$GPU_PKGS"
-    paru -S --noconfirm --needed \$GPU_PKGS
+    sudo pacman -S --noconfirm --needed \$GPU_PKGS
 fi
 
-echo "⚡ [4/5] Herramientas IA en paralelo..."
+echo "⚡ [3/4] Herramientas IA en paralelo..."
 curl -fsSL https://opencode.ai/install | OPENCODE_INSTALL=/usr/local bash &
 PID_OC=\$!
 
 go install github.com/Gentleman-Programming/engram/cmd/engram@latest &
 PID_EN=\$!
 
-curl -fsSL https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/scripts/install.sh | bash &
+(curl -fsSL https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/scripts/install.sh | bash && \
+    sudo cp -f "\$HOME/.local/bin/gentle-ai" /usr/local/bin/) &
 PID_GA=\$!
 
 curl -fsSL https://ollama.com/install.sh | sh &
@@ -290,7 +284,7 @@ wait \$PID_EN && echo "✅ engram"    || echo "❌ engram falló"
 wait \$PID_GA && echo "✅ gentle-ai" || echo "❌ gentle-ai falló"
 wait \$PID_OL && echo "✅ ollama"    || echo "❌ ollama falló"
 
-echo "⚡ [5/5] agent-teams-lite..."
+echo "⚡ [4/4] agent-teams-lite..."
 ollama serve > /tmp/ollama-build.log 2>&1 &
 OLLAMA_PID=\$!
 sleep 5
@@ -300,16 +294,11 @@ kill \$OLLAMA_PID 2>/dev/null || true
 cd ~
 
 echo "⚡ Copiando binarios a /usr/local/bin..."
-for BIN in opencode gentle-ai; do
-    [ -f "\$HOME/.local/bin/\$BIN" ] && sudo cp -f "\$HOME/.local/bin/\$BIN" /usr/local/bin/ && echo "  ✅ \$BIN"
-done
 [ -f "\$HOME/go/bin/engram" ] && sudo cp -f "\$HOME/go/bin/engram" /usr/local/bin/ && echo "  ✅ engram"
-command -v starship &>/dev/null && sudo cp -f "\$(command -v starship)" /usr/local/bin/ && echo "  ✅ starship"
 
 echo "🧹 Limpiando caché..."
 sudo pacman -Scc --noconfirm
-paru -Scc --noconfirm 2>/dev/null || true
-sudo rm -rf /tmp/* ~/.cache/go ~/.cache/paru /var/cache/pacman/pkg 2>/dev/null || true
+sudo rm -rf /tmp/* ~/.cache/go /var/cache/pacman/pkg 2>/dev/null || true
 
 echo "✅ Build completo."
 rm -- "\$0"
@@ -384,6 +373,10 @@ crear() {
 
     _escribir_bashrc "$NOMBRE" "$R_ENTORNO"
     _escribir_starship "$R_ENTORNO"
+
+    # Copiar tutor.md a AGENTS.md directamente (no depende de podman ps)
+    mkdir -p "$R_ENTORNO/.config/opencode"
+    [ -f "$TUTOR_PATH" ] && cp "$TUTOR_PATH" "$R_ENTORNO/.config/opencode/AGENTS.md"
     sync-agents
 
     distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
@@ -570,14 +563,60 @@ BASH_RC
     mkdir -p "$R_ENTORNO/.config/opencode"
     cat > "$R_ENTORNO/.config/opencode/config.json" << 'OPENCODE_CONFIG'
 {
-  "read": {
-    "*": "allow",
-    "**/.env": "deny",
-    "**/.env.*": "deny",
-    "**/credentials.json": "deny",
-    "**/secrets/**": "deny",
-    "*.env": "deny",
-    "*.env.*": "deny"
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "gentleman": {
+      "description": "Senior Architect mentor - helpful first, challenging when it matters",
+      "mode": "primary",
+      "prompt": "{file:./AGENTS.md}",
+      "tools": {
+        "edit": true,
+        "write": true
+      }
+    },
+    "sdd-orchestrator": {
+      "description": "Gentleman personality + SDD delegate-only orchestrator",
+      "mode": "all",
+      "prompt": "{file:./AGENTS.md}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    }
+  },
+  "mcp": {
+    "context7": {
+      "enabled": true,
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "engram": {
+      "command": ["engram", "mcp"],
+      "enabled": true,
+      "type": "local"
+    }
+  },
+  "permission": {
+    "bash": {
+      "*": "allow",
+      "git commit *": "ask",
+      "git push": "ask",
+      "git push *": "ask",
+      "git push --force *": "ask",
+      "git rebase *": "ask",
+      "git reset --hard *": "ask"
+    },
+    "read": {
+      "*": "allow",
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      "**/credentials.json": "deny",
+      "**/secrets/**": "deny",
+      "*.env": "deny",
+      "*.env.*": "deny"
+    }
   },
   "provider": {
     "ollama": {
@@ -586,7 +625,7 @@ BASH_RC
         "baseURL": "http://localhost:11434/v1"
       },
       "models": {
-        "qwen2.5:latest": {
+        "TU_MODELO:latest": {
           "reasoning": true
         }
       }
