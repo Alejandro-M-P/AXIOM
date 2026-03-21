@@ -272,8 +272,15 @@ PID_OC=\$!
 go install github.com/Gentleman-Programming/engram/cmd/engram@latest &
 PID_EN=\$!
 
-(curl -fsSL https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/scripts/install.sh | bash && \
-    sudo cp -f "\$HOME/.local/bin/gentle-ai" /usr/local/bin/) &
+(
+    GA_LATEST=$(curl -fsSL https://api.github.com/repos/Gentleman-Programming/gentle-ai/releases/latest | grep -o '"tag_name": *"[^"]*"' | grep -o '[0-9][^"]*')
+    GA_URL="https://github.com/Gentleman-Programming/gentle-ai/releases/download/v${GA_LATEST}/gentle-ai_${GA_LATEST}_linux_amd64.tar.gz"
+    curl -fsSL "\$GA_URL" -o /tmp/gentle-ai.tar.gz
+    tar -xzf /tmp/gentle-ai.tar.gz -C /tmp/
+    sudo mv /tmp/gentle-ai /usr/local/bin/gentle-ai
+    sudo chmod +x /usr/local/bin/gentle-ai
+    rm -f /tmp/gentle-ai.tar.gz
+) &
 PID_GA=\$!
 
 curl -fsSL https://ollama.com/install.sh | sh &
@@ -298,6 +305,7 @@ echo "⚡ Copiando binarios a /usr/local/bin..."
 
 echo "🧹 Limpiando caché..."
 sudo pacman -Scc --noconfirm
+chmod -R +w ~/.cache/go ~/.cache 2>/dev/null || true
 sudo rm -rf /tmp/* ~/.cache/go /var/cache/pacman/pkg 2>/dev/null || true
 
 echo "✅ Build completo."
