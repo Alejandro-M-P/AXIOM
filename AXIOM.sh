@@ -16,6 +16,7 @@ AI_GLOBAL="$BASE_DEV/ai_global"
 AI_CONFIG="$BASE_DEV/ai_config"
 TUTOR_PATH="$AI_GLOBAL/teams/tutor.md"
 AXIOM_BUILD_CONTAINER="axiom-build"
+ROCM_MODE="${AXIOM_ROCM_MODE:-host}"
 
 # ─── 3. LOGO ────────────────────────────────────────
 mostrar_logo() {
@@ -79,12 +80,40 @@ detect_gpu() {
     echo "✅ GPU: $GPU_TYPE ${GFX_VAL:+(GFX: $GFX_VAL)}"
 }
 
-# nombre de la imagen base según GPU
 _imagen_base() {
     echo "localhost/axiom-${GPU_TYPE:-generic}:latest"
 }
 
-# ─── 5. SYNC-AGENTS ─────────────────────────────────
+# ─── 5. VOLÚMENES GPU (modo host) ───────────────────
+_gpu_volumes_host() {
+    local VOLS=""
+    case "${GPU_TYPE:-}" in
+        rdna*|generic)
+            # ROCm desde el host
+            for P in /usr/lib/rocm /usr/lib64/rocm /opt/rocm; do
+                [ -d "$P" ] && VOLS="$VOLS --volume $P:$P:ro"
+            done
+            for B in rocminfo rocm-smi amdgpu-pro-pin; do
+                local FP
+                FP=$(command -v "$B" 2>/dev/null)
+                [ -n "$FP" ] && VOLS="$VOLS --volume $FP:$FP:ro"
+            done
+            ;;
+        nvidia)
+            for P in /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda; do
+                [ -e "$P" ] && VOLS="$VOLS --volume $P:$P:ro"
+            done
+            ;;
+        intel)
+            for P in /usr/lib/intel-opencl /usr/lib/x86_64-linux-gnu/intel-opencl; do
+                [ -d "$P" ] && VOLS="$VOLS --volume $P:$P:ro"
+            done
+            ;;
+    esac
+    echo "$VOLS"
+}
+
+# ─── 6. SYNC-AGENTS ─────────────────────────────────
 sync-agents() {
     [ ! -f "$TUTOR_PATH" ] && return 0
     while IFS= read -r CAJA; do
@@ -96,7 +125,7 @@ sync-agents() {
     echo "✅ Ley Global sincronizada."
 }
 
-# ─── 6. BUILD — construye la imagen base completa ───
+# ─── 7. BUILD ───────────────────────────────────────
 build() {
     mostrar_logo
     detect_gpu
@@ -106,18 +135,20 @@ build() {
 
     echo ""
     echo "🏗️  Construyendo imagen base: $IMAGEN"
-    echo "    Esto tarda ~15-30 min. Solo se hace una vez."
+    echo "    Modo GPU: $ROCM_MODE"
+    if [ "$ROCM_MODE" = "host" ]; then
+        echo "    ROCm se montará desde el host → imagen ~10-13 GB"
+    else
+        echo "    ROCm se instalará dentro → imagen ~38 GB"
+    fi
     echo ""
 
-    # Directorios necesarios
     mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams"
     sudo chown -R "$USER:$USER" "$AI_GLOBAL"
     [ ! -f "$TUTOR_PATH" ] && echo "- Protocolo de razón técnica activo." > "$TUTOR_PATH"
 
-    # Eliminar contenedor de build anterior si existe
     distrobox-rm "$AXIOM_BUILD_CONTAINER" --force 2>/dev/null || true
 
-    # Crear contenedor de build limpio
     distrobox-create --name "$AXIOM_BUILD_CONTAINER" \
         --image archlinux:latest \
         --home "$BASE_ENV/$AXIOM_BUILD_CONTAINER" \
@@ -127,17 +158,18 @@ build() {
         --security-opt label=disable --group-add video --group-add render" \
         --yes
 
-    # Script de build completo dentro del contenedor
     local BUILD_SCRIPT="$BASE_ENV/$AXIOM_BUILD_CONTAINER/axiom-build.sh"
     mkdir -p "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
-    # Paquetes GPU según tipo detectado
+    # Paquetes GPU solo si modo image
     local GPU_PKGS=""
-    case "${GPU_TYPE}" in
-        nvidia)  GPU_PKGS="nvidia-utils cuda" ;;
-        rdna*)   GPU_PKGS="rocm-hip-sdk" ;;
-        intel)   GPU_PKGS="intel-compute-runtime onevpl-intel-gpu" ;;
-    esac
+    if [ "$ROCM_MODE" = "image" ]; then
+        case "${GPU_TYPE}" in
+            nvidia) GPU_PKGS="nvidia-utils cuda" ;;
+            rdna*)  GPU_PKGS="rocm-hip-sdk" ;;
+            intel)  GPU_PKGS="intel-compute-runtime onevpl-intel-gpu" ;;
+        esac
+    fi
 
     cat > "$BUILD_SCRIPT" << SCRIPT
 #!/bin/bash
@@ -155,12 +187,12 @@ if ! command -v paru &>/dev/null; then
     cd ~ && rm -rf /tmp/paru
 fi
 
-echo "⚡ [3/4] Paquetes GPU: ${GPU_PKGS:-ninguno} + starship..."
+echo "⚡ [3/4] Paquetes base + starship ${GPU_PKGS:+y GPU: $GPU_PKGS}..."
 paru -S --noconfirm --needed starship ${GPU_PKGS}
 
 echo "⚡ [4/4] Instalando herramientas IA en paralelo..."
 
-curl -fsSL https://opencode.ai/install | bash &
+curl -fsSL https://opencode.ai/install | OPENCODE_INSTALL=/usr/local bash &
 PID_OC=\$!
 
 go install github.com/Gentleman-Programming/engram/cmd/engram@latest &
@@ -172,15 +204,29 @@ PID_GA=\$!
 curl -fsSL https://ollama.com/install.sh | sh &
 PID_OL=\$!
 
-wait \$PID_OC && echo "✅ opencode" || echo "❌ opencode falló"
-wait \$PID_EN && echo "✅ engram"   || echo "❌ engram falló"
-wait \$PID_GA && echo "✅ gentle-ai"|| echo "❌ gentle-ai falló"
-wait \$PID_OL && echo "✅ ollama"   || echo "❌ ollama falló"
+wait \$PID_OC && echo "✅ opencode"  || echo "❌ opencode falló"
+wait \$PID_EN && echo "✅ engram"    || echo "❌ engram falló"
+wait \$PID_GA && echo "✅ gentle-ai" || echo "❌ gentle-ai falló"
+wait \$PID_OL && echo "✅ ollama"    || echo "❌ ollama falló"
 
-echo "🧹 Limpiando caché para reducir tamaño de imagen..."
+echo "⚡ Instalando agent-teams-lite..."
+ollama serve > /tmp/ollama.log 2>&1 &
+sleep 3
+git clone https://github.com/Gentleman-Programming/agent-teams-lite.git ~/agent-teams
+cd ~/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams-lite" || echo "❌ agent-teams-lite falló"
+cd ~
+
+# Copiar binarios al PATH global para que estén en la imagen
+echo "⚡ Moviendo binarios a /usr/local/bin..."
+sudo cp -f "\$HOME/.local/bin/opencode"  /usr/local/bin/ 2>/dev/null || true
+sudo cp -f "\$HOME/.local/bin/gentle-ai" /usr/local/bin/ 2>/dev/null || true
+sudo cp -f "\$HOME/go/bin/engram"        /usr/local/bin/ 2>/dev/null || true
+sudo cp -f "\$(command -v starship)"     /usr/local/bin/ 2>/dev/null || true
+
+echo "🧹 Limpiando caché..."
 sudo pacman -Scc --noconfirm
 paru -Scc --noconfirm 2>/dev/null || true
-sudo rm -rf /tmp/* ~/.cache/go ~/.cache/paru /var/cache/pacman/pkg
+sudo rm -rf /tmp/* ~/.cache/go ~/.cache/paru /var/cache/pacman/pkg 2>/dev/null || true
 
 echo "✅ Imagen base lista."
 rm -- "\$0"
@@ -189,7 +235,7 @@ SCRIPT
     chmod +x "$BUILD_SCRIPT"
     distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
 
-    echo "📦 Exportando imagen $IMAGEN..."
+    echo "📦 Exportando imagen $IMAGEN (puede tardar ~10-15 min)..."
     podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
 
     echo "🧹 Limpiando contenedor de build..."
@@ -200,7 +246,7 @@ SCRIPT
     echo "✅ Imagen $IMAGEN lista. Ya puedes usar: crear [nombre]"
 }
 
-# ─── 7. CREAR ────────────────────────────────────────
+# ─── 8. CREAR ───────────────────────────────────────
 crear() {
     mostrar_logo
     if [ -z "${1:-}" ]; then echo "❌ Uso: crear [nombre]"; return 1; fi
@@ -211,7 +257,6 @@ crear() {
     echo "🛡️ Acceso al Búnker '$NOMBRE':"
     if ! sudo -v; then echo "❌ Acceso denegado."; return 1; fi
 
-    # Si ya existe, entrar directamente
     if distrobox-list --no-color | grep -qw "$NOMBRE"; then
         sync-agents
         distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
@@ -222,12 +267,10 @@ crear() {
     local IMAGEN
     IMAGEN=$(_imagen_base)
 
-    # Verificar que existe la imagen base
     if ! podman image exists "$IMAGEN"; then
         echo ""
         echo "⚠️  No se encontró la imagen base $IMAGEN"
         echo "    Ejecuta: build"
-        echo "    (Solo se hace una vez, tarda ~15-30 min)"
         return 1
     fi
 
@@ -238,6 +281,10 @@ crear() {
     sudo chown -R "$USER:$USER" "$AI_GLOBAL"
     [ ! -f "$TUTOR_PATH" ] && echo "- Protocolo de razón técnica activo." > "$TUTOR_PATH"
 
+    # Volúmenes GPU del host si corresponde
+    local GPU_VOLS=""
+    [ "$ROCM_MODE" = "host" ] && GPU_VOLS=$(_gpu_volumes_host)
+
     distrobox-create --name "$NOMBRE" \
         --image "$IMAGEN" \
         --home "$R_ENTORNO" \
@@ -245,26 +292,23 @@ crear() {
         --volume $AI_GLOBAL:/ai_global \
         --volume $AI_CONFIG:/ai_config \
         --device /dev/kfd --device /dev/dri \
-        --security-opt label=disable --group-add video --group-add render" \
+        --security-opt label=disable --group-add video --group-add render \
+        $GPU_VOLS" \
         --yes
 
-    # Actualización rápida (solo diffs desde el último build)
     distrobox-enter -n "$NOMBRE" -- bash -c "
         sudo pacman -Syu --noconfirm --needed 2>/dev/null | tail -3
         echo '✅ Sistema actualizado.'
     "
 
-    # Escribir .bashrc con variables del host
     _escribir_bashrc "$NOMBRE" "$R_ENTORNO"
-
-    # Starship config
     _escribir_starship "$R_ENTORNO"
 
     sync-agents
     distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
 }
 
-# ─── 8. BASHRC ──────────────────────────────────────
+# ─── 9. BASHRC ──────────────────────────────────────
 _escribir_bashrc() {
     local NOMBRE="$1" R_ENTORNO="$2"
 
@@ -340,11 +384,11 @@ diagnostico() {
     elif command -v rocminfo &>/dev/null; then
         rocminfo | grep "Agent 1" -A 2 || echo "❌ rocminfo falló"
     else
-        echo "⚠️ Sin herramientas de GPU."
+        echo "⚠️ Sin herramientas de GPU visibles."
     fi
     echo ""
     echo "2️⃣  Git Token:"
-    [ -n "$AXIOM_GIT_TOKEN" ] && echo "✅ Token presente." || echo "❌ AXIOM_GIT_TOKEN no encontrado."
+    [ -n "$AXIOM_GIT_TOKEN" ] && echo "✅ Token presente." || echo "❌ AXIOM_GIT_TOKEN vacío."
     echo ""
     echo "3️⃣  Ollama:"
     pgrep -x ollama > /dev/null && echo "✅ En ejecución." || echo "⚠️ No está corriendo."
@@ -383,9 +427,38 @@ BASH_RC
         echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
     fi
     echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
+
+    # Config de opencode — conexión a Ollama local y protección de credenciales
+    mkdir -p "$R_ENTORNO/.config/opencode"
+    cat > "$R_ENTORNO/.config/opencode/config.json" << 'OPENCODE_CONFIG'
+{
+  "read": {
+    "*": "allow",
+    "**/.env": "deny",
+    "**/.env.*": "deny",
+    "**/credentials.json": "deny",
+    "**/secrets/**": "deny",
+    "*.env": "deny",
+    "*.env.*": "deny"
+  },
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "qwen2.5:latest": {
+          "reasoning": true
+        }
+      }
+    }
+  }
+}
+OPENCODE_CONFIG
 }
 
-# ─── 9. STARSHIP ────────────────────────────────────
+# ─── 10. STARSHIP ───────────────────────────────────
 _escribir_starship() {
     local R_ENTORNO="$1"
     mkdir -p "$R_ENTORNO/.config"
@@ -528,7 +601,7 @@ format = 'via [${symbol}${version} ](bold #79c0ff)'
 STARSHIP
 }
 
-# ─── 10. BORRAR ─────────────────────────────────────
+# ─── 11. BORRAR ─────────────────────────────────────
 borrar() {
     mostrar_logo
     if [ -z "${1:-}" ]; then echo "❌ Uso: borrar [nombre]"; return 1; fi
@@ -545,7 +618,7 @@ borrar() {
     fi
 }
 
-# ─── 11. PARAR ──────────────────────────────────────
+# ─── 12. PARAR ──────────────────────────────────────
 parar() {
     mostrar_logo
     if [ -z "${1:-}" ]; then echo "❌ Uso: parar [nombre]"; return 1; fi
@@ -553,38 +626,36 @@ parar() {
     podman stop "$1" && echo "⏹️ Búnker '$1' parado."
 }
 
-# ─── 12. REBUILD — actualiza la imagen base ─────────
+# ─── 13. REBUILD ────────────────────────────────────
 rebuild() {
     mostrar_logo
     detect_gpu
     local IMAGEN
     IMAGEN=$(_imagen_base)
-
     echo "🔄 Reconstruyendo imagen base $IMAGEN..."
     echo "    Los búnkeres existentes NO se ven afectados."
-    echo "    Los nuevos búnkeres usarán la imagen actualizada."
     echo ""
     read -rp "¿Continuar? (s/N): " CONFIRM
     [[ "$CONFIRM" =~ ^[sS]$ ]] || return 0
-
     podman rmi "$IMAGEN" --force 2>/dev/null || true
     build
 }
 
-# ─── 13. AYUDA HOST ─────────────────────────────────
+# ─── 14. AYUDA HOST ─────────────────────────────────
 ayuda() {
     mostrar_logo
     echo ""
     echo "🛡️  SISTEMA BÚNKER — Comandos del host"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  build              Construir imagen base (primera vez, ~20 min)"
-    echo "  rebuild            Reconstruir imagen base (actualizar)"
+    echo "  build              Construir imagen base (primera vez)"
+    echo "  rebuild            Reconstruir imagen base"
     echo "  crear [nombre]     Crear búnker desde imagen base (~30 seg)"
     echo "  borrar [nombre]    Borrar búnker y su entorno"
     echo "  parar  [nombre]    Parar búnker sin borrarlo"
     echo "  ayuda              Mostrar esta ayuda"
     echo ""
-    echo "  Imágenes base disponibles:"
+    echo "  Modo GPU: $ROCM_MODE"
+    echo "  Imágenes disponibles:"
     podman images --format "    {{.Repository}}:{{.Tag}}  ({{.Size}})" | grep axiom || \
         echo "    (ninguna — ejecuta: build)"
     echo ""
