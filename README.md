@@ -54,7 +54,15 @@ cd ~/AXIOM
 ```bash
 chmod +x install.sh && ./install.sh
 ```
-El asistente te pedirá tus datos de GitHub, token, directorio base y **modo de drivers GPU**:
+El asistente te pedirá, en orden:
+
+1. Usuario de GitHub
+2. Email de GitHub
+3. Token de GitHub (Classic o Fine-grained)
+4. Directorio base (por defecto `~/dev`)
+5. Directorio de modelos de Ollama (por defecto `~/dev/ai_config/models`)
+6. *(Opcional)* GFX version para AMD — Enter para autodetectar
+7. **Modo de drivers GPU:**
 
 | Modo | Descripción | Tamaño imagen | Tiempo commit |
 | :--- | :--- | :--- | :--- |
@@ -95,25 +103,22 @@ Todo corre local. Nada sale a ningún servidor. Basado en el ecosistema de [Gent
 
 ### Configuración de Ollama en opencode
 
-AXIOM escribe automáticamente la conexión a Ollama en `~/.config/opencode/config.json` dentro de cada búnker. opencode ya viene con sus propios providers por defecto — este bloque solo añade Ollama local encima de lo que ya trae:
+AXIOM escribe automáticamente la conexión a Ollama en `~/.config/opencode/opencode.json` dentro de cada búnker. opencode ya viene con sus propios providers por defecto — este bloque solo añade Ollama local encima de lo que ya trae:
 
 ```json
- } ,
-  "provider": {
-    "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
-      "options": {
-        "baseURL": "http://localhost:11434/v1"
-      },
-      "models": {
-        "qwen3.5:latest": {
-          "reasoning": true
-        }
+"provider": {
+  "ollama": {
+    "npm": "@ai-sdk/openai-compatible",
+    "options": {
+      "baseURL": "http://localhost:11434/v1"
+    },
+    "models": {
+      "TU_MODELO:latest": {
+        "reasoning": true
       }
     }
   }
 }
-
 ```
 
 Sustituye `TU_MODELO` por cualquier modelo que tengas descargado en Ollama. Algunos ejemplos habituales:
@@ -162,7 +167,7 @@ La regla se guarda en `tutor.md` con su razón, y `sync-agents` se ejecuta autom
 
 **También puede hacerlo la IA.** Si durante una sesión de trabajo el agente detecta un patrón o una decisión que debería recordar, puede llamar a `save-rule` él mismo. La regla queda guardada para todas las sesiones futuras, en todos los búnkeres.
 
-**`sync-agents`** es la función que mantiene todo sincronizado. Copia `tutor.md` a `~/.config/opencode/AGENTS.md` dentro de cada búnker activo. Se ejecuta automáticamente al crear un búnker, al entrar en uno existente y al guardar una regla nueva. También puedes lanzarla manualmente:
+**`sync-agents`** es la función que mantiene todo sincronizado. Copia `tutor.md` a `~/.config/opencode/AGENTS.md` dentro de cada búnker activo, añadiendo encima un bloque de contexto con el tipo de GPU y la versión GFX detectada. Las notas locales que hayas escrito al principio del archivo se preservan siempre. Se ejecuta automáticamente al crear un búnker, al entrar en uno existente y al guardar una regla nueva. También puedes lanzarla manualmente:
 
 ```bash
 sync-agents
@@ -230,14 +235,13 @@ Arquitecto Senior.
 | `build` | Construye la imagen base con GPU, herramientas IA y starship. Solo se ejecuta una vez por máquina. | **Host** |
 | `rebuild` | Reconstruye la imagen base para actualizar el stack. Los búnkeres existentes no se ven afectados. | **Host** |
 | `resetear` | Borra la imagen base. Pregunta si también quieres borrar todos los búnkeres. | **Host** |
-| `reset-base` | Borra la imagen base sin tocar los búnkeres existentes. Útil para liberar espacio o empezar de cero. | **Host** |
 | `crear [nombre]` | Crea un nuevo búnker desde la imagen base (~30 seg) o entra en uno existente. | **Host** |
 | `borrar [nombre]` | Solicita razón técnica y destruye el búnker y su memoria local por completo. | **Host** |
 | `parar [nombre]` | Detiene el contenedor del búnker sin eliminar sus datos. | **Host** |
 | `open` | Sincroniza leyes y abre el entorno inteligente `opencode`. | **Búnker** |
 | `sync-agents` | Sincroniza `tutor.md` a la configuración local del agente. | **Búnker** |
 | `save-rule [regla]` | Guarda una nueva regla técnica y la sincroniza con todos los búnkeres activos. | **Búnker** |
-| `git-clone [u/r]` | Clona un repositorio de GitHub con token y limpia las credenciales del remote. | **Búnker** |
+| `git-clone [u/r]` | Clona un repositorio de GitHub con el token pasado en memoria — sin modificar ni quedar grabado en el remote. | **Búnker** |
 | `rama` | Crea una rama nueva de forma interactiva — pide nombre y rama base. | **Búnker** |
 | `commit [mensaje]` | Añade todos los cambios y commitea. Si no hay mensaje lo pide. | **Búnker** |
 | `push` | Hace push a GitHub de forma segura usando el token del `.env`. | **Búnker** |
@@ -269,7 +273,7 @@ Después de instalar y crear tu primer búnker, así queda todo en disco:
         ├── .config/
         │   ├── starship.toml       ← prompt personalizado Tokyo Night
         │   └── opencode/
-        │       ├── config.json     ← conexión a Ollama local
+        │       ├── opencode.json   ← conexión a Ollama local
         │       └── AGENTS.md       ← copia sincronizada de tutor.md
         └── ...                     ← resto del home aislado del host
 
@@ -331,15 +335,6 @@ which rocminfo
 ls /usr/lib/rocm
 ```
 Si no está, cambia a modo `image` en el `.env` y haz `rebuild`.
-
-**`paru` falla durante el build con errores de permisos**
-
-Ocurre a veces con `makepkg` dentro de distrobox. Limpia y reintenta:
-```bash
-distrobox-rm axiom-build --force
-rm -rf ~/dev/.entorno/axiom-build
-build
-```
 
 **El `podman commit` tarda demasiado o parece congelado**
 
