@@ -180,231 +180,155 @@ SCRIPT
     echo "echo '⚡ Instalando paquetes específicos de GPU...'" >> "$R_ENTORNO/setup.sh"
     echo "paru -S --noconfirm $PKGS" >> "$R_ENTORNO/setup.sh"
 
-    cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
-
-export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
-
-mkdir -p ~/.config && cat << 'EOF' > ~/.config/starship.toml
-
+    # 9. STARSHIP DESDE EL HOST (evita que los # hex se rompan en heredocs anidados)
+    mkdir -p "$R_ENTORNO/.config"
+    cat > "$R_ENTORNO/.config/starship.toml" << 'STARSHIP'
 # Configuración "Professional Developer" - Tokyo Night
-
 format = """
-
-[](fg:
-
-#1a1b26)\
-
+[](fg:#1a1b26)\
 $os\
-
 $custom\
-
-[](fg:
-
-#1a1b26 bg:
-
-#24283b)\
-
+[](fg:#1a1b26 bg:#24283b)\
 $directory\
-
-[](fg:
-
-#24283b bg:
-
-#414868)\
-
+[](fg:#24283b bg:#414868)\
 $git_branch\
-
 $git_status\
-
+$git_state\
+$git_metrics\
 $time\
-
-[](fg:
-
-#414868) \
-
-$python$nodejs$rust$golang\
-
+[](fg:#414868) \
+$python$nodejs$rust$golang$c\
 $fill\
-
+$memory_usage\
 $cmd_duration\
-
 $jobs\
-
 $status\
-
 $line_break\
-
 $character"""
 
 [fill]
-
 symbol = " "
 
 [os]
-
 disabled = false
-
-style = "bg:
-
-#1a1b26 fg:
-
-#7aa2f7"
-
+style = "bg:#1a1b26 fg:#7aa2f7"
 format = "[ $symbol ]($style)"
 
 [os.symbols]
-
-Arch = " "
-
-Ubuntu = " "
-
-Fedora = " "
-
-Debian = " "
-
-Linux = " "
-
-Macos = " "
-
+Arch = " "
+Ubuntu = " "
+Fedora = " "
+Debian = " "
+Linux = " "
+Macos = " "
 Windows = "󰍲 "
 
+[custom.distrobox]
+description = "Distrobox"
+when = 'test -f /run/.containerenv'
+command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
+symbol = "📦"
+style = "bg:#1a1b26 fg:#bb9af7"
+format = '[$symbol $output ]($style)'
+
 [directory]
-
-style = "bg:
-
-#24283b fg:
-
-#e0af68"
-
+style = "bg:#24283b fg:#e0af68"
 format = "[ $path ]($style)"
-
 truncation_length = 3
-
 fish_style_pwd_dir_length = 1
 
 [git_branch]
-
-symbol = " "
-
-style = "bg:
-
-#414868 fg:
-
-#bb9af7"
-
+symbol = " "
+style = "bg:#414868 fg:#bb9af7"
 format = '[[ $symbol$branch ]($style)]($style)'
+truncation_length = 20
+truncation_symbol = "…"
 
 [git_status]
+style = "bg:#414868 fg:#f7768e"
+format = '[[( $all_status$ahead_behind )]($style)]($style)'
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+staged = "[+${count}](bold green)"
+modified = "[~${count}](bold yellow)"
+untracked = "[?${count}](bold red)"
+deleted = "[-${count}](bold red)"
+conflicted = "[=${count}](bold red)"
+stashed = "[󰏗 ${count}](bold blue)"
 
-style = "bg:
+[git_state]
+style = "bg:#414868 fg:#f7768e"
+format = '[[( $state $progress_current/$progress_total)]($style)]($style)'
+rebase = "REBASE"
+merge = "MERGE"
+revert = "REVERT"
+cherry_pick = " PICK"
+bisect = "BISECT"
 
-#414868 fg:
-
-#f7768e"
-
-format = '[[($all_status$ahead_behind )]($style)]($style)'
+[git_metrics]
+added_style = "bold #9ece6a"
+deleted_style = "bold #f7768e"
+format = '([+$added]($added_style) )([-$deleted]($deleted_style) )'
+disabled = false
 
 [time]
-
 disabled = false
-
 time_format = "%R"
-
-style = "bg:
-
-#414868 fg:
-
-#7dcfff"
-
-format = '[[  $time ]($style)]($style)'
-
-# --- EXTRAS PARA DESARROLLADORES ---
+style = "bg:#414868 fg:#7dcfff"
+format = '[[  $time ]($style)]($style)'
 
 [cmd_duration]
-
-min_time = 2_000 # Solo aparece si el comando tarda más de 2s
-
+min_time = 2_000
 format = "took [󱎫 $duration]($style) "
-
-style = "fg:
-
-#e0af68"
+style = "fg:#e0af68"
 
 [status]
-
 disabled = false
-
 format = '[\[$symbol $common_meaning$exit_code\]]($style) '
-
 symbol = "✖"
-
-style = "fg:
-
-#f7768e"
+style = "fg:#f7768e"
 
 [jobs]
-
-symbol = " "
-
-style = "fg:
-
-#bb9af7"
-
+symbol = " "
+style = "fg:#bb9af7"
 format = "[$symbol$number]($style) "
 
+[memory_usage]
+symbol = "󰍛 "
+threshold = 75
+style = "fg:#e0af68"
+format = "[$symbol${ram}]($style) "
+disabled = false
+
 [character]
-
-success_symbol = "[󰁔](bold 
-
-#9ece6a) "
-
-error_symbol = "[󰁔](bold 
-
-#f7768e) "
-
-[custom.distrobox]
-
-description = "Distrobox"
-
-when = 'test -f /run/.containerenv'
-
-command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
-
-symbol = "📦"
-
-style = "bg:
-
-#1a1b26 fg:
-
-#bb9af7"
-
-format = '[$symbol $output ]($style)'
+success_symbol = "[󰁔](bold #9ece6a) "
+error_symbol = "[󰁔](bold #f7768e) "
 
 [python]
-
-symbol = " "
-
-format = 'via [${symbol}${version} ](bold 
-
-#79c0ff)'
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
 
 [nodejs]
-
 symbol = "󰎙 "
-
-format = 'via [${symbol}${version} ](bold 
-
-#79c0ff)'
+format = 'via [${symbol}${version} ](bold #79c0ff)'
 
 [rust]
-
 symbol = "🦀 "
+format = 'via [${symbol}${version} ](bold #ff7b72)'
 
-format = 'via [${symbol}${version} ](bold 
+[golang]
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
 
-#ff7b72)'
+[c]
+symbol = " "
+format = 'via [${symbol}${version} ](bold #79c0ff)'
+STARSHIP
 
-EOF
+    cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
+
+export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
 
 echo "⚡ Instalando herramientas IA en serie..."
 
