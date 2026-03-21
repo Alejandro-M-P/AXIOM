@@ -1,21 +1,26 @@
+
+
 #!/bin/bash
 # ─── MÓDULO GIT: OPERACIONES SEGURAS ────────────────
 
+
 _git_auth_cmd() {
-    echo "!f() { echo \"username=${AXIOM_GIT_USER}\"; echo \"password=${AXIOM_GIT_TOKEN}\"; }; f"
+    echo "!printf 'username=$AXIOM_GIT_USER\npassword=$AXIOM_GIT_TOKEN\n'"
 }
 
 push() {
-    [ -z "$AXIOM_GIT_TOKEN" ] && echo "❌ AXIOM_GIT_TOKEN no encontrado." && return 1
+    [ -z "$AXIOM_GIT_TOKEN" ] && { echo "❌ Token vacío."; return 1; }
+    
     git config user.name "$AXIOM_GIT_USER"
     git config user.email "$AXIOM_GIT_EMAIL"
-
+    
     local RAMA=$(git branch --show-current)
     echo "🚀 Push en progreso ($RAMA)..."
     
-    # 🔥 EL FIX: Llamada directa con -c, evitamos el eval
-    git -c "credential.helper=$(_git_auth_cmd)" push "$@"
+    # 🔥 LA CLAVE: Sin 'eval' y con el helper simplificado
+    git -c credential.helper="$(_git_auth_cmd)" push "$@"
 }
+
 
 commit() {
     local MENSAJE="${1:-}"
