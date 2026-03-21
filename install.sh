@@ -71,7 +71,7 @@ mkdir -p "$DIR/lib"
 mkdir -p "$BASE_DIR"/{ai_global/teams,ai_config/models,.entorno}
 
 echo "🔐 Asegurando permisos de ejecución..."
-chmod +x "$DIR/axiom.sh"
+chmod +x "$DIR/AXIOM.sh"
 [ -d "$DIR/lib" ] && chmod +x "$DIR/lib/"*.sh 2>/dev/null || true
 
 # ─── 4. CREACIÓN DEL COMANDO GLOBAL ───────────────
