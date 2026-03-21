@@ -253,6 +253,8 @@ set -uo pipefail
 
 export PATH="\$HOME/.local/bin:\$HOME/go/bin:/usr/local/bin:\$PATH"
 
+GPU_PKGS="$GPU_PKGS"
+
 echo "⚡ [1/5] Sistema base..."
 sudo pacman -Sy --needed --noconfirm base-devel git curl jq wget nodejs npm go
 
@@ -265,7 +267,10 @@ fi
 
 echo "⚡ [3/5] Paquetes base + starship..."
 paru -S --noconfirm --needed starship
-$( [ -n "$GPU_PKGS" ] && echo "paru -S --noconfirm --needed $GPU_PKGS" )
+if [ -n "\$GPU_PKGS" ]; then
+    echo "⚡ Instalando GPU: \$GPU_PKGS"
+    paru -S --noconfirm --needed \$GPU_PKGS
+fi
 
 echo "⚡ [4/5] Herramientas IA en paralelo..."
 curl -fsSL https://opencode.ai/install | OPENCODE_INSTALL=/usr/local bash &
