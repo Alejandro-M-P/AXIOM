@@ -14,6 +14,10 @@ BASH_VARS
     eval "$(starship init bash)"
     cd /$NOMBRE
 BASH_RC
+
+    if [[ -n "${GFX_VAL:-}" ]]; then
+        echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
+    fi
 }
 
 build() {
@@ -222,6 +226,8 @@ crear() {
     [ -f "$TUTOR_PATH" ] && cp "$TUTOR_PATH" "$R_ENTORNO/.config/opencode/AGENTS.md"
     sync-agents
 
+    _escribir_opencode_config "$NOMBRE" "$R_ENTORNO"
+
     distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
 }
 
@@ -330,13 +336,13 @@ rebuild() {
 }
 
 _escribir_opencode_config(){
-    if [[ -n "${GFX_VAL:-}" ]]; then
-            echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
-        fi
-        echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
+    local NOMBRE="$1" R_ENTORNO="$2"
 
         mkdir -p "$R_ENTORNO/.config/opencode"
-        cat > "$R_ENTORNO/.config/opencode/opencode.json" << 'OPENCODE_CONFIG'
+    local CONF="$R_ENTORNO/.config/opencode/opencode.json"
+
+    if [ ! -f "$CONF" ]; then
+        cat > "$CONF" << 'OPENCODE_CONFIG'
     {
     "$schema": "https://opencode.ai/config.json",
     "agent": {
@@ -351,6 +357,28 @@ _escribir_opencode_config(){
         },
         "sdd-orchestrator": {
         "description": "Gentleman personality + SDD delegate-only orchestrator",
+        "mode": "all",
+        "prompt": "{file:./AGENTS.md}",
+        "tools": {
+            "bash": true,
+            "edit": true,
+            "read": true,
+            "write": true
+        }
+        },
+        "sdd-apply": {
+        "description": "SDD delegate-only apply sub-agent",
+        "mode": "all",
+        "prompt": "{file:./AGENTS.md}",
+        "tools": {
+            "bash": true,
+            "edit": true,
+            "read": true,
+            "write": true
+        }
+        },
+        "sdd-apply": {
+        "description": "SDD delegate-only apply sub-agent",
         "mode": "all",
         "prompt": "{file:./AGENTS.md}",
         "tools": {
@@ -408,6 +436,10 @@ _escribir_opencode_config(){
     }
     }
 OPENCODE_CONFIG
+    else
+        # Si ya existe, solo inyectamos de forma segura los agentes SDD al final sin borrar lo demás
+        jq '.agent = (.agent // {}) | .agent["sdd-orchestrator"] = { "description": "Gentleman personality + SDD delegate-only orchestrator", "mode": "all", "prompt": "{file:./AGENTS.md}", "tools": { "bash": true, "edit": true, "read": true, "write": true } } | .agent["sdd-apply"] = { "description": "SDD delegate-only apply sub-agent", "mode": "all", "prompt": "{file:./AGENTS.md}", "tools": { "bash": true, "edit": true, "read": true, "write": true } }' "$CONF" > "${CONF}.tmp" && mv "${CONF}.tmp" "$CONF"
+    fi
     }
 
 

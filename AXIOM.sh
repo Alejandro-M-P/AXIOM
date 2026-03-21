@@ -18,17 +18,19 @@ for modulo in "$DIR/lib/"*.sh; do
 done
 
 # 4. LÓGICA DE EJECUCIÓN
-# Si se pasa un argumento (ej: axiom build), lo ejecuta.
-# Si no, muestra la ayuda.
-if [ $# -gt 0 ]; then
-    COMMAND="$1"
-    shift
-    if declare -f "$COMMAND" > /dev/null; then
-        "$COMMAND" "$@"
+# Solo ejecutamos comandos o mostramos ayuda si el script se está EJECUTANDO,
+# no cuando le hacemos "source" desde el .bashrc
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    if [ $# -gt 0 ]; then
+        COMMAND="$1"
+        shift
+        if declare -f "$COMMAND" > /dev/null; then
+            "$COMMAND" "$@"
+        else
+            echo "❌ Comando '$COMMAND' no reconocido."
+            ayuda
+        fi
     else
-        echo "❌ Comando '$COMMAND' no reconocido."
         ayuda
     fi
-else
-    ayuda
 fi
