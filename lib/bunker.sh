@@ -4,7 +4,7 @@ _escribir_bashrc() {
     export AXIOM_GIT_USER="$AXIOM_GIT_USER"
     export AXIOM_GIT_EMAIL="$AXIOM_GIT_EMAIL"
     export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
-    BASH_VARS
+BASH_VARS
 
         # Importamos los módulos dentro del búnker
         cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
@@ -13,7 +13,7 @@ _escribir_bashrc() {
     source /usr/local/bin/agents.sh
     eval "$(starship init bash)"
     cd /$NOMBRE
-    BASH_RC
+BASH_RC
 }
 
 build() {
@@ -24,12 +24,12 @@ build() {
     IMAGEN=$(_imagen_base)
 
     echo ""
-    echo "🏗️  Construyendo imagen base: $IMAGEN"
-    echo "    Modo GPU: $ROCM_MODE"
+    echo "🏗️  Construyendo imagen base: $IMAGEN /Building base image: $IMAGEN "
+    echo "    Modo GPU: $ROCM_MODE / GPU Mode: $ROCM_MODE "
     if [ "$ROCM_MODE" = "host" ]; then
-        echo "    ROCm se montará desde el host → imagen ~10-13 GB"
+        echo "    ROCm se montará desde el host → imagen ~10-13 GB/ROCm will be mounted from host → image ~10-13 GB"
     else
-        echo "    ROCm se instalará dentro → imagen ~38 GB"
+        echo "    ROCm se instalará dentro → imagen ~38 GB/ROCm will be installed inside → image ~38 GB"
     fi
     echo ""
 
@@ -39,18 +39,18 @@ build() {
     _init_tutor
 
     # ─── LIMPIEZA SEGURA DE PERMISOS (Fix Go Mod) ────────
-    echo "🧹 Limpiando búnker de construcción anterior..."
+    echo "🧹 Limpiando búnker de construcción anterior.../Cleaning previous build bunker..."
     distrobox-rm "$AXIOM_BUILD_CONTAINER" --force 2>/dev/null || true
 
     if [ -d "$BASE_ENV/$AXIOM_BUILD_CONTAINER" ]; then
-        echo "🔓 Desbloqueando caché de Go para eliminación..."
+        echo "🔓 Desbloqueando caché de Go para eliminación.../Unlocking Go cache for deletion..."
         # El comando clave: forzamos escritura recursiva
         chmod -R +w "$BASE_ENV/$AXIOM_BUILD_CONTAINER" 2>/dev/null
         rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
     fi
     # ─────────────────────────────────────────────────────
 
-    echo "📦 Creando contenedor de build..."
+    echo "📦 Creando contenedor de build.../Creating build container..."
     distrobox-create --name "$AXIOM_BUILD_CONTAINER" \
         --image archlinux:latest \
         --home "$BASE_ENV/$AXIOM_BUILD_CONTAINER" \
@@ -80,7 +80,7 @@ build() {
     export PATH="\$HOME/.local/bin:\$HOME/go/bin:/usr/local/bin:\$PATH"
     GPU_PKGS="${GPU_PKGS:-}"
 
-    echo "⚡ [1/4] Sistema base..."
+    echo "⚡ [1/4] Sistema base.../Base system..."
     sudo pacman -Sy --needed --noconfirm base-devel git curl jq wget nodejs npm go
 
     echo "⚡ [2/4] Starship + GPU..."
@@ -90,7 +90,7 @@ build() {
         sudo pacman -S --noconfirm --needed \$GPU_PKGS
     fi
 
-    echo "⚡ [3/4] Herramientas IA en paralelo..."
+    echo "⚡ [3/4] Herramientas IA en paralelo.../Parallel AI tools..."
     curl -fsSL https://opencode.ai/install | OPENCODE_INSTALL=/usr/local bash &
     PID_OC=\$!
 
@@ -135,31 +135,31 @@ build() {
     cd /tmp/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams-lite"
     kill \$OLLAMA_PID 2>/dev/null || true
 
-    echo "⚡ Copiando binarios a /usr/local/bin..."
+    echo "⚡ Copiando binarios a /usr/local/bin.../Copying binaries to /usr/local/bin..."
     [ -f "\$HOME/go/bin/engram" ] && sudo cp -f "\$HOME/go/bin/engram" /usr/local/bin/
 
-    echo "🧹 Limpiando caché interna..."
+    echo "🧹 Limpiando caché interna.../Cleaning internal cache..."
     sudo pacman -Scc --noconfirm
     chmod -R +w ~/.cache/go ~/.cache 2>/dev/null || true
     sudo rm -rf /tmp/* ~/.cache/go /var/cache/pacman/pkg 2>/dev/null || true
 
-    echo "✅ Build completo dentro del contenedor."
+    echo "✅ Build completo dentro del contenedor./Build complete inside the container."
     rm -- "\$0"
-    SCRIPT
+SCRIPT
 
         chmod +x "$BUILD_SCRIPT"
         distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
 
-        echo "📦 Exportando imagen $IMAGEN (esto puede tardar)..."
+        echo "📦 Exportando imagen $IMAGEN (esto puede tardar).../Exporting image $IMAGEN (this may take a while)..."
         podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
 
-        echo "🧹 Limpieza final..."
+        echo "🧹 Limpieza final.../Final cleanup..."
         distrobox-rm "$AXIOM_BUILD_CONTAINER" --force
         chmod -R +w "$BASE_ENV/$AXIOM_BUILD_CONTAINER" 2>/dev/null
         rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
         echo ""
-        echo "✅ Imagen $IMAGEN lista. Ya puedes usar: crear [nombre]"
+        echo "✅ Imagen $IMAGEN lista. Ya puedes usar: crear [nombre]/Image $IMAGEN ready. You can now use: create [name]"
 }
 
 
@@ -170,8 +170,8 @@ crear() {
     local R_PROYECTO="$BASE_DEV/$NOMBRE"
     local R_ENTORNO="$BASE_ENV/$NOMBRE"
 
-    echo "🛡️ Acceso al Búnker '$NOMBRE':"
-    if ! sudo -v; then echo "❌ Acceso denegado."; return 1; fi
+    echo "🛡️ Acceso al Búnker '$NOMBRE':/Bunker Access: '$NOMBRE'"
+    if ! sudo -v; then echo "❌ Acceso denegado./Access denied."; return 1; fi
 
     if distrobox-list --no-color | grep -qw "$NOMBRE"; then
         sync-agents
@@ -185,12 +185,12 @@ crear() {
 
     if ! podman image exists "$IMAGEN"; then
         echo ""
-        echo "⚠️  No se encontró la imagen base $IMAGEN"
-        echo "    Ejecuta: build"
+        echo "⚠️  No se encontró la imagen base $IMAGEN /Base $IMAGEN not found."
+        echo "    Ejecuta: build/Run: build"
         return 1
     fi
 
-    echo "⚡ Creando búnker '$NOMBRE' desde $IMAGEN..."
+    echo "⚡ Creando búnker '$NOMBRE' desde $IMAGEN.../Creating bunker '$NOMBRE' from  $IMAGEN..."
     mkdir -p "$R_PROYECTO" "$R_ENTORNO" "$AI_CONFIG/models"
     mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams"
     sudo chown -R "$USER:$USER" "$AI_GLOBAL" "$AI_CONFIG"
@@ -212,7 +212,7 @@ crear() {
 
     distrobox-enter -n "$NOMBRE" -- bash -c "
         sudo pacman -Syu --noconfirm --needed 2>/dev/null | tail -3
-        echo '✅ Sistema actualizado.'
+        echo '✅ Sistema actualizado./System updated.'
     "
 
     _escribir_bashrc "$NOMBRE" "$R_ENTORNO"
@@ -228,20 +228,20 @@ crear() {
 
 borrar() {
     mostrar_logo
-    if [ -z "${1:-}" ]; then echo "❌ Uso: borrar [nombre]"; return 1; fi
-    read -rp "📝 Razón técnica obligatoria: " REASON
-    [ -z "$REASON" ] && echo "❌ Cancelado: se requiere justificación." && return 1
+    if [ -z "${1:-}" ]; then echo "❌ Uso: borrar [nombre] / Usage: delete [name]"; return 1; fi
+    read -rp "📝 Razón técnica obligatoria:/ Mandatory technical reason: " REASON
+    [ -z "$REASON" ] && echo "❌ Cancelado: se requiere justificación./Canceled: justification required." && return 1
     # Registro la razón en el global para que no sea código muerto
     echo "- Borrado búnker $1 (Razón: $REASON)" >> "$TUTOR_PATH"
 
-    read -rp "❗ ¿Borrar búnker '$1'? (s/N): " CONFIRM
+    read -rp "❗ ¿Borrar búnker '$1'? (s/N):/Delete bunker? (y/N) " CONFIRM
     if [[ "$CONFIRM" =~ ^[sS]$ ]]; then
         distrobox-rm "$1" --force
         if [ -d "$BASE_ENV/$1" ]; then
             chmod -R +w "$BASE_ENV/$1"
             rm -rf "$BASE_ENV/$1"
         fi
-        echo "🔥 Búnker '$1' eliminado."
+        echo "🔥 Búnker '$1' eliminado. / bunker '$1' deleted"
     fi
 }
 
@@ -407,9 +407,9 @@ _escribir_opencode_config(){
         }
     }
     }
-    OPENCODE_CONFIG
+OPENCODE_CONFIG
     }
-}
+
 
 _escribir_starship() {
     local R_ENTORNO="$1"
@@ -462,5 +462,5 @@ _escribir_starship() {
     [character]
     success_symbol = "[╰─>](bold #a3be8c) "
     error_symbol = "[╰─>](bold #bf616a) "
-    STARSHIP
+STARSHIP
 }
