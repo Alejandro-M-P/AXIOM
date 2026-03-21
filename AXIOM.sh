@@ -177,6 +177,11 @@ wait \$PID_EN && echo "✅ engram"   || echo "❌ engram falló"
 wait \$PID_GA && echo "✅ gentle-ai"|| echo "❌ gentle-ai falló"
 wait \$PID_OL && echo "✅ ollama"   || echo "❌ ollama falló"
 
+echo "🧹 Limpiando caché para reducir tamaño de imagen..."
+sudo pacman -Scc --noconfirm
+paru -Scc --noconfirm 2>/dev/null || true
+sudo rm -rf /tmp/* ~/.cache/go ~/.cache/paru /var/cache/pacman/pkg
+
 echo "✅ Imagen base lista."
 rm -- "\$0"
 SCRIPT
