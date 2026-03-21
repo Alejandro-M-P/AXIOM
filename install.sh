@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e # Abortar si hay errores
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -11,6 +12,7 @@ if [ -f "$DIR/.env" ]; then
     exit 1
 fi
 
+# ─── 1. CAPTURA DE DATOS ───────────────────────────
 GIT_USER=""
 while [ -z "$GIT_USER" ]; do read -rp "1️⃣  Usuario de GitHub: " GIT_USER; done
 
@@ -30,10 +32,8 @@ read -rp "6️⃣  (Opcional) Forzar GFX_VERSION para AMD (Enter para autodetect
 
 echo ""
 echo "7️⃣  Modo de drivers GPU:"
-echo "   1. Montar desde el host  (recomendado — Bazzite, Fedora, Nobara, CachyOS...)"
-echo "      Imagen resultante: ~10-13 GB | Commit: ~3-4 min"
-echo "   2. Instalar dentro de la imagen  (máxima portabilidad, cualquier distro)"
-echo "      Imagen resultante: ~38 GB    | Commit: ~15 min"
+echo "   1. Montar desde el host  (recomendado — Bazzite, Fedora, Nobara...)"
+echo "   2. Instalar dentro de la imagen  (máxima portabilidad)"
 echo ""
 read -rp "   Selecciona [1/2] (Enter para 1): " ROCM_OPT
 ROCM_OPT=${ROCM_OPT:-1}
@@ -43,6 +43,7 @@ case "$ROCM_OPT" in
     *) ROCM_MODE="host"  ;;
 esac
 
+# ─── 2. GENERACIÓN DE .ENV ─────────────────────────
 cat > "$DIR/.env" << EOF
 # ─── IDENTIDAD GIT ───────────────────────────────
 AXIOM_GIT_USER="$GIT_USER"
@@ -57,24 +58,43 @@ AXIOM_OLLAMA_HOST="http://localhost:11434"
 AXIOM_MODELS_DIR="$MODELS_DIR"
 
 # ─── GPU ─────────────────────────────────────────
-# host  → monta ROCm/CUDA del host (recomendado en Bazzite, Fedora, Nobara...)
-# image → instala ROCm/CUDA dentro de la imagen (portabilidad total)
 AXIOM_ROCM_MODE="$ROCM_MODE"
 AXIOM_GPU_TYPE=""
 AXIOM_GFX_VAL="$GFX_VERSION"
 EOF
 
+# ─── 3. PREPARACIÓN DE ESTRUCTURA ──────────────────
 echo ""
-echo "✅ ¡Configuración guardada en .env exitosamente!"
+echo "📂 Preparando estructura de archivos..."
+mkdir -p "$DIR/lib"
+# Creamos los búnkeres y búnker de entorno
+mkdir -p "$BASE_DIR"/{ai_global/teams,ai_config/models,.entorno}
+
+echo "🔐 Asegurando permisos de ejecución..."
+chmod +x "$DIR/axiom.sh"
+[ -d "$DIR/lib" ] && chmod +x "$DIR/lib/"*.sh 2>/dev/null || true
+
+# ─── 4. CREACIÓN DEL COMANDO GLOBAL ───────────────
+BIN_PATH="$HOME/.local/bin"
+mkdir -p "$BIN_PATH"
+
+echo "🛠️  Creando acceso directo 'axiom' en $BIN_PATH..."
+cat > "$BIN_PATH/axiom" << EOF
+#!/bin/bash
+# Wrapper para ejecutar AXIOM desde cualquier lugar
+export AXIOM_PATH="$DIR"
+bash "\$AXIOM_PATH/axiom.sh" "\$@"
+EOF
+
+chmod +x "$BIN_PATH/axiom"
+
+# ─── 5. FINALIZACIÓN ──────────────────────────────
 echo ""
-echo "   Modo GPU seleccionado: $ROCM_MODE"
+echo "✅ ¡Instalación completada con éxito!"
+echo "------------------------------------"
+echo "🚀 Ahora puedes usar el comando 'axiom' en cualquier terminal."
 echo ""
-echo "🔥 SIGUIENTES PASOS 🔥"
-echo "1. Añade al final de tu ~/.bashrc:"
-echo "     source $DIR/axiom.sh"
+echo "⚠️  NOTA: Si 'axiom' no se reconoce, añade esto a tu ~/.bashrc:"
+echo "   export PATH=\"\$HOME/.local/bin:\$PATH\""
 echo ""
-echo "2. Abre una terminal nueva y construye la imagen base (solo una vez):"
-echo "     build"
-echo ""
-echo "3. Crea tu primer búnker:"
-echo "     crear mi-primer-proyecto"
+echo "🔥 PRIMER PASO: axiom build"
