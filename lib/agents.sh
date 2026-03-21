@@ -163,13 +163,13 @@ build() {
         rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
         echo ""
-        echo "✅ Imagen $IMAGEN lista. Ya puedes usar: crear [nombre] / Image $IMAGEN ready. You can now use: crear [name]"
+        echo "✅ Imagen $IMAGEN lista. Ya puedes usar: create [nombre] / Image $IMAGEN ready. You can now use: create [name]"
 }
 
 
-crear() {
+create() {
     mostrar_logo
-    if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: crear [nombre/name]"; return 1; fi
+    if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: create [nombre/name]"; return 1; fi
     local NOMBRE="$1"
     local R_PROYECTO="$BASE_DEV/$NOMBRE"
     local R_ENTORNO="$BASE_ENV/$NOMBRE"
@@ -232,9 +232,9 @@ crear() {
 }
 
 
-borrar() {
+delete() {
     mostrar_logo
-    if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: borrar [nombre/name]"; return 1; fi
+    if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: delete [nombre/name]"; return 1; fi
     read -rp "📝 Razón técnica obligatoria / Mandatory technical reason: " REASON
     [ -z "$REASON" ] && echo "❌ Cancelado: se requiere justificación. / Canceled: justification required." && return 1
     # Registro la razón en el global para que no sea código muerto
@@ -252,7 +252,7 @@ borrar() {
 }
 
 
-resetear() {
+reset() {
     mostrar_logo
     detect_gpu
     local IMAGEN

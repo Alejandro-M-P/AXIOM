@@ -28,7 +28,7 @@ One problem led to another, every solution made the system more solid, and here 
 
 ## What exactly is it?
 
-You run `crear my-project`. In 30 seconds you get a full Arch Linux with direct access to your GPU, Ollama running locally with your models, and the entire Gentleman Programming AI stack ready to use. Code however you want, experiment however you want, break whatever you want.
+You run `create my-project`. In 30 seconds you get a full Arch Linux with direct access to your GPU, Ollama running locally with your models, and the entire Gentleman Programming AI stack ready to use. Code however you want, experiment however you want, break whatever you want.
 
 When you're done, the host is exactly as it was when you started. Zero mess.
 
@@ -77,7 +77,7 @@ Automatically detects your GPU and installs the entire stack into `localhost/axi
 
 5. **Create your first bunker:**
 ```bash
-crear my-first-project
+create my-first-project
 ```
 From here on, each new bunker boots in ~30 seconds.
 

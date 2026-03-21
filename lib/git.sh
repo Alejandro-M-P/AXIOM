@@ -50,7 +50,7 @@ git-clone() {
     echo "✅ Repo clonado. / Repo cloned."
 }
 
-rama() {
+branch() {
     echo -e "\n🌿 Ramas disponibles / Available branches:"
     git branch -a 2>/dev/null | sed 's/^/  /'
     echo ""

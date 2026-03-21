@@ -28,7 +28,7 @@ Un problema llevó a otro, cada solución hizo el sistema más sólido, y aquí 
 
 ## ¿Qué es exactamente?
 
-Ejecutas `crear mi-proyecto`. En 30 segundos tienes un Arch Linux completo con acceso directo a tu GPU, Ollama corriendo local con tus modelos, y todo el stack de IA de Gentleman Programming listo para usar. Escribes como quieras, experimentas como quieras, rompes lo que quieras.
+Ejecutas `create mi-proyecto`. En 30 segundos tienes un Arch Linux completo con acceso directo a tu GPU, Ollama corriendo local con tus modelos, y todo el stack de IA de Gentleman Programming listo para usar. Escribes como quieras, experimentas como quieras, rompes lo que quieras.
 
 Cuando terminas, el host está exactamente igual que cuando empezaste. Cero suciedad.
 
@@ -77,7 +77,7 @@ Detecta tu GPU automáticamente e instala todo el stack en `localhost/axiom-[gpu
 
 5. **Crear tu primer búnker:**
 ```bash
-crear mi-primer-proyecto
+create mi-primer-proyecto
 ```
 A partir de aquí cada búnker nuevo arranca en ~30 segundos.
 
