@@ -2,11 +2,11 @@ detect_gpu() {
     if [ -n "${AXIOM_GPU_TYPE:-}" ]; then
         export GPU_TYPE="$AXIOM_GPU_TYPE"
         export GFX_VAL="${AXIOM_GFX_VAL:-}"
-        echo "✅ GPU forzada por .env: $GPU_TYPE (GFX: ${GFX_VAL:-N/A})"
+        echo "✅ GPU forzada por .env / GPU forced by .env: $GPU_TYPE (GFX: ${GFX_VAL:-N/A})"
         return 0
     fi
 
-    echo "🔍 Detectando hardware gráfico..."
+    echo "🔍 Detectando hardware gráfico... / Detecting graphics hardware..."
     local HAS_RDNA4=0 HAS_RDNA3=0 HAS_NVIDIA=0 HAS_INTEL=0
     local GFX_RDNA4="12.0.1" GFX_RDNA3="11.0.0"
     export GPU_NAME=""
@@ -30,11 +30,11 @@ detect_gpu() {
     elif [ "$HAS_RDNA3"  -eq 1 ]; then export GPU_TYPE="rdna3";  export GFX_VAL="$GFX_RDNA3"
     elif [ "$HAS_INTEL"  -eq 1 ]; then export GPU_TYPE="intel";  export GFX_VAL=""
     else
-        echo "⚠️ Detección no concluyente. Selecciona:"
+        echo "⚠️ Detección no concluyente. Selecciona: / Inconclusive detection. Select:"
         echo "1. RDNA 4 (8000/9000)  2. RDNA 3/2 (6000/7000)"
         echo "3. NVIDIA              4. INTEL"
         echo "5. Generic / CPU Only"
-        read -rp "Opción [1-5]: " GPU_OPT
+        read -rp "Opción/Option [1-5]: " GPU_OPT
         case "$GPU_OPT" in
             1) export GPU_TYPE="rdna4";   export GFX_VAL="$GFX_RDNA4" ;;
             2) export GPU_TYPE="rdna3";   export GFX_VAL="$GFX_RDNA3" ;;
@@ -43,7 +43,7 @@ detect_gpu() {
             *) export GPU_TYPE="generic"; export GFX_VAL="" ;;
         esac
         if [[ "$GPU_TYPE" == rdna* ]]; then
-            read -rp "📝 GFX Override (Enter para $GFX_VAL): " MANUAL_GFX
+            read -rp "📝 GFX Override (Enter para/for $GFX_VAL): " MANUAL_GFX
             [ -n "$MANUAL_GFX" ] && export GFX_VAL="$MANUAL_GFX"
         fi
     fi

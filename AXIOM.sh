@@ -27,7 +27,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         if declare -f "$COMMAND" > /dev/null; then
             "$COMMAND" "$@"
         else
-            echo "❌ Comando '$COMMAND' no reconocido."
+            echo "❌ Comando '$COMMAND' no reconocido. / Command '$COMMAND' not recognized."
             ayuda
         fi
     else

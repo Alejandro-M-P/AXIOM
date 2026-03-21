@@ -1,3 +1,5 @@
+[🇬🇧 English](README-en.md) | [🇪🇸 Español](README.md)
+
 # AXIOM Bunker System
 
 > *Cero suciedad. Treinta segundos. Todo listo.*
