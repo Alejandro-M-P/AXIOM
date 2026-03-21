@@ -477,7 +477,8 @@ push() {
     RAMA=$(git branch --show-current)
 
     echo "🚀 Push en progreso ($RAMA)..."
-    eval git "$(_git_auth_cmd)" push "$@"
+    git -c "credential.helper=$(_git_auth_cmd)" push "$@"
+    echo "✅ Push completado."
 }
 
 commit() {
