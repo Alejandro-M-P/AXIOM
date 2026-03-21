@@ -17,7 +17,7 @@ push() {
     local RAMA=$(git branch --show-current)
     echo "🚀 Push en progreso ($RAMA)..."
     
-    # 🔥 LA CLAVE: Sin 'eval' y con el helper simplificado
+    
     git -c credential.helper="$(_git_auth_cmd)" push "$@"
 }
 
