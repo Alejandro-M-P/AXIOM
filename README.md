@@ -16,7 +16,7 @@ Ahí empezó todo. Un script pequeño. Ridículamente pequeño. Solo creaba una 
 
 Después llegó la idea de guardar el entorno de desarrollo en `~/dev` — separado del sistema, organizado, controlado. Cada proyecto en su carpeta, cada búnker con su home propio. El host seguía intacto. La suciedad, cero.
 
-Y entonces me apunté a un curso gratuito de [Mouredev](https://github.com/mouredev) sobre aprender a programar con IA. Ahí descubrí el stack de [Gentleman Programming](https://github.com/Gentleman-Programming): opencode, engram, gentle-ai, agent-teams-lite. Un ecosistema completo de herramientas de IA para desarrollo — todo local, todo en tu hardware, nada en la nube. Lo quise integrar. Y en vez de instalarlo a pelo en el host o en un contenedor cualquiera, lo metí dentro de AXIOM.
+Y entonces me apunté a un curso gratuito de Mouredev sobre aprender a programar con IA. Ahí descubrí el stack de [Gentleman Programming](https://github.com/Gentleman-Programming): opencode, engram, gentle-ai, agent-teams-lite. Un ecosistema completo de herramientas de IA para desarrollo — todo local, todo en tu hardware, nada en la nube. Lo quise integrar. Y en vez de instalarlo a pelo en el host o en un contenedor cualquiera, lo metí dentro de AXIOM.
 
 Un problema llevó a otro, cada solución hizo el sistema más sólido, y aquí estamos. Lo que empezó como un script de 10 líneas para no ensuciar Bazzite es ahora un sistema completo de entornos de desarrollo aislados con GPU, IA local y memoria compartida entre agentes.
 
@@ -83,7 +83,7 @@ A partir de aquí cada búnker nuevo arranca en ~30 segundos.
 
 ## Stack de IA incluido
 
-Todo corre local. Nada sale a ningún servidor. Basado en el ecosistema de [Gentleman Programming](https://github.com/Gentleman-Programming) y el curso de [Mouredev](https://github.com/mouredev).
+Todo corre local. Nada sale a ningún servidor. Basado en el ecosistema de [Gentleman Programming](https://github.com/Gentleman-Programming), descubierto a través del curso de programación con IA de Mouredev.
 
 | Herramienta | Qué hace |
 | :--- | :--- |
@@ -226,6 +226,8 @@ Arquitecto Senior.
 | :--- | :--- | :--- |
 | `build` | Construye la imagen base con GPU, herramientas IA y starship. Solo se ejecuta una vez por máquina. | **Host** |
 | `rebuild` | Reconstruye la imagen base para actualizar el stack. Los búnkeres existentes no se ven afectados. | **Host** |
+| `resetear` | Borra la imagen base. Pregunta si también quieres borrar todos los búnkeres. | **Host** |
+| `reset-base` | Borra la imagen base sin tocar los búnkeres existentes. Útil para liberar espacio o empezar de cero. | **Host** |
 | `crear [nombre]` | Crea un nuevo búnker desde la imagen base (~30 seg) o entra en uno existente. | **Host** |
 | `borrar [nombre]` | Solicita razón técnica y destruye el búnker y su memoria local por completo. | **Host** |
 | `parar [nombre]` | Detiene el contenedor del búnker sin eliminar sus datos. | **Host** |
@@ -233,6 +235,8 @@ Arquitecto Senior.
 | `sync-agents` | Sincroniza `tutor.md` a la configuración local del agente. | **Búnker** |
 | `save-rule [regla]` | Guarda una nueva regla técnica y la sincroniza con todos los búnkeres activos. | **Búnker** |
 | `git-clone [u/r]` | Clona un repositorio de GitHub con token y limpia las credenciales del remote. | **Búnker** |
+| `rama` | Crea una rama nueva de forma interactiva — pide nombre y rama base. | **Búnker** |
+| `commit [mensaje]` | Añade todos los cambios y commitea. Si no hay mensaje lo pide. | **Búnker** |
 | `push` | Hace push a GitHub de forma segura usando el token del `.env`. | **Búnker** |
 | `diagnostico` | Diagnóstico de salud: GPU, Ollama y Token Git. | **Búnker** |
 | `ayuda` | Muestra el menú de ayuda en pantalla. | **Host / Búnker** |
@@ -391,3 +395,21 @@ git checkout -b feat/nombre-de-la-feature
 - Ejemplos de `tutor.md` para distintos lenguajes y stacks
 
 Si tienes dudas antes de ponerte a trabajar en algo, abre un issue primero para alinearnos.
+
+---
+
+## Créditos y proyectos relacionados
+
+AXIOM no existiría sin estos proyectos. Si algo falla o quieres profundizar, aquí están las fuentes:
+
+| Proyecto | Repositorio | Para qué se usa |
+| :--- | :--- | :--- |
+| Distrobox | [89luca89/distrobox](https://github.com/89luca89/distrobox) | Motor de contenedores del sistema |
+| Podman | [containers/podman](https://github.com/containers/podman) | Runtime de contenedores |
+| opencode | [sst/opencode](https://github.com/sst/opencode) | Editor de código con IA |
+| Ollama | [ollama/ollama](https://github.com/ollama/ollama) | Modelos de lenguaje local |
+| engram | [Gentleman-Programming/engram](https://github.com/Gentleman-Programming/engram) | Memoria persistente entre sesiones |
+| gentle-ai | [Gentleman-Programming/gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) | Interfaz de agentes IA |
+| agent-teams-lite | [Gentleman-Programming/agent-teams-lite](https://github.com/Gentleman-Programming/agent-teams-lite) | Coordinación de múltiples agentes |
+| Starship | [starship/starship](https://github.com/starship/starship) | Prompt del terminal |
+| Gentleman Programming | [Gentleman-Programming](https://github.com/Gentleman-Programming) | Stack de IA y curso de referencia |
