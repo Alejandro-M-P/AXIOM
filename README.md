@@ -61,7 +61,7 @@ source ~/.bashrc
 ```bash
 build
 ```
-Detecta tu GPU automáticamente e instala todo el stack (drivers, herramientas IA, starship) en una imagen `localhost/axiom-[gpu]:latest`. Tarda ~15-30 min pero **solo se ejecuta una vez**. Al finalizar, el build limpia automáticamente todos los cachés (pacman, paru, Go, `/tmp`) antes de commitear la imagen, reduciendo su tamaño de ~40 GB a ~15 GB sin perder nada funcional.
+Detecta tu GPU automáticamente e instala todo el stack (drivers, herramientas IA, starship) en una imagen `localhost/axiom-[gpu]:latest`. Tarda ~15-30 min pero **solo se ejecuta una vez**. Al finalizar, el build limpia automáticamente todos los cachés (pacman, paru, Go, `/tmp`) antes de commitear la imagen. La imagen resultante ocupa ~38 GB — la mayor parte es ROCm, que no se puede reducir más sin perder funcionalidad. El `podman commit` final tarda unos 10-15 min adicionales por el tamaño.
 
 5. **Crear tu primer búnker:**
 ```bash
