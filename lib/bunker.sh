@@ -1,3 +1,12 @@
+AXIOM_BUILD_CONTAINER="axiom-build"
+
+_init_tutor() {
+    if [ ! -f "$TUTOR_PATH" ]; then
+        mkdir -p "$(dirname "$TUTOR_PATH")"
+        touch "$TUTOR_PATH"
+    fi
+}
+
 _escribir_bashrc() {
     local NOMBRE="$1" R_ENTORNO="$2"
     cat > "$R_ENTORNO/.bashrc" << BASH_VARS
@@ -29,8 +38,8 @@ build() {
 
     echo ""
     echo "🏗️  Construyendo imagen base / Building base image: $IMAGEN"
-    echo "    Modo GPU / GPU Mode: $ROCM_MODE"
-    if [ "$ROCM_MODE" = "host" ]; then
+    echo "    Modo GPU / GPU Mode: $AXIOM_ROCM_MODE"
+    if [ "$AXIOM_ROCM_MODE" = "host" ]; then
         echo "    ROCm se montará desde el host → imagen ~10-13 GB / ROCm will be mounted from host → image ~10-13 GB"
     else
         echo "    ROCm se instalará dentro → imagen ~38 GB / ROCm will be installed inside → image ~38 GB"
@@ -44,7 +53,7 @@ build() {
 
     # ─── LIMPIEZA SEGURA DE PERMISOS (Fix Go Mod) ────────
     echo "🧹 Limpiando búnker de construcción anterior... / Cleaning previous build bunker..."
-    distrobox-rm "$AXIOM_BUILD_CONTAINER" --force 2>/dev/null || true
+    distrobox-rm "$AXIOM_BUILD_CONTAINER" --force --yes 2>/dev/null || true
 
     if [ -d "$BASE_ENV/$AXIOM_BUILD_CONTAINER" ]; then
         echo "🔓 Desbloqueando caché de Go para eliminación... / Unlocking Go cache for deletion..."
@@ -68,7 +77,7 @@ build() {
     mkdir -p "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
     local GPU_PKGS=""
-    if [ "$ROCM_MODE" = "image" ]; then
+    if [ "$AXIOM_ROCM_MODE" = "image" ]; then
         case "${GPU_TYPE}" in
             nvidia) GPU_PKGS="nvidia-utils cuda" ;;
             rdna*)  GPU_PKGS="rocm-hip-sdk" ;;
@@ -158,18 +167,18 @@ SCRIPT
         podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
 
         echo "🧹 Limpieza final... / Final cleanup..."
-        distrobox-rm "$AXIOM_BUILD_CONTAINER" --force
+    distrobox-rm "$AXIOM_BUILD_CONTAINER" --force --yes
         chmod -R +w "$BASE_ENV/$AXIOM_BUILD_CONTAINER" 2>/dev/null
         rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
         echo ""
-        echo "✅ Imagen $IMAGEN lista. Ya puedes usar: create [nombre] / Image $IMAGEN ready. You can now use: create [name]"
+        echo "✅ Imagen $IMAGEN lista. Ya puedes usar: axiom create [nombre] / Image $IMAGEN ready. You can now use: axiom create [name]"
 }
 
 
 create() {
     mostrar_logo
-    if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: create [nombre/name]"; return 1; fi
+    if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: axiom create [nombre/name]"; return 1; fi
     local NOMBRE="$1"
     local R_PROYECTO="$BASE_DEV/$NOMBRE"
     local R_ENTORNO="$BASE_ENV/$NOMBRE"
@@ -190,7 +199,7 @@ create() {
     if ! podman image exists "$IMAGEN"; then
         echo ""
         echo "⚠️  No se encontró la imagen base $IMAGEN / Base image $IMAGEN not found."
-        echo "    Ejecuta / Run: build"
+        echo "    Ejecuta / Run: axiom build"
         return 1
     fi
 
@@ -201,7 +210,7 @@ create() {
     _init_tutor
 
     local GPU_VOLS=""
-    [ "$ROCM_MODE" = "host" ] && GPU_VOLS=$(_gpu_volumes_host)
+    [ "$AXIOM_ROCM_MODE" = "host" ] && GPU_VOLS=$(_gpu_volumes_host)
 
     distrobox-create --name "$NOMBRE" \
         --image "$IMAGEN" \
@@ -234,7 +243,7 @@ create() {
 
 delete() {
     mostrar_logo
-    if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: delete [nombre/name]"; return 1; fi
+    if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: axiom delete [nombre/name]"; return 1; fi
     read -rp "📝 Razón técnica obligatoria / Mandatory technical reason: " REASON
     [ -z "$REASON" ] && echo "❌ Cancelado: se requiere justificación. / Canceled: justification required." && return 1
     # Registro la razón en el global para que no sea código muerto
@@ -242,7 +251,7 @@ delete() {
 
     read -rp "❗ ¿Borrar búnker '$1'? / Delete bunker '$1'? (s/N/y/N): " CONFIRM
     if [[ "$CONFIRM" =~ ^[sSyY]$ ]]; then
-        distrobox-rm "$1" --force
+        distrobox-rm "$1" --force --yes
         if [ -d "$BASE_ENV/$1" ]; then
             chmod -R +w "$BASE_ENV/$1"
             rm -rf "$BASE_ENV/$1"
@@ -297,7 +306,7 @@ reset() {
         echo "🔥 Iniciando limpieza profunda... / Starting deep cleanup..."
         for CAJA in $LISTA_BUNKERES; do
             echo "  🗑️  Eliminando / Deleting $CAJA..."
-            distrobox-rm "$CAJA" --force 2>/dev/null
+            distrobox-rm "$CAJA" --force --yes 2>/dev/null
             # El parche de permisos para evitar el error anterior:
             if [ -d "$BASE_ENV/$CAJA" ]; then
                 chmod -R +w "$BASE_ENV/$CAJA" 2>/dev/null
@@ -317,7 +326,7 @@ reset() {
     fi
 
     echo ""
-    echo "✨ Sistema limpio. Usa 'build' para generar una base nueva desde cero. / System clean. Use 'build' to generate a new base from scratch."
+    echo "✨ Sistema limpio. Usa 'axiom build' para generar una base nueva desde cero. / System clean. Use 'axiom build' to generate a new base from scratch."
 }
 
 

@@ -28,14 +28,14 @@ mostrar_logo
     else
         echo "🛡️  SISTEMA BÚNKER — Comandos del host / Host commands"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "  build              Construir imagen base / Build base image"
-        echo "  rebuild            Reconstruir imagen base / Rebuild base image"
-        echo "  create [nombre]    Crear o entrar a un búnker / Create or enter a bunker"
-        echo "  delete [nombre]    Eliminar búnker y entorno / Delete bunker and environment"
-        echo "  stop [nombre]      Detener búnker sin borrarlo / Stop bunker without deleting it"
-        echo "  reset              Limpieza total del sistema / Total system cleanup"
-        echo "  reset-base         Borrar la imagen base / Delete the base image"
-        echo "  help               Mostrar esta ayuda / Show this help"
+        echo "  axiom build              Construir imagen base / Build base image"
+        echo "  axiom rebuild            Reconstruir imagen base / Rebuild base image"
+        echo "  axiom create [nombre]    Crear o entrar a un búnker / Create or enter a bunker"
+        echo "  axiom delete [nombre]    Eliminar búnker y entorno / Delete bunker and environment"
+        echo "  axiom stop [nombre]      Detener búnker sin borrarlo / Stop bunker without deleting it"
+        echo "  axiom reset              Limpieza total del sistema / Total system cleanup"
+        echo "  axiom reset-base         Borrar la imagen base / Delete the base image"
+        echo "  axiom help               Mostrar esta ayuda / Show this help"
         
     fi
 }

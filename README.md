@@ -28,7 +28,7 @@ Un problema llevó a otro, cada solución hizo el sistema más sólido, y aquí 
 
 ## ¿Qué es exactamente?
 
-Ejecutas `create mi-proyecto`. En 30 segundos tienes un Arch Linux completo con acceso directo a tu GPU, Ollama corriendo local con tus modelos, y todo el stack de IA de Gentleman Programming listo para usar. Escribes como quieras, experimentas como quieras, rompes lo que quieras.
+Ejecutas `axiom create mi-proyecto`. En 30 segundos tienes un Arch Linux completo con acceso directo a tu GPU, Ollama corriendo local con tus modelos, y todo el stack de IA de Gentleman Programming listo para usar. Escribes como quieras, experimentas como quieras, rompes lo que quieras.
 
 Cuando terminas, el host está exactamente igual que cuando empezaste. Cero suciedad.
 
@@ -79,7 +79,7 @@ source ~/.bashrc
 
 4. **Construir la imagen base (solo una vez):**
 ```bash
-build
+axiom build
 ```
 Detecta tu GPU automáticamente e instala todo el stack en `localhost/axiom-[gpu]:latest`. Tarda ~15-30 min de instalación más ~3-15 min de `podman commit` según el modo elegido. Al finalizar limpia automáticamente todos los cachés antes de commitear.
 
