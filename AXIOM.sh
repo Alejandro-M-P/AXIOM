@@ -114,12 +114,10 @@ _gpu_volumes_host() {
 }
 
 # ─── 6. INIT TUTOR.MD ───────────────────────────────
-# Genera tutor.md con los datos reales del sistema si no existe
 _init_tutor() {
     [ -f "$TUTOR_PATH" ] && return 0
     mkdir -p "$(dirname "$TUTOR_PATH")"
 
-    # Detectar info del sistema para rellenar el contexto
     local DISTRO GPU_INFO GFX_INFO
     DISTRO=$(grep ^NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"')
     [ -z "$DISTRO" ] && DISTRO="Linux"
@@ -167,7 +165,7 @@ Arquitecto Senior.
 - **Clean Code & Pro Naming**: El código debe hablar por sí solo.
 - **Detección de Errores**: Al entregar código, indica los 2 puntos más probables
   por donde podría fallar.
-- **Git Ready**: Sugiere el momento del commit tras entregar un bloque funcional.
+- **Git Ready**: Sugiere el momento del commit tras entregar un bloque funcional. El usuario decidirá el mensaje.
 
 ## 💾 Gestión del Entorno
 - **Engram**: Registra archivos creados y decisiones técnicas para mantener contexto.
@@ -219,13 +217,24 @@ build() {
     fi
     echo ""
 
+    # Preparación de directorios globales
     mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams" "$AI_CONFIG/models"
     sudo chown -R "$USER:$USER" "$AI_GLOBAL" "$AI_CONFIG"
     _init_tutor
 
+    # ─── LIMPIEZA SEGURA DE PERMISOS (Fix Go Mod) ────────
+    echo "🧹 Limpiando búnker de construcción anterior..."
     distrobox-rm "$AXIOM_BUILD_CONTAINER" --force 2>/dev/null || true
-    rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
+    if [ -d "$BASE_ENV/$AXIOM_BUILD_CONTAINER" ]; then
+        echo "🔓 Desbloqueando caché de Go para eliminación..."
+        # El comando clave: forzamos escritura recursiva
+        chmod -R +w "$BASE_ENV/$AXIOM_BUILD_CONTAINER" 2>/dev/null
+        rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
+    fi
+    # ─────────────────────────────────────────────────────
+
+    echo "📦 Creando contenedor de build..."
     distrobox-create --name "$AXIOM_BUILD_CONTAINER" \
         --image archlinux:latest \
         --home "$BASE_ENV/$AXIOM_BUILD_CONTAINER" \
@@ -247,13 +256,13 @@ build() {
         esac
     fi
 
+    # Generamos el script interno
     cat > "$BUILD_SCRIPT" << SCRIPT
 #!/bin/bash
 set -uo pipefail
 
 export PATH="\$HOME/.local/bin:\$HOME/go/bin:/usr/local/bin:\$PATH"
-
-GPU_PKGS="$GPU_PKGS"
+GPU_PKGS="${GPU_PKGS:-}"
 
 echo "⚡ [1/4] Sistema base..."
 sudo pacman -Sy --needed --noconfirm base-devel git curl jq wget nodejs npm go
@@ -273,53 +282,64 @@ go install github.com/Gentleman-Programming/engram/cmd/engram@latest &
 PID_EN=\$!
 
 (
-    GA_LATEST=$(curl -fsSL https://api.github.com/repos/Gentleman-Programming/gentle-ai/releases/latest | grep -o '"tag_name": *"[^"]*"' | grep -o '[0-9][^"]*')
-    GA_URL="https://github.com/Gentleman-Programming/gentle-ai/releases/download/v${GA_LATEST}/gentle-ai_${GA_LATEST}_linux_amd64.tar.gz"
-    curl -fsSL "\$GA_URL" -o /tmp/gentle-ai.tar.gz
-    tar -xzf /tmp/gentle-ai.tar.gz -C /tmp/
-    sudo mv /tmp/gentle-ai /usr/local/bin/gentle-ai
-    sudo chmod +x /usr/local/bin/gentle-ai
-    rm -f /tmp/gentle-ai.tar.gz
+    AUTH_HEADER=""
+    [ -n "${AXIOM_GIT_TOKEN:-}" ] && AUTH_HEADER="-H \"Authorization: Bearer ${AXIOM_GIT_TOKEN:-}\""
+
+    GA_LATEST=\$(eval curl -fsSL \$AUTH_HEADER https://api.github.com/repos/Gentleman-Programming/gentle-ai/releases/latest | grep -o '"tag_name": *"[^"]*"' | grep -o '[0-9][^"]*' || echo "latest")
+
+    if [ -z "\$GA_LATEST" ] || [ "\$GA_LATEST" = "latest" ]; then
+        GA_LATEST="0.1.0"
+    fi
+
+    GA_URL="https://github.com/Gentleman-Programming/gentle-ai/releases/download/v\${GA_LATEST}/gentle-ai_\${GA_LATEST}_linux_amd64.tar.gz"
+    if curl -fsSL "\$GA_URL" -o /tmp/gentle-ai.tar.gz; then
+        tar -xzf /tmp/gentle-ai.tar.gz -C /tmp/
+        sudo mv /tmp/gentle-ai /usr/local/bin/gentle-ai
+        sudo chmod +x /usr/local/bin/gentle-ai
+        rm -f /tmp/gentle-ai.tar.gz
+    fi
 ) &
 PID_GA=\$!
 
 curl -fsSL https://ollama.com/install.sh | sh &
 PID_OL=\$!
 
-wait \$PID_OC && echo "✅ opencode"  || echo "❌ opencode falló"
-wait \$PID_EN && echo "✅ engram"    || echo "❌ engram falló"
-wait \$PID_GA && echo "✅ gentle-ai" || echo "❌ gentle-ai falló"
-wait \$PID_OL && echo "✅ ollama"    || echo "❌ ollama falló"
+wait \$PID_OC && echo "✅ opencode"
+wait \$PID_EN && echo "✅ engram"
+wait \$PID_GA && echo "✅ gentle-ai"
+wait \$PID_OL && echo "✅ ollama"
 
 echo "⚡ [4/4] agent-teams-lite..."
 ollama serve > /tmp/ollama-build.log 2>&1 &
 OLLAMA_PID=\$!
-sleep 5
+
+until curl -s http://localhost:11434/ > /dev/null; do sleep 1; done
+
 git clone https://github.com/Gentleman-Programming/agent-teams-lite.git /tmp/agent-teams
-cd /tmp/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams-lite" || echo "❌ agent-teams-lite falló"
+cd /tmp/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams-lite"
 kill \$OLLAMA_PID 2>/dev/null || true
-cd ~
 
 echo "⚡ Copiando binarios a /usr/local/bin..."
-[ -f "\$HOME/go/bin/engram" ] && sudo cp -f "\$HOME/go/bin/engram" /usr/local/bin/ && echo "  ✅ engram"
+[ -f "\$HOME/go/bin/engram" ] && sudo cp -f "\$HOME/go/bin/engram" /usr/local/bin/
 
-echo "🧹 Limpiando caché..."
+echo "🧹 Limpiando caché interna..."
 sudo pacman -Scc --noconfirm
 chmod -R +w ~/.cache/go ~/.cache 2>/dev/null || true
 sudo rm -rf /tmp/* ~/.cache/go /var/cache/pacman/pkg 2>/dev/null || true
 
-echo "✅ Build completo."
+echo "✅ Build completo dentro del contenedor."
 rm -- "\$0"
 SCRIPT
 
     chmod +x "$BUILD_SCRIPT"
     distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
 
-    echo "📦 Exportando imagen $IMAGEN (puede tardar ~3-15 min)..."
+    echo "📦 Exportando imagen $IMAGEN (esto puede tardar)..."
     podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
 
-    echo "🧹 Limpiando contenedor de build..."
+    echo "🧹 Limpieza final..."
     distrobox-rm "$AXIOM_BUILD_CONTAINER" --force
+    chmod -R +w "$BASE_ENV/$AXIOM_BUILD_CONTAINER" 2>/dev/null
     rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
     echo ""
@@ -382,7 +402,6 @@ crear() {
     _escribir_bashrc "$NOMBRE" "$R_ENTORNO"
     _escribir_starship "$R_ENTORNO"
 
-    # Copiar tutor.md a AGENTS.md directamente (no depende de podman ps)
     mkdir -p "$R_ENTORNO/.config/opencode"
     [ -f "$TUTOR_PATH" ] && cp "$TUTOR_PATH" "$R_ENTORNO/.config/opencode/AGENTS.md"
     sync-agents
@@ -416,7 +435,6 @@ _ollama_ensure() {
     done
 }
 
-# Sincroniza tutor.md → AGENTS.md antes de abrir opencode
 sync-agents() {
     [ ! -f /ai_global/teams/tutor.md ] && return 0
     mkdir -p ~/.config/opencode
@@ -433,31 +451,33 @@ save-rule() {
     sync-agents
 }
 
+# Método seguro en memoria para credenciales de Git sin dejar rastro en logs
+_git_auth_cmd() {
+    echo "-c credential.helper=!f() { echo \"username=${AXIOM_GIT_USER}\"; echo \"password=${AXIOM_GIT_TOKEN}\"; }; f"
+}
+
 git-clone() {
     if [ -z "${1:-}" ]; then echo "❌ Uso: git-clone [usuario/repo] [carpeta]"; return 1; fi
     [ -z "$AXIOM_GIT_TOKEN" ] && echo "❌ No se encontró AXIOM_GIT_TOKEN" && return 1
     local REPO="$1" DIR="${2:-$(basename "$1")}"
-    git clone "https://${AXIOM_GIT_USER}:${AXIOM_GIT_TOKEN}@github.com/${REPO}.git" "$DIR"
-    git -C "$DIR" remote set-url origin "https://github.com/${REPO}.git"
-    echo "✅ Repo clonado y remote limpiado."
+
+    # Evalúa los parámetros extra de configuración git para pasar las credenciales al vuelo
+    eval git "$(_git_auth_cmd)" clone "https://github.com/${REPO}.git" "$DIR"
+    echo "✅ Repo clonado."
 }
 
 push() {
     [ -z "$AXIOM_GIT_TOKEN" ] && echo "❌ AXIOM_GIT_TOKEN no encontrado." && return 1
     git config user.name "$AXIOM_GIT_USER"
     git config user.email "$AXIOM_GIT_EMAIL"
-    local REMOTE_URL REPO_PATH RAMA
+
+    local REMOTE_URL RAMA
     REMOTE_URL=$(git config --get remote.origin.url)
     [ -z "$REMOTE_URL" ] && echo "❌ No hay remote origin." && return 1
-    REPO_PATH=$(echo "$REMOTE_URL" | sed -E 's#.*github\.com[:/](.+?)(\.git)?$#\1#')
-    [ -z "$REPO_PATH" ] && echo "❌ No se pudo parsear el repositorio." && return 1
     RAMA=$(git branch --show-current)
-    echo "🚀 Push → $REPO_PATH ($RAMA)"
-    git remote set-url origin "https://${AXIOM_GIT_USER}:${AXIOM_GIT_TOKEN}@github.com/${REPO_PATH}.git"
-    git push "$@"
-    local RET=$?
-    git remote set-url origin "https://github.com/${REPO_PATH}.git"
-    return $RET
+
+    echo "🚀 Push en progreso ($RAMA)..."
+    eval git "$(_git_auth_cmd)" push "$@"
 }
 
 commit() {
@@ -530,23 +550,12 @@ diagnostico() {
     [ -f ~/.config/opencode/AGENTS.md ] && echo "✅ Presente." || echo "⚠️ No existe — ejecuta sync-agents"
 }
 
-# Sincroniza AGENTS.md y lanza opencode
 open() {
     sync-agents
     _ollama_ensure && opencode
 }
 
-mostrar_logo() {
-    echo -e "\033[1;36m"
-    echo "    _   _  _ ___ ___  __  __ "
-    echo "   /_\ | \/ |_ _/ _ \|  \/  |"
-    echo "  / _ \ >  < | | (_) | |\/| |"
-    echo " /_/ \_/_/\_\___\___/|_|  |_|"
-    echo -e "\033[0m"
-}
-
 ayuda() {
-    mostrar_logo
     echo ""
     echo "🤖  BÚNKER — Comandos disponibles"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -555,7 +564,7 @@ ayuda() {
     echo "  save-rule [regla]  Guardar regla en tutor.md"
     echo "  diagnostico        Diagnóstico de salud"
     echo ""
-    echo "  git-clone [u/r]    Clonar repo con token"
+    echo "  git-clone [u/r]    Clonar repo de forma segura"
     echo "  rama               Crear rama nueva (interactivo)"
     echo "  commit [mensaje]   Añadir todo y commitear"
     echo "  push               Push seguro a GitHub"
@@ -569,7 +578,7 @@ BASH_RC
     echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
 
     mkdir -p "$R_ENTORNO/.config/opencode"
-    cat > "$R_ENTORNO/.config/opencode/config.json" << 'OPENCODE_CONFIG'
+    cat > "$R_ENTORNO/.config/opencode/opencode.json" << 'OPENCODE_CONFIG'
 {
   "$schema": "https://opencode.ai/config.json",
   "agent": {
@@ -642,156 +651,69 @@ BASH_RC
 }
 OPENCODE_CONFIG
 }
-
 # ─── 11. STARSHIP ───────────────────────────────────
 _escribir_starship() {
     local R_ENTORNO="$1"
     mkdir -p "$R_ENTORNO/.config"
     cat > "$R_ENTORNO/.config/starship.toml" << 'STARSHIP'
-format = """
-[](fg:#1a1b26)\
-$os\
-$custom\
-[](fg:#1a1b26 bg:#24283b)\
-$directory\
-[](fg:#24283b bg:#414868)\
-$git_branch\
-$git_status\
-$git_state\
-$git_metrics\
-$time\
-[](fg:#414868) \
-$python$nodejs$rust$golang$c\
-$fill\
-$memory_usage\
-$cmd_duration\
-$jobs\
-$status\
-$line_break\
-$character"""
+add_newline = true
 
-[fill]
-symbol = " "
+format = """
+[](fg:#88c0d0)$os[](fg:#88c0d0 bg:#81a1c1)$username[](fg:#81a1c1 bg:#4c566a)$directory[](fg:#4c566a bg:#a3be8c)$git_branch$git_status[](fg:#a3be8c bg:#5e81ac)$time[ ](fg:#5e81ac)
+$character"""
 
 [os]
 disabled = false
-style = "bg:#1a1b26 fg:#7aa2f7"
-format = "[ $symbol ]($style)"
+style = "bg:#88c0d0 fg:#2e3440"
 
 [os.symbols]
-Arch = " "
-Ubuntu = " "
-Fedora = " "
-Debian = " "
-Linux = " "
-Macos = " "
-Windows = "󰍲 "
+Fedora = " "
+Arch = "󰣇 "
 
-[custom.distrobox]
-description = "Distrobox"
-when = 'test -f /run/.containerenv'
-command = 'grep "name=" /run/.containerenv | cut -d"\"" -f2'
-symbol = "📦"
-style = "bg:#1a1b26 fg:#bb9af7"
-format = '[$symbol $output ]($style)'
+[username]
+show_always = true
+style_user = "bg:#81a1c1 fg:#eceff4"
+format = "[ $user ]($style)"
 
 [directory]
-style = "bg:#24283b fg:#e0af68"
+style = "bg:#4c566a fg:#eceff4"
 format = "[ $path ]($style)"
+home_symbol = "~"
 truncation_length = 3
 fish_style_pwd_dir_length = 1
 
+[directory.substitutions]
+"/var/home/alejandro" = "~"
+
 [git_branch]
-symbol = " "
-style = "bg:#414868 fg:#bb9af7"
-format = '[[ $symbol$branch ]($style)]($style)'
-truncation_length = 20
-truncation_symbol = "…"
+symbol = " "
+style = "bg:#a3be8c fg:#2e3440"
+format = "[[ $symbol$branch ]($style)]($style)"
 
 [git_status]
-style = "bg:#414868 fg:#f7768e"
-format = '[[( $all_status$ahead_behind )]($style)]($style)'
-ahead = "⇡${count}"
-behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-staged = "[+${count}](bold green)"
-modified = "[~${count}](bold yellow)"
-untracked = "[?${count}](bold red)"
-deleted = "[-${count}](bold red)"
-conflicted = "[=${count}](bold red)"
-stashed = "[󰏗 ${count}](bold blue)"
-
-[git_state]
-style = "bg:#414868 fg:#f7768e"
-format = '[[( $state $progress_current/$progress_total)]($style)]($style)'
-
-[git_metrics]
-added_style = "bold #9ece6a"
-deleted_style = "bold #f7768e"
-format = '([+$added]($added_style) )([-$deleted]($deleted_style) )'
-disabled = false
+style = "bg:#a3be8c fg:#2e3440"
+format = "[[($all_status$ahead_behind )]($style)]($style)"
 
 [time]
 disabled = false
 time_format = "%R"
-style = "bg:#414868 fg:#7dcfff"
-format = '[[  $time ]($style)]($style)'
-
-[cmd_duration]
-min_time = 2_000
-format = "took [󱎫 $duration]($style) "
-style = "fg:#e0af68"
-
-[status]
-disabled = false
-format = '[\[$symbol $common_meaning$exit_code\]]($style) '
-symbol = "✖"
-style = "fg:#f7768e"
-
-[jobs]
-symbol = " "
-style = "fg:#bb9af7"
-format = "[$symbol$number]($style) "
-
-[memory_usage]
-symbol = "󰍛 "
-threshold = 75
-style = "fg:#e0af68"
-format = "[$symbol${ram}]($style) "
-disabled = false
+style = "bg:#5e81ac fg:#eceff4"
+format = "[  $time ]($style)"
 
 [character]
-success_symbol = "[󰁔](bold #9ece6a) "
-error_symbol = "[󰁔](bold #f7768e) "
-
-[python]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-
-[nodejs]
-symbol = "󰎙 "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-
-[rust]
-symbol = "🦀 "
-format = 'via [${symbol}${version} ](bold #ff7b72)'
-
-[golang]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
-
-[c]
-symbol = " "
-format = 'via [${symbol}${version} ](bold #79c0ff)'
+success_symbol = "[╰─>](bold #a3be8c) "
+error_symbol = "[╰─>](bold #bf616a) "
 STARSHIP
 }
-
 # ─── 12. BORRAR ─────────────────────────────────────
 borrar() {
     mostrar_logo
     if [ -z "${1:-}" ]; then echo "❌ Uso: borrar [nombre]"; return 1; fi
     read -rp "📝 Razón técnica obligatoria: " REASON
     [ -z "$REASON" ] && echo "❌ Cancelado: se requiere justificación." && return 1
+    # Registro la razón en el global para que no sea código muerto
+    echo "- Borrado búnker $1 (Razón: $REASON)" >> "$TUTOR_PATH"
+
     read -rp "❗ ¿Borrar búnker '$1'? (s/N): " CONFIRM
     if [[ "$CONFIRM" =~ ^[sS]$ ]]; then
         distrobox-rm "$1" --force
@@ -818,31 +740,66 @@ resetear() {
     local IMAGEN
     IMAGEN=$(_imagen_base)
 
-    echo "🗑️  Imagen base actual: $IMAGEN"
-    podman image exists "$IMAGEN" \
-        && echo "    Tamaño: $(podman images --format '{{.Size}}' $IMAGEN)" \
-        || echo "    (no existe)"
+    echo "🗑️  Estado de la imagen base: $IMAGEN"
+    if podman image exists "$IMAGEN"; then
+        echo "    Tamaño: $(podman images --format '{{.Size}}' $IMAGEN)"
+    else
+        echo "    (La imagen no existe actualmente)"
+    fi
     echo ""
 
-    read -rp "¿Borrar también todos los búnkeres existentes? (s/N): " BORRAR_TODO
+    # 🔍 Escaneo de búnkeres existentes
+    echo "🔎 Escaneando búnkeres en el sistema..."
+    local LISTA_BUNKERES
+    LISTA_BUNKERES=$(distrobox-list --no-color | awk -F'|' 'NR>1 {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
+
+    if [ -n "$LISTA_BUNKERES" ]; then
+        echo "📂 Se han encontrado los siguientes búnkeres:"
+        echo "------------------------------------------------"
+        echo "$LISTA_BUNKERES" | sed 's/^/  • /'
+        echo "------------------------------------------------"
+        echo ""
+        read -rp "⚠️  ¿Deseas borrar TODOS estos búnkeres y sus entornos? (s/N): " BORRAR_TODO
+    else
+        echo "ℹ️  No se han detectado búnkeres creados."
+        BORRAR_TODO="n"
+    fi
     echo ""
 
+    # Ejecución del borrado de búnkeres
     if [[ "$BORRAR_TODO" =~ ^[sS]$ ]]; then
-        read -rp "📝 Razón técnica obligatoria: " REASON
-        [ -z "$REASON" ] && echo "❌ Cancelado: se requiere justificación." && return 1
-        echo "🔥 Borrando búnkeres..."
-        while IFS= read -r CAJA; do
-            distrobox-rm "$CAJA" --force 2>/dev/null && \
-            chmod -R +w "$BASE_ENV/$CAJA" 2>/dev/null && \
-            rm -rf "$BASE_ENV/$CAJA" && \
-            echo "  🗑️  $CAJA eliminado"
-        done < <(distrobox-list --no-color | awk -F'|' 'NR>1 {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
+        read -rp "📝 Razón técnica para el reset total: " REASON
+        if [ -z "$REASON" ]; then
+            echo "❌ Operación cancelada: Se requiere una justificación técnica."
+            return 1
+        fi
+
+        echo "- Reset global ejecutado (Razón: $REASON)" >> "$TUTOR_PATH"
+
+        echo "🔥 Iniciando limpieza profunda..."
+        for CAJA in $LISTA_BUNKERES; do
+            echo "  🗑️  Eliminando $CAJA..."
+            distrobox-rm "$CAJA" --force 2>/dev/null
+            # El parche de permisos para evitar el error anterior:
+            if [ -d "$BASE_ENV/$CAJA" ]; then
+                chmod -R +w "$BASE_ENV/$CAJA" 2>/dev/null
+                rm -rf "$BASE_ENV/$CAJA"
+            fi
+        done
+        echo "✅ Todos los búnkeres han sido eliminados."
     fi
 
-    echo "🗑️  Borrando imagen base..."
-    podman rmi "$IMAGEN" --force 2>/dev/null && echo "✅ Imagen eliminada." || echo "⚠️ No había imagen que borrar."
+    # Borrado de la imagen base
     echo ""
-    echo "Ejecuta 'build' para construir una nueva imagen base."
+    echo "🗑️  Eliminando imagen base de Podman..."
+    if podman rmi "$IMAGEN" --force 2>/dev/null; then
+        echo "✅ Imagen $IMAGEN eliminada con éxito."
+    else
+        echo "⚠️  No se encontró la imagen o ya fue eliminada."
+    fi
+
+    echo ""
+    echo "✨ Sistema limpio. Usa 'build' para generar una base nueva desde cero."
 }
 
 # ─── 15. REBUILD ────────────────────────────────────
