@@ -9,14 +9,15 @@ if [ ! -f "$DIR/.env" ]; then
 fi
 source "$DIR/.env"
 
-# ─── 2. CÁLCULO DE RUTAS DERIVADAS ──────────────────
+# ─── 2. RUTAS DERIVADAS ─────────────────────────────
 BASE_DEV="${AXIOM_BASE_DIR}"
 BASE_ENV="$BASE_DEV/.entorno"
 AI_GLOBAL="$BASE_DEV/ai_global"
 AI_CONFIG="$BASE_DEV/ai_config"
 TUTOR_PATH="$AI_GLOBAL/teams/tutor.md"
+AXIOM_BUILD_CONTAINER="axiom-build"
 
-# ─── 3. LOGO AXIOM ──────────────────────────────────
+# ─── 3. LOGO ────────────────────────────────────────
 mostrar_logo() {
     echo -e "\033[1;36m"
     echo "    _   _  _ ___ ___  __  __ "
@@ -26,102 +27,175 @@ mostrar_logo() {
     echo -e "\033[0m"
 }
 
-# ─── 4. DETECCIÓN DE HARDWARE (GPU) ─────────────────
+# ─── 4. DETECCIÓN DE GPU ────────────────────────────
 detect_gpu() {
-    if [ -n "$AXIOM_GPU_TYPE" ]; then
+    if [ -n "${AXIOM_GPU_TYPE:-}" ]; then
         export GPU_TYPE="$AXIOM_GPU_TYPE"
-        export GFX_VAL="$AXIOM_GFX_VAL"
+        export GFX_VAL="${AXIOM_GFX_VAL:-}"
         echo "✅ GPU forzada por .env: $GPU_TYPE (GFX: ${GFX_VAL:-N/A})"
         return 0
     fi
 
-    echo "🔍 Detectando hardware gráfico automáticamente..."
-    local HAS_RDNA4=0
-    local HAS_RDNA3=0
-    local HAS_NVIDIA=0
-    local HAS_INTEL=0
-
-    local GFX_RDNA4="12.0.1"
-    local GFX_RDNA3="11.0.0"
+    echo "🔍 Detectando hardware gráfico..."
+    local HAS_RDNA4=0 HAS_RDNA3=0 HAS_NVIDIA=0 HAS_INTEL=0
+    local GFX_RDNA4="12.0.1" GFX_RDNA3="11.0.0"
 
     while IFS= read -r line; do
-        local VENDOR=$(echo "$line" | sed -n 's/.*\[\([0-9a-fA-F]\{4\}\):.*/\1/p')
-        local DESC=$(echo "$line" | cut -d ' ' -f 2-)
-
+        local VENDOR DESC
+        VENDOR=$(echo "$line" | sed -n 's/.*\[\([0-9a-fA-F]\{4\}\):.*/\1/p')
+        DESC=$(echo "$line" | cut -d ' ' -f 2-)
         case "${VENDOR,,}" in
             10de) HAS_NVIDIA=1 ;;
             1002)
-                if echo "$DESC" | grep -iqE '(8[0-9]{3}|9[0-9]{3})'; then
-                    HAS_RDNA4=1
-                elif echo "$DESC" | grep -iqE '(6[0-9]{3}|7[0-9]{3})'; then
-                    HAS_RDNA3=1
-                fi
+                echo "$DESC" | grep -iqE '(8[0-9]{3}|9[0-9]{3})' && HAS_RDNA4=1
+                echo "$DESC" | grep -iqE '(6[0-9]{3}|7[0-9]{3})' && HAS_RDNA3=1
                 ;;
             8086) HAS_INTEL=1 ;;
         esac
     done < <(lspci -nn | grep -iE 'vga|3d|display|accelerator')
 
-    if [ "$HAS_NVIDIA" -eq 1 ]; then
-        export GPU_TYPE="nvidia"; export GFX_VAL=""
-        echo "✅ GPU detectada: NVIDIA"
-    elif [ "$HAS_RDNA4" -eq 1 ]; then
-        export GPU_TYPE="rdna4"; export GFX_VAL="$GFX_RDNA4"
-        echo "✅ GPU detectada: AMD RDNA 4 -> GFX: $GFX_VAL"
-    elif [ "$HAS_RDNA3" -eq 1 ]; then
-        export GPU_TYPE="rdna3"; export GFX_VAL="$GFX_RDNA3"
-        echo "✅ GPU detectada: AMD RDNA 3/2 -> GFX: $GFX_VAL"
-    elif [ "$HAS_INTEL" -eq 1 ]; then
-        export GPU_TYPE="intel"; export GFX_VAL=""
-        echo "✅ GPU detectada: Intel (Arc/OneAPI)"
+    if   [ "$HAS_NVIDIA" -eq 1 ]; then export GPU_TYPE="nvidia"; export GFX_VAL=""
+    elif [ "$HAS_RDNA4"  -eq 1 ]; then export GPU_TYPE="rdna4";  export GFX_VAL="$GFX_RDNA4"
+    elif [ "$HAS_RDNA3"  -eq 1 ]; then export GPU_TYPE="rdna3";  export GFX_VAL="$GFX_RDNA3"
+    elif [ "$HAS_INTEL"  -eq 1 ]; then export GPU_TYPE="intel";  export GFX_VAL=""
     else
-        echo "⚠️ Detección automática no concluyente."
-        echo "1. RDNA 4 (Serie 8000/9000)"
-        echo "2. RDNA 3 | RDNA 2 (Serie 6000/7000)"
-        echo "3. NVIDIA"
-        echo "4. INTEL"
+        echo "⚠️ Detección no concluyente. Selecciona:"
+        echo "1. RDNA 4 (8000/9000)  2. RDNA 3/2 (6000/7000)"
+        echo "3. NVIDIA              4. INTEL"
         echo "5. Generic / CPU Only"
-        read -rp "Selecciona una opción [1-5]: " GPU_OPT
-
+        read -rp "Opción [1-5]: " GPU_OPT
         case "$GPU_OPT" in
-            1) export GPU_TYPE="rdna4"; export GFX_VAL="$GFX_RDNA4" ;;
-            2) export GPU_TYPE="rdna3"; export GFX_VAL="$GFX_RDNA3" ;;
-            3) export GPU_TYPE="nvidia"; export GFX_VAL="" ;;
-            4) export GPU_TYPE="intel"; export GFX_VAL="" ;;
+            1) export GPU_TYPE="rdna4";   export GFX_VAL="$GFX_RDNA4" ;;
+            2) export GPU_TYPE="rdna3";   export GFX_VAL="$GFX_RDNA3" ;;
+            3) export GPU_TYPE="nvidia";  export GFX_VAL="" ;;
+            4) export GPU_TYPE="intel";   export GFX_VAL="" ;;
             *) export GPU_TYPE="generic"; export GFX_VAL="" ;;
         esac
-
         if [[ "$GPU_TYPE" == rdna* ]]; then
-            read -rp "📝 ¿Deseas cambiar el GFX Override? (Enter para $GFX_VAL): " MANUAL_GFX
+            read -rp "📝 GFX Override (Enter para $GFX_VAL): " MANUAL_GFX
             [ -n "$MANUAL_GFX" ] && export GFX_VAL="$MANUAL_GFX"
         fi
     fi
+    echo "✅ GPU: $GPU_TYPE ${GFX_VAL:+(GFX: $GFX_VAL)}"
 }
 
-# ─── 5. SINCRONIZACIÓN DE AGENTES (HOST) ────────────
+# nombre de la imagen base según GPU
+_imagen_base() {
+    echo "localhost/axiom-${GPU_TYPE:-generic}:latest"
+}
+
+# ─── 5. SYNC-AGENTS ─────────────────────────────────
 sync-agents() {
     [ ! -f "$TUTOR_PATH" ] && return 0
-    local CAJAS
-    mapfile -t CAJAS < <(distrobox-list --no-color | awk -F'|' 'NR>1 && $2!~/^\s*(ID)?\s*$/ {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
-
-    for CAJA in "${CAJAS[@]}"; do
-        if podman ps --format '{{.Names}}' | grep -qx "$CAJA"; then
-            [ ! -d "$BASE_ENV/$CAJA" ] && continue
-            local DEST="$BASE_ENV/$CAJA/.config/opencode/AGENTS.md"
-            mkdir -p "$(dirname "$DEST")"
-
-            if [ ! -f "$DEST" ]; then
-                cat "$TUTOR_PATH" > "$DEST"
-            else
-                while IFS= read -r line; do
-                    grep -qF "$line" "$DEST" || echo "$line" >> "$DEST"
-                done < "$TUTOR_PATH"
-            fi
-        fi
-    done
-    echo "✅ Ley Global sincronizada en búnkeres activos."
+    while IFS= read -r CAJA; do
+        [ -d "$BASE_ENV/$CAJA" ] || continue
+        local DEST="$BASE_ENV/$CAJA/.config/opencode/AGENTS.md"
+        mkdir -p "$(dirname "$DEST")"
+        cp "$TUTOR_PATH" "$DEST"
+    done < <(podman ps --format '{{.Names}}')
+    echo "✅ Ley Global sincronizada."
 }
 
-# ─── 6. COMANDO CREAR ───────────────────────────────
+# ─── 6. BUILD — construye la imagen base completa ───
+build() {
+    mostrar_logo
+    detect_gpu
+
+    local IMAGEN
+    IMAGEN=$(_imagen_base)
+
+    echo ""
+    echo "🏗️  Construyendo imagen base: $IMAGEN"
+    echo "    Esto tarda ~15-30 min. Solo se hace una vez."
+    echo ""
+
+    # Directorios necesarios
+    mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams"
+    sudo chown -R "$USER:$USER" "$AI_GLOBAL"
+    [ ! -f "$TUTOR_PATH" ] && echo "- Protocolo de razón técnica activo." > "$TUTOR_PATH"
+
+    # Eliminar contenedor de build anterior si existe
+    distrobox-rm "$AXIOM_BUILD_CONTAINER" --force 2>/dev/null || true
+
+    # Crear contenedor de build limpio
+    distrobox-create --name "$AXIOM_BUILD_CONTAINER" \
+        --image archlinux:latest \
+        --home "$BASE_ENV/$AXIOM_BUILD_CONTAINER" \
+        --additional-flags "--volume $AI_GLOBAL:/ai_global \
+        --volume $AI_CONFIG:/ai_config \
+        --device /dev/kfd --device /dev/dri \
+        --security-opt label=disable --group-add video --group-add render" \
+        --yes
+
+    # Script de build completo dentro del contenedor
+    local BUILD_SCRIPT="$BASE_ENV/$AXIOM_BUILD_CONTAINER/axiom-build.sh"
+    mkdir -p "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
+
+    # Paquetes GPU según tipo detectado
+    local GPU_PKGS=""
+    case "${GPU_TYPE}" in
+        nvidia)  GPU_PKGS="nvidia-utils cuda" ;;
+        rdna*)   GPU_PKGS="rocm-hip-sdk" ;;
+        intel)   GPU_PKGS="intel-compute-runtime onevpl-intel-gpu" ;;
+    esac
+
+    cat > "$BUILD_SCRIPT" << SCRIPT
+#!/bin/bash
+set -uo pipefail
+
+export PATH="\$HOME/.local/bin:\$HOME/go/bin:/usr/local/bin:\$PATH"
+
+echo "⚡ [1/4] Sistema base..."
+sudo pacman -Sy --needed --noconfirm base-devel git curl jq wget nodejs npm go
+
+echo "⚡ [2/4] Instalando paru..."
+if ! command -v paru &>/dev/null; then
+    git clone https://aur.archlinux.org/paru.git /tmp/paru
+    cd /tmp/paru && makepkg -si --noconfirm
+    cd ~ && rm -rf /tmp/paru
+fi
+
+echo "⚡ [3/4] Paquetes GPU: ${GPU_PKGS:-ninguno} + starship..."
+paru -S --noconfirm --needed starship ${GPU_PKGS}
+
+echo "⚡ [4/4] Instalando herramientas IA en paralelo..."
+
+curl -fsSL https://opencode.ai/install | bash &
+PID_OC=\$!
+
+go install github.com/Gentleman-Programming/engram/cmd/engram@latest &
+PID_EN=\$!
+
+curl -fsSL https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/scripts/install.sh | bash &
+PID_GA=\$!
+
+curl -fsSL https://ollama.com/install.sh | sh &
+PID_OL=\$!
+
+wait \$PID_OC && echo "✅ opencode" || echo "❌ opencode falló"
+wait \$PID_EN && echo "✅ engram"   || echo "❌ engram falló"
+wait \$PID_GA && echo "✅ gentle-ai"|| echo "❌ gentle-ai falló"
+wait \$PID_OL && echo "✅ ollama"   || echo "❌ ollama falló"
+
+echo "✅ Imagen base lista."
+rm -- "\$0"
+SCRIPT
+
+    chmod +x "$BUILD_SCRIPT"
+    distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
+
+    echo "📦 Exportando imagen $IMAGEN..."
+    podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
+
+    echo "🧹 Limpiando contenedor de build..."
+    distrobox-rm "$AXIOM_BUILD_CONTAINER" --force
+    rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
+
+    echo ""
+    echo "✅ Imagen $IMAGEN lista. Ya puedes usar: crear [nombre]"
+}
+
+# ─── 7. CREAR ────────────────────────────────────────
 crear() {
     mostrar_logo
     if [ -z "${1:-}" ]; then echo "❌ Uso: crear [nombre]"; return 1; fi
@@ -132,6 +206,7 @@ crear() {
     echo "🛡️ Acceso al Búnker '$NOMBRE':"
     if ! sudo -v; then echo "❌ Acceso denegado."; return 1; fi
 
+    # Si ya existe, entrar directamente
     if distrobox-list --no-color | grep -qw "$NOMBRE"; then
         sync-agents
         distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
@@ -139,7 +214,19 @@ crear() {
     fi
 
     detect_gpu
-    echo "⚡ Construyendo infraestructura…"
+    local IMAGEN
+    IMAGEN=$(_imagen_base)
+
+    # Verificar que existe la imagen base
+    if ! podman image exists "$IMAGEN"; then
+        echo ""
+        echo "⚠️  No se encontró la imagen base $IMAGEN"
+        echo "    Ejecuta: build"
+        echo "    (Solo se hace una vez, tarda ~15-30 min)"
+        return 1
+    fi
+
+    echo "⚡ Creando búnker '$NOMBRE' desde $IMAGEN..."
     mkdir -p "$R_PROYECTO" "$R_ENTORNO" "$AI_CONFIG/models"
     mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams" 2>/dev/null || \
         sudo mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams"
@@ -147,7 +234,7 @@ crear() {
     [ ! -f "$TUTOR_PATH" ] && echo "- Protocolo de razón técnica activo." > "$TUTOR_PATH"
 
     distrobox-create --name "$NOMBRE" \
-        --image archlinux:latest \
+        --image "$IMAGEN" \
         --home "$R_ENTORNO" \
         --additional-flags "--volume $R_PROYECTO:/$NOMBRE \
         --volume $AI_GLOBAL:/ai_global \
@@ -156,34 +243,148 @@ crear() {
         --security-opt label=disable --group-add video --group-add render" \
         --yes
 
-    # 7. SCRIPT DE INSTALACIÓN DENTRO DEL CONTENEDOR
-    cat > "$R_ENTORNO/setup.sh" << 'SCRIPT'
-#!/bin/bash
-set -u
+    # Actualización rápida (solo diffs desde el último build)
+    distrobox-enter -n "$NOMBRE" -- bash -c "
+        sudo pacman -Syu --noconfirm --needed 2>/dev/null | tail -3
+        echo '✅ Sistema actualizado.'
+    "
 
-echo "⚡ Actualizando sistema base e instalando utilidades..."
-sudo pacman -Syu --noconfirm base-devel git curl jq wget nodejs npm go
+    # Escribir .bashrc con variables del host
+    _escribir_bashrc "$NOMBRE" "$R_ENTORNO"
 
-echo "⚡ Instalando paru..."
-git clone https://aur.archlinux.org/paru.git /tmp/paru
-cd /tmp/paru && makepkg -si --noconfirm
-cd ~ && rm -rf /tmp/paru
-SCRIPT
+    # Starship config
+    _escribir_starship "$R_ENTORNO"
 
-    local PKGS="starship"
-    case "${GPU_TYPE:-}" in
-        nvidia) PKGS="$PKGS nvidia-utils cuda" ;;
-        rdna*)  PKGS="$PKGS rocm-hip-sdk" ;;
-        intel)  PKGS="$PKGS intel-compute-runtime onevpl-intel-gpu" ;;
-    esac
+    sync-agents
+    distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
+}
 
-    echo "echo '⚡ Instalando paquetes específicos de GPU...'" >> "$R_ENTORNO/setup.sh"
-    echo "paru -S --noconfirm $PKGS" >> "$R_ENTORNO/setup.sh"
+# ─── 8. BASHRC ──────────────────────────────────────
+_escribir_bashrc() {
+    local NOMBRE="$1" R_ENTORNO="$2"
 
-    # 9. STARSHIP DESDE EL HOST (evita que los # hex se rompan en heredocs anidados)
+    cat > "$R_ENTORNO/.bashrc" << BASH_VARS
+export AXIOM_GIT_USER="$AXIOM_GIT_USER"
+export AXIOM_GIT_EMAIL="$AXIOM_GIT_EMAIL"
+export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
+export OLLAMA_HOST="${AXIOM_OLLAMA_HOST:-}"
+export OLLAMA_MODELS="${AXIOM_MODELS_DIR:-/ai_config/models}"
+BASH_VARS
+
+    cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
+export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
+eval "$(starship init bash)"
+
+_ollama_ensure() {
+    ollama list &>/dev/null && return 0
+    ollama serve > /tmp/ollama.log 2>&1 &
+    local i=0
+    until ollama list &>/dev/null; do
+        sleep 1; i=$((i+1))
+        [ $i -ge 15 ] && echo "❌ ollama no respondió en 15s" && return 1
+    done
+}
+
+sync-agents() {
+    [ ! -f /ai_global/teams/tutor.md ] && return 0
+    mkdir -p ~/.config/opencode
+    cp /ai_global/teams/tutor.md ~/.config/opencode/AGENTS.md
+    echo "✅ AGENTS.md sincronizado."
+}
+
+save-rule() {
+    read -rp "📝 Razón técnica: " REASON
+    [ -z "$REASON" ] && echo "❌ Se requiere razón técnica." && return 1
+    local R="${1:-}"
+    [ -z "$R" ] && read -rp "📝 Regla: " R
+    echo "- $R (Razón: $REASON)" >> /ai_global/teams/tutor.md
+    sync-agents
+}
+
+git-clone() {
+    if [ -z "${1:-}" ]; then echo "❌ Uso: git-clone [usuario/repo] [carpeta]"; return 1; fi
+    [ -z "$AXIOM_GIT_TOKEN" ] && echo "❌ No se encontró AXIOM_GIT_TOKEN" && return 1
+    local REPO="$1" DIR="${2:-$(basename "$1")}"
+    git clone "https://${AXIOM_GIT_USER}:${AXIOM_GIT_TOKEN}@github.com/${REPO}.git" "$DIR"
+    git -C "$DIR" remote set-url origin "https://github.com/${REPO}.git"
+    echo "✅ Repo clonado y remote limpiado."
+}
+
+push() {
+    [ -z "$AXIOM_GIT_TOKEN" ] && echo "❌ AXIOM_GIT_TOKEN no encontrado." && return 1
+    git config user.name "$AXIOM_GIT_USER"
+    git config user.email "$AXIOM_GIT_EMAIL"
+    local REMOTE_URL REPO_PATH
+    REMOTE_URL=$(git config --get remote.origin.url)
+    [ -z "$REMOTE_URL" ] && echo "❌ No hay remote origin." && return 1
+    REPO_PATH=$(echo "$REMOTE_URL" | sed -E 's#.*github\.com[:/](.+?)(\.git)?$#\1#')
+    [ -z "$REPO_PATH" ] && echo "❌ No se pudo parsear el repositorio." && return 1
+    git remote set-url origin "https://${AXIOM_GIT_USER}:${AXIOM_GIT_TOKEN}@github.com/${REPO_PATH}.git"
+    git push "$@"
+    local RET=$?
+    git remote set-url origin "https://github.com/${REPO_PATH}.git"
+    return $RET
+}
+
+diagnostico() {
+    echo "🔍 [DIAGNÓSTICO AXIOM]"
+    echo "──────────────────────"
+    echo "1️⃣  GPU:"
+    if command -v nvidia-smi &>/dev/null; then
+        nvidia-smi | grep "Driver Version" || echo "❌ nvidia-smi falló"
+    elif command -v rocminfo &>/dev/null; then
+        rocminfo | grep "Agent 1" -A 2 || echo "❌ rocminfo falló"
+    else
+        echo "⚠️ Sin herramientas de GPU."
+    fi
+    echo ""
+    echo "2️⃣  Git Token:"
+    [ -n "$AXIOM_GIT_TOKEN" ] && echo "✅ Token presente." || echo "❌ AXIOM_GIT_TOKEN no encontrado."
+    echo ""
+    echo "3️⃣  Ollama:"
+    pgrep -x ollama > /dev/null && echo "✅ En ejecución." || echo "⚠️ No está corriendo."
+}
+
+open() {
+    sync-agents
+    _ollama_ensure && opencode
+}
+
+mostrar_logo() {
+    echo -e "\033[1;36m"
+    echo "    _   _  _ ___ ___  __  __ "
+    echo "   /_\ | \/ |_ _/ _ \|  \/  |"
+    echo "  / _ \ >  < | | (_) | |\/| |"
+    echo " /_/ \_/_/\_\___\___/|_|  |_|"
+    echo -e "\033[0m"
+}
+
+ayuda() {
+    mostrar_logo
+    echo ""
+    echo "🤖  BÚNKER — Comandos disponibles"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  open               Sincronizar leyes y abrir opencode"
+    echo "  sync-agents        Copiar tutor.md a AGENTS.md"
+    echo "  save-rule [regla]  Guardar regla en tutor.md"
+    echo "  git-clone [u/r]    Clonar repo con token"
+    echo "  diagnostico        Diagnóstico de salud"
+    echo "  push               Push seguro a GitHub"
+    echo ""
+}
+BASH_RC
+
+    if [[ -n "${GFX_VAL:-}" ]]; then
+        echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
+    fi
+    echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
+}
+
+# ─── 9. STARSHIP ────────────────────────────────────
+_escribir_starship() {
+    local R_ENTORNO="$1"
     mkdir -p "$R_ENTORNO/.config"
     cat > "$R_ENTORNO/.config/starship.toml" << 'STARSHIP'
-# Configuración "Professional Developer" - Tokyo Night
 format = """
 [](fg:#1a1b26)\
 $os\
@@ -260,11 +461,6 @@ stashed = "[󰏗 ${count}](bold blue)"
 [git_state]
 style = "bg:#414868 fg:#f7768e"
 format = '[[( $state $progress_current/$progress_total)]($style)]($style)'
-rebase = "REBASE"
-merge = "MERGE"
-revert = "REVERT"
-cherry_pick = " PICK"
-bisect = "BISECT"
 
 [git_metrics]
 added_style = "bold #9ece6a"
@@ -325,189 +521,14 @@ format = 'via [${symbol}${version} ](bold #79c0ff)'
 symbol = " "
 format = 'via [${symbol}${version} ](bold #79c0ff)'
 STARSHIP
-
-    cat >> "$R_ENTORNO/setup.sh" << 'SCRIPT'
-
-export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
-
-echo "⚡ Instalando herramientas IA en serie..."
-
-# opencode
-curl -fsSL https://opencode.ai/install | bash
-export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
-command -v opencode >/dev/null && echo "✅ opencode listo" || echo "❌ opencode falló"
-
-# engram
-go install github.com/Gentleman-Programming/engram/cmd/engram@latest
-command -v engram >/dev/null && echo "✅ engram listo" || echo "❌ engram falló"
-
-# gentle-ai
-curl -fsSL https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/scripts/install.sh | bash
-command -v gentle-ai >/dev/null && echo "✅ gentle-ai listo" || echo "❌ gentle-ai falló"
-
-# ollama
-curl -fsSL https://ollama.com/install.sh | sh || true
-command -v ollama >/dev/null && echo "✅ ollama listo" || echo "❌ ollama falló"
-
-# agent-teams-lite
-ollama serve > /tmp/ollama.log 2>&1 &
-sleep 3
-git clone https://github.com/Gentleman-Programming/agent-teams-lite.git ~/agent-teams
-cd ~/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams listo" || echo "❌ agent-teams falló"
-cd ~
-
-echo "⚡ Inicializando AGENTS.md..."
-mkdir -p ~/.config/opencode
-[ -f /ai_global/teams/tutor.md ] && cat /ai_global/teams/tutor.md >> ~/.config/opencode/AGENTS.md
-
-rm -- "$0"
-SCRIPT
-
-    # 8. BASHRC DEL BÚNKER (Construido desde el host)
-    cat > "$R_ENTORNO/.bashrc" << BASH_VARS
-export AXIOM_GIT_USER="$AXIOM_GIT_USER"
-export AXIOM_GIT_EMAIL="$AXIOM_GIT_EMAIL"
-export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
-export OLLAMA_HOST="$AXIOM_OLLAMA_HOST"
-export OLLAMA_MODELS="${AXIOM_MODELS_DIR:-/ai_config/models}"
-BASH_VARS
-    cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
-export PATH="$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:$PATH"
-eval "$(starship init bash)"
-
-_ollama_ensure() {
-    local i=0
-    pgrep -x ollama > /dev/null || (ollama serve > /tmp/ollama.log 2>&1 &)
-    until ollama list &>/dev/null 2>&1; do
-        sleep 1; i=$((i+1))
-        [ $i -ge 30 ] && echo "❌ ollama no respondió en 30s" && return 1
-    done
 }
 
-sync-agents() {
-    [ ! -f /ai_global/teams/tutor.md ] && return 0
-    mkdir -p ~/.config/opencode
-    cat /ai_global/teams/tutor.md > ~/.config/opencode/AGENTS.md
-    echo "✅ AGENTS.md sincronizado."
-}
-
-save-rule() {
-    read -rp "📝 Razón técnica: " REASON
-    [ -z "$REASON" ] && echo "❌ Error: Se requiere razón técnica." && return 1
-    local R="${1:-}"
-    [ -z "$R" ] && read -rp "📝 Regla: " R
-    echo "- $R (Razón: $REASON)" >> /ai_global/teams/tutor.md
-    sync-agents
-}
-
-git-clone() {
-    if [ -z "${1:-}" ]; then echo "❌ Uso: git-clone [usuario/repo] [carpeta]"; return 1; fi
-    if [ -z "$AXIOM_GIT_TOKEN" ]; then echo "❌ No se encontró AXIOM_GIT_TOKEN"; return 1; fi
-    local REPO="$1"
-    local DIR="${2:-$(basename "$REPO")}"
-    git clone "https://${AXIOM_GIT_USER}:${AXIOM_GIT_TOKEN}@github.com/${REPO}.git" "$DIR"
-    git -C "$DIR" remote set-url origin "https://github.com/${REPO}.git"
-    echo "✅ Repo clonado y remote limpiado de credenciales."
-}
-
-push() {
-    if [ -z "$AXIOM_GIT_TOKEN" ]; then echo "❌ Error: AXIOM_GIT_TOKEN no encontrado en .env."; return 1; fi
-    git config user.name "$AXIOM_GIT_USER"
-    git config user.email "$AXIOM_GIT_EMAIL"
-
-    local REMOTE_URL
-    REMOTE_URL=$(git config --get remote.origin.url)
-    if [ -z "$REMOTE_URL" ]; then echo "❌ Error: No hay 'remote origin' configurado."; return 1; fi
-
-    local REPO_PATH
-    REPO_PATH=$(echo "$REMOTE_URL" | sed -E 's#.*github\.com[:/](.+?)(\.git)?$#\1#')
-    if [ -z "$REPO_PATH" ]; then echo "❌ Error: No se pudo parsear el repositorio."; return 1; fi
-
-    echo "⚡ Configurando URL temporal para push..."
-    git remote set-url origin "https://${AXIOM_GIT_USER}:${AXIOM_GIT_TOKEN}@github.com/${REPO_PATH}.git"
-
-    echo "🚀 Ejecutando git push..."
-    git push "$@"
-    local RET=$?
-
-    echo "🧹 Limpiando URL remota..."
-    git remote set-url origin "https://github.com/${REPO_PATH}.git"
-    return $RET
-}
-
-diagnostico() {
-    echo "🔍 [DIAGNÓSTICO DE SALUD: AXIOM]"
-    echo "---------------------------------"
-    echo "1️⃣  Visibilidad de GPU:"
-    if command -v nvidia-smi &>/dev/null; then
-        nvidia-smi | grep "Driver Version" || echo "❌ Falla en nvidia-smi"
-    elif command -v rocminfo &>/dev/null; then
-        rocminfo | grep "Agent 1" -A 2 || echo "❌ Falla en rocminfo"
-    else
-        echo "⚠️ No se encontraron herramientas de GPU."
-    fi
-
-    echo ""
-    echo "2️⃣  Acceso a Git Token:"
-    if [ -n "$AXIOM_GIT_TOKEN" ]; then echo "✅ Token inyectado vía .env correctamente."
-    else echo "❌ No se pudo acceder a AXIOM_GIT_TOKEN"
-    fi
-
-    echo ""
-    echo "3️⃣  Estado de Ollama:"
-    if pgrep -x ollama > /dev/null; then echo "✅ Ollama está en ejecución."
-    else echo "⚠️ Ollama NO está en ejecución."
-    fi
-}
-
-open() {
-    sync-agents
-    _ollama_ensure && opencode
-}
-
-mostrar_logo() {
-    echo -e "\033[1;36m"
-    echo "    _   _  _ ___ ___  __  __ "
-    echo "   /_\ | \/ |_ _/ _ \|  \/  |"
-    echo "  / _ \ >  < | | (_) | |\/| |"
-    echo " /_/ \_/_/\_\___\___/|_|  |_|"
-    echo -e "\033[0m"
-}
-
-ayuda() {
-    mostrar_logo
-    echo ""
-    echo "🤖  BÚNKER — Comandos disponibles"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  open               Sincronizar leyes y abrir opencode"
-    echo "  sync-agents        Copiar tutor.md a AGENTS.md"
-    echo "  save-rule [regla]  Guardar regla técnica en tutor.md"
-    echo "  git-clone [u/r]    Clonar repo de GitHub con token"
-    echo "  diagnostico        Ejecutar diagnóstico de salud del búnker"
-    echo "  push               Hacer push automático a GitHub de forma segura"
-    echo ""
-}
-BASH_RC
-
-    if [[ -n "$GFX_VAL" ]]; then
-        echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
-    fi
-    echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
-
-    distrobox-enter -n "$NOMBRE" -- bash "$R_ENTORNO/setup.sh"
-    sync-agents
-    distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
-}
-
-# ─── 12. BORRAR ─────────────────────────────────────
+# ─── 10. BORRAR ─────────────────────────────────────
 borrar() {
     mostrar_logo
     if [ -z "${1:-}" ]; then echo "❌ Uso: borrar [nombre]"; return 1; fi
-    read -rp "📝 Razón técnica obligatoria para borrar: " REASON
-    if [ -z "$REASON" ]; then
-        echo "❌ Operación cancelada: Se requiere justificar la eliminación."
-        return 1
-    fi
+    read -rp "📝 Razón técnica obligatoria: " REASON
+    [ -z "$REASON" ] && echo "❌ Cancelado: se requiere justificación." && return 1
     read -rp "❗ ¿Borrar búnker '$1'? (s/N): " CONFIRM
     if [[ "$CONFIRM" =~ ^[sS]$ ]]; then
         distrobox-rm "$1" --force
@@ -515,30 +536,51 @@ borrar() {
             chmod -R +w "$BASE_ENV/$1"
             rm -rf "$BASE_ENV/$1"
         fi
-        echo "🔥 Limpieza total. Memoria local eliminada."
+        echo "🔥 Búnker '$1' eliminado."
     fi
 }
 
-# ─── 13. PARAR ──────────────────────────────────────
+# ─── 11. PARAR ──────────────────────────────────────
 parar() {
     mostrar_logo
     if [ -z "${1:-}" ]; then echo "❌ Uso: parar [nombre]"; return 1; fi
-    if ! distrobox-list --no-color | grep -qw "$1"; then
-        echo "❌ Búnker '$1' no existe."
-        return 1
-    fi
+    distrobox-list --no-color | grep -qw "$1" || { echo "❌ Búnker '$1' no existe."; return 1; }
     podman stop "$1" && echo "⏹️ Búnker '$1' parado."
 }
 
-# ─── 14. AYUDA HOST ─────────────────────────────────
+# ─── 12. REBUILD — actualiza la imagen base ─────────
+rebuild() {
+    mostrar_logo
+    detect_gpu
+    local IMAGEN
+    IMAGEN=$(_imagen_base)
+
+    echo "🔄 Reconstruyendo imagen base $IMAGEN..."
+    echo "    Los búnkeres existentes NO se ven afectados."
+    echo "    Los nuevos búnkeres usarán la imagen actualizada."
+    echo ""
+    read -rp "¿Continuar? (s/N): " CONFIRM
+    [[ "$CONFIRM" =~ ^[sS]$ ]] || return 0
+
+    podman rmi "$IMAGEN" --force 2>/dev/null || true
+    build
+}
+
+# ─── 13. AYUDA HOST ─────────────────────────────────
 ayuda() {
     mostrar_logo
     echo ""
     echo "🛡️  SISTEMA BÚNKER — Comandos del host"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  crear [nombre]   Crear o entrar a un búnker"
-    echo "  borrar [nombre]  Borrar búnker y su entorno"
-    echo "  parar  [nombre]  Parar un búnker sin borrarlo"
-    echo "  ayuda            Muestra esta ayuda"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  build              Construir imagen base (primera vez, ~20 min)"
+    echo "  rebuild            Reconstruir imagen base (actualizar)"
+    echo "  crear [nombre]     Crear búnker desde imagen base (~30 seg)"
+    echo "  borrar [nombre]    Borrar búnker y su entorno"
+    echo "  parar  [nombre]    Parar búnker sin borrarlo"
+    echo "  ayuda              Mostrar esta ayuda"
+    echo ""
+    echo "  Imágenes base disponibles:"
+    podman images --format "    {{.Repository}}:{{.Tag}}  ({{.Size}})" | grep axiom || \
+        echo "    (ninguna — ejecuta: build)"
     echo ""
 }
