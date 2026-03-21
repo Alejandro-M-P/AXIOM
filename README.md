@@ -98,19 +98,22 @@ Todo corre local. Nada sale a ningún servidor. Basado en el ecosistema de [Gent
 AXIOM escribe automáticamente la conexión a Ollama en `~/.config/opencode/config.json` dentro de cada búnker. opencode ya viene con sus propios providers por defecto — este bloque solo añade Ollama local encima de lo que ya trae:
 
 ```json
-"provider": {
-  "ollama": {
-    "npm": "@ai-sdk/openai-compatible",
-    "options": {
-      "baseURL": "http://localhost:11434/v1"
-    },
-    "models": {
-      "TU_MODELO:latest": {
-        "reasoning": true
+ } ,
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "qwen3.5:latest": {
+          "reasoning": true
+        }
       }
     }
   }
 }
+
 ```
 
 Sustituye `TU_MODELO` por cualquier modelo que tengas descargado en Ollama. Algunos ejemplos habituales:
