@@ -9,17 +9,13 @@ _git_auth_cmd() {
 }
 
 push() {
-    [ -z "$AXIOM_GIT_TOKEN" ] && { echo "❌ Token vacío. / Empty token."; return 1; }
+    # Aseguramos que el remoto tenga el token inyectado
+    git remote set-url origin "https://${AXIOM_GIT_USER}:${AXIOM_GIT_TOKEN}@github.com/Alejandro-M-P/AXIOM.git"
     
-    git config user.name "$AXIOM_GIT_USER"
-    git config user.email "$AXIOM_GIT_EMAIL"
-    
-    local RAMA=$(git branch --show-current)
-    echo "🚀 Push en progreso / Push in progress ($RAMA)..."
-    
-    
-    git -c credential.helper="$(_git_auth_cmd)" push "$@"
+    echo "🚀 Push en progreso..."
+    git push origin "$(git branch --show-current)"
 }
+
 
 
 commit() {
@@ -46,8 +42,7 @@ git-clone() {
     local REPO="$1" DIR="${2:-$(basename "$1")}"
 
     # También corregimos el clone para que sea seguro
-    git -c "credential.helper=$(_git_auth_cmd)" clone "https://github.com/${REPO}.git" "$DIR"
-    echo "✅ Repo clonado. / Repo cloned."
+    git clone "https://${AXIOM_GIT_USER}:${AXIOM_GIT_TOKEN}@github.com/${REPO}.git" "$DIR"
 }
 
 branch() {
