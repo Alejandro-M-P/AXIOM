@@ -179,20 +179,15 @@ The result is that your agents always work with the same rules across all projec
 | :--- | :--- | :--- |
 | `build` | Builds base image with GPU, AI tools, and starship. Runs only once per machine. | **Host** |
 | `rebuild` | Rebuilds base image to update the stack. Existing bunkers are not affected. | **Host** |
-| `resetear` | Deletes base image. Asks if you also want to delete all bunkers. | **Host** |
-| `reset-base` | Deletes base image without touching existing bunkers. Useful for clearing space. | **Host** |
-| `crear [name]` | Creates a new bunker from base image (~30s) or enters an existing one. | **Host** |
+| `restart` | Deletes base image. Asks if you also want to delete all bunkers. | **Host** |
+| `create [name]` | Creates a new bunker from base image (~30s) or enters an existing one. | **Host** |
 | `borrar [name]` | Demands a technical reason and completely destroys the bunker and its local memory. | **Host** |
-| `parar [name]` | Stops the bunker container without deleting its data. | **Host** |
-| `open` | Syncs laws and opens the intelligent `opencode` environment. | **Bunker** |
 | `sync-agents` | Synchronizes `tutor.md` to local agent config. | **Bunker** |
-| `save-rule [rule]`| Saves a new technical rule and synchronizes it across all active bunkers. | **Bunker** |
 | `git-clone [u/r]` | Clones a GitHub repository securely using token credentials. | **Bunker** |
-| `rama` | Interactively creates a new branch — prompts for name and base branch. | **Bunker** |
+| `branch` | Interactively creates a new branch — prompts for name and base branch. | **Bunker** |
 | `commit [msg]` | Stages all changes and commits. Asks for a message if none is provided. | **Bunker** |
 | `push` | Securely pushes to GitHub using the token from `.env`. | **Bunker** |
-| `diagnostico` | Health diagnostics: GPU, Ollama, and Git Token. | **Bunker** |
-| `ayuda` | Shows the help menu on screen. | **Host / Bunker** |
+| `help` | Shows the help menu on screen. | **Host / Bunker** |
 
 ---
 

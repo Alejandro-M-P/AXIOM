@@ -231,24 +231,19 @@ Arquitecto Senior.
 ---
 
 ## Comandos Disponibles
-
 | Comando | Descripción | Entorno |
 | :--- | :--- | :--- |
-| `build` | Construye la imagen base con GPU, herramientas IA y starship. Solo se ejecuta una vez por máquina. | **Host** |
+| `build` | Construye la imagen base con GPU, herramientas IA y starship. Se ejecuta una sola vez por máquina. | **Host** |
 | `rebuild` | Reconstruye la imagen base para actualizar el stack. Los búnkeres existentes no se ven afectados. | **Host** |
-| `resetear` | Borra la imagen base. Pregunta si también quieres borrar todos los búnkeres. | **Host** |
-| `crear [nombre]` | Crea un nuevo búnker desde la imagen base (~30 seg) o entra en uno existente. | **Host** |
-| `borrar [nombre]` | Solicita razón técnica y destruye el búnker y su memoria local por completo. | **Host** |
-| `parar [nombre]` | Detiene el contenedor del búnker sin eliminar sus datos. | **Host** |
-| `open` | Sincroniza leyes y abre el entorno inteligente `opencode`. | **Búnker** |
-| `sync-agents` | Sincroniza `tutor.md` a la configuración local del agente. | **Búnker** |
-| `save-rule [regla]` | Guarda una nueva regla técnica y la sincroniza con todos los búnkeres activos. | **Búnker** |
-| `git-clone [u/r]` | Clona un repositorio de GitHub con el token pasado en memoria — sin modificar ni quedar grabado en el remote. | **Búnker** |
-| `rama` | Crea una rama nueva de forma interactiva — pide nombre y rama base. | **Búnker** |
-| `commit [mensaje]` | Añade todos los cambios y commitea. Si no hay mensaje lo pide. | **Búnker** |
-| `push` | Hace push a GitHub de forma segura usando el token del `.env`. | **Búnker** |
-| `diagnostico` | Diagnóstico de salud: GPU, Ollama y Token Git. | **Búnker** |
-| `ayuda` | Muestra el menú de ayuda en pantalla. | **Host / Búnker** |
+| `restart` | Elimina la imagen base. Pregunta si también quieres borrar todos los búnkeres. | **Host** |
+| `create [nombre]` | Crea un nuevo búnker desde la imagen base (~30s) o entra en uno existente. | **Host** |
+| `delete [nombre]` | Exige una razón técnica y destruye completamente el búnker y su memoria local. | **Host** |
+| `sync-agents` | Sincroniza `tutor.md` con la configuración local de agentes. | **Búnker** |
+| `git-clone [u/r]` | Clona un repositorio de GitHub de forma segura usando las credenciales del `.env`. | **Búnker** |
+| `branch` | Crea una nueva rama de forma interactiva — pide nombre y rama base. | **Búnker** |
+| `commit [msg]` | Añade todos los cambios y hace commit. Pide mensaje si no se proporciona. | **Búnker** |
+| `push` | Hace push seguro a GitHub usando el token del `.env`. | **Búnker** |
+| `help` | Muestra el menú de ayuda en pantalla. | **Host / Búnker** |
 
 ---
 

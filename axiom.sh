@@ -8,13 +8,11 @@ DIR="${AXIOM_PATH:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 # 2. Exportar rutas para que los módulos las vean
 export BASE_DEV="${AXIOM_BASE_DIR}"
 export BASE_ENV="$BASE_DEV/.entorno"
-export AI_GLOBAL="$BASE_DEV/ai_global"
 export AI_CONFIG="$BASE_DEV/ai_config"
-export TUTOR_PATH="$AI_GLOBAL/teams/tutor.md"
-
+export TUTOR_PATH="$AI_CONFIG/teams/tutor.md"
 # 3. CARGA DE MÓDULOS
-for modulo in "$DIR/lib/"*.sh; do
-    [ -f "$modulo" ] && source "$modulo"
+for modulo in gpu core git bunker; do
+    [ -f "$DIR/lib/$modulo.sh" ] && source "$DIR/lib/$modulo.sh"
 done
 
 # 4. LÓGICA DE EJECUCIÓN

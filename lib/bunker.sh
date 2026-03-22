@@ -6,7 +6,6 @@ _init_tutor() {
         touch "$TUTOR_PATH"
     fi
 }
-
 _escribir_bashrc() {
     local NOMBRE="$1" R_ENTORNO="$2"
     cat > "$R_ENTORNO/.bashrc" << BASH_VARS
@@ -15,25 +14,33 @@ _escribir_bashrc() {
     export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
     export AXIOM_AUTH_MODE="${AXIOM_AUTH_MODE:-https}"
     export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-}"
+    export OLLAMA_MODELS="/ai_config/models"
 BASH_VARS
 
-    if [[ -n "${GFX_VAL:-}" ]]; then
-        echo "    export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
+    if [[ -n "${GFX_VAL:-$AXIOM_GFX_VAL}" ]]; then
+        echo "export HSA_OVERRIDE_GFX_VERSION=${GFX_VAL:-$AXIOM_GFX_VAL}" >> "$R_ENTORNO/.bashrc"
     fi
 
     cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
     source $AXIOM_PATH/lib/core.sh
     source $AXIOM_PATH/lib/git.sh
     eval "$(starship init bash)"
-    cd $AXIOM_BASE_DIR/$NOMBRE
+BASH_RC
 
+    echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
+    cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
+    if [ ! -f "$Archive" ]; then
+    gentle-ai
+    echo "done" > "$Archive"
+    fi
     # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
     Archive="$HOME/.axiom_done"
 
     if [ ! -f "$Archive" ]; then
-        gentle-ai
-        echo "done" > "$Archive"
+    gentle-ai
+    echo "done" > "$Archive"
     fi
+    sync-agents
 BASH_RC
 }
 
@@ -55,8 +62,8 @@ build() {
     fi
     echo ""
 
-    mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams" "$AI_CONFIG/models"
-    sudo chown -R "$USER:$USER" "$AI_GLOBAL" "$AI_CONFIG"
+    mkdir -p "$AI_CONFIG/models" "$AI_CONFIG/teams" 
+    sudo chown -R "$USER:$USER"  "$AI_CONFIG"
     _init_tutor
 
     echo "🧹 Limpiando búnker de construcción anterior... / Cleaning previous build bunker..."
@@ -68,12 +75,11 @@ build() {
         rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
     fi
 
-    echo "📦 Creando contenedor de build... / Creating build container..."
+  echo "📦 Creando contenedor de build... / Creating build container..."
     distrobox-create --name "$AXIOM_BUILD_CONTAINER" \
         --image archlinux:latest \
         --home "$BASE_ENV/$AXIOM_BUILD_CONTAINER" \
-        --additional-flags "--volume $AI_GLOBAL:/ai_global \
-        --volume $AI_CONFIG:/ai_config \
+        --additional-flags "--volume $AI_CONFIG:/ai_config \
         --device /dev/kfd --device /dev/dri \
         --security-opt label=disable --group-add video --group-add render" \
         --yes
@@ -92,7 +98,7 @@ build() {
 
     cat > "$BUILD_SCRIPT" << SCRIPT
     #!/bin/bash
-    set -uo pipefail
+    set -euo pipefail
 
     export PATH="\$HOME/.local/bin:\$HOME/go/bin:/usr/local/bin:\$PATH"
     GPU_PKGS="${GPU_PKGS:-}"
@@ -116,7 +122,7 @@ build() {
 
     (
         AUTH_HEADER=""
-        [ -n "${AXIOM_GIT_TOKEN:-}" ] && AUTH_HEADER="-H \"Authorization: Bearer ${AXIOM_GIT_TOKEN:-}\""
+        [ -n "\${AXIOM_GIT_TOKEN:-}" ] && AUTH_HEADER="-H \"Authorization: Bearer \${AXIOM_GIT_TOKEN:-}\""
 
         GA_LATEST=\$(eval curl -fsSL \$AUTH_HEADER https://api.github.com/repos/Gentleman-Programming/gentle-ai/releases/latest | grep -o '"tag_name": *"[^"]*"' | grep -o '[0-9][^"]*' || echo "latest")
 
@@ -137,16 +143,27 @@ build() {
     curl -fsSL https://ollama.com/install.sh | sh &
     PID_OL=\$!
 
-    wait \$PID_OC && echo "✅ opencode"
-    wait \$PID_EN && echo "✅ engram"
-    wait \$PID_GA && echo "✅ gentle-ai"
-    wait \$PID_OL && echo "✅ ollama"
+    wait \$PID_OC || { echo "❌ opencode falló"; exit 1; }
+    echo "✅ opencode"
+    wait \$PID_EN || { echo "❌ engram falló"; exit 1; }
+    echo "✅ engram"
+    wait \$PID_GA || { echo "❌ gentle-ai falló"; exit 1; }
+    echo "✅ gentle-ai"
+    wait \$PID_OL || { echo "❌ ollama falló"; exit 1; }
+    echo "✅ ollama"
 
     echo "⚡ [4/4] agent-teams-lite..."
     ollama serve > /tmp/ollama-build.log 2>&1 &
     OLLAMA_PID=\$!
 
-    until curl -s http://localhost:11434/ > /dev/null; do sleep 1; done
+    ELAPSED=0
+    until curl -s http://localhost:11434/ > /dev/null; do
+        sleep 1
+        ((ELAPSED++))
+        [ \$ELAPSED -ge 60 ] && { echo "❌ Ollama no arrancó en 60s"; exit 1; }
+    done
+    echo "✅ Ollama"
+
 
     git clone https://github.com/Gentleman-Programming/agent-teams-lite.git /tmp/agent-teams
     cd /tmp/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams-lite"
@@ -163,9 +180,8 @@ build() {
     echo "✅ Build completo dentro del contenedor. / Build complete inside the container."
     rm -- "\$0"
 SCRIPT
-
     chmod +x "$BUILD_SCRIPT"
-    distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
+    AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN" distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
 
     echo "📦 Exportando imagen $IMAGEN (esto puede tardar)... / Exporting image $IMAGEN (this may take a while)..."
     podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
@@ -192,9 +208,8 @@ create() {
 
     if distrobox-list --no-color | grep -qw "$NOMBRE"; then
         if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ]; then
-            ssh-add -l &>/dev/null || ssh-add ~/.ssh/id_ed25519 2>/dev/null
-        fi
-        sync-agents
+        ssh-add -l &>/dev/null || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    fi
         distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
         return 0
     fi
@@ -212,8 +227,7 @@ create() {
 
     echo "⚡ Creando búnker '$NOMBRE' desde $IMAGEN... / Creating bunker '$NOMBRE' from $IMAGEN..."
     mkdir -p "$R_PROYECTO" "$R_ENTORNO" "$AI_CONFIG/models"
-    mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams"
-    sudo chown -R "$USER:$USER" "$AI_GLOBAL" "$AI_CONFIG"
+
     _init_tutor
 
     local GPU_VOLS=""
@@ -229,7 +243,6 @@ create() {
         --image "$IMAGEN" \
         --home "$R_ENTORNO" \
         --additional-flags "--volume $R_PROYECTO:/$NOMBRE \
-        --volume $AI_GLOBAL:/ai_global \
         --volume $AI_CONFIG:/ai_config \
         --device /dev/kfd --device /dev/dri \
         --security-opt label=disable --group-add video --group-add render \
@@ -246,7 +259,7 @@ create() {
 
     mkdir -p "$R_ENTORNO/.config/opencode"
     [ -f "$TUTOR_PATH" ] && cp "$TUTOR_PATH" "$R_ENTORNO/.config/opencode/AGENTS.md"
-    sync-agents
+    
 
     _escribir_opencode_config "$NOMBRE" "$R_ENTORNO"
 
@@ -294,7 +307,13 @@ reset() {
 
     echo "🔎 Escaneando búnkeres en el sistema... / Scanning bunkers in the system..."
     local LISTA_BUNKERES
-    LISTA_BUNKERES=$(distrobox-list --no-color | awk -F'|' 'NR>1 {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
+    if distrobox list --format json &>/dev/null; then
+        LISTA_BUNKERES=$(distrobox list --format json | jq -r '.[].name')
+    else
+        LISTA_BUNKERES=$(distrobox-list --no-color | awk -F'|' 'NR>1 {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
+    fi
+    echo ""
+
 
     if [ -n "$LISTA_BUNKERES" ]; then
         echo "📂 Se han encontrado los siguientes búnkeres: / Found the following bunkers:"
