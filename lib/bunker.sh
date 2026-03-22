@@ -9,39 +9,40 @@ _init_tutor() {
 
 _escribir_bashrc() {
     local NOMBRE="$1" R_ENTORNO="$2"
+
+    # 1. BLOQUE DE VARIABLES (Aquí SI se expande $NOMBRE porque NO tiene comillas)
     cat > "$R_ENTORNO/.bashrc" << BASH_VARS
+    export NOMBRE="$NOMBRE"
     export AXIOM_GIT_USER="$AXIOM_GIT_USER"
     export AXIOM_GIT_EMAIL="$AXIOM_GIT_EMAIL"
     export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
 BASH_VARS
 
-
-if [[ -n "${GFX_VAL:-}" ]]; then
+    # 2. BLOQUE GFX (Se queda igual, fuera de los cats)
+    if [[ -n "${GFX_VAL:-}" ]]; then
         echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
     fi
 
+    # 3. BLOQUE DE LÓGICA (Aquí NO se expande nada hasta que el búnker abre)
+    cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
+    # Ahora $NOMBRE sí funciona porque lo exportamos arriba
+    source "/$NOMBRE/lib/core.sh"
+    source "/$NOMBRE/lib/git.sh"
+    # Borramos agents.sh (ya no existe, recuerda que lo movimos a core.sh)
 
-        # Importamos los módulos dentro del búnker
-        cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
-    source /usr/local/bin/core.sh
-    source /usr/local/bin/git.sh
-    source /usr/local/bin/agents.sh
     eval "$(starship init bash)"
-    cd /$NOMBRE
-
-
-
-    # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
-
+    
+    # Hook de IA
     Archive="$HOME/.axiom_done"
-
     if [ ! -f "$Archive" ]; then
         gentle-ai
         echo "done" > "$Archive"
     fi
+
+    # El CD siempre al final para aparecer en tu proyecto
+    cd "/$NOMBRE"
 BASH_RC
 }
-
 
 
 

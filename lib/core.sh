@@ -39,3 +39,21 @@ mostrar_logo
         
     fi
 }
+
+sync-agents() {
+    echo "🔄 Sincronizando Tutor con búnkeres... / Syncing Tutor with bunkers..."
+    if [ ! -f "$TUTOR_PATH" ]; then
+        echo "⚠️  Tutor no encontrado en $TUTOR_PATH"
+        return 1
+    fi
+
+    # Buscamos todos los .bashrc en la carpeta de entornos
+    for bashrc in "$BASE_ENV"/*/.bashrc; do
+        if [ -f "$bashrc" ]; then
+            local DESTINO="$(dirname "$bashrc")/.config/opencode/AGENTS.md"
+            mkdir -p "$(dirname "$DESTINO")"
+            cp "$TUTOR_PATH" "$DESTINO"
+        fi
+    done
+    echo "✅ Sincronización completada. / Sync complete."
+}
