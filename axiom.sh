@@ -1,7 +1,10 @@
 #!/bin/bash
 DIR="${AXIOM_PATH:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
-[ -f "$DIR/.env" ] && source "$DIR/.env"
+if [ -f "$DIR/.env" ]; then
+    chmod 600 "$DIR/.env" 2>/dev/null
+    source "$DIR/.env"
+fi
 
 export BASE_DEV="${AXIOM_BASE_DIR}"
 export BASE_ENV="$BASE_DEV/.entorno"

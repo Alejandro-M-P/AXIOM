@@ -14,11 +14,16 @@ _git_run() {
     if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ]; then
         git "$@"
     else
-        [ -z "$AXIOM_GIT_TOKEN" ] && { echo "❌ Token vacío."; return 1; }
+        # Card 1: leer el token on-demand desde el volumen read-only.
+        # Nunca se exporta como variable de entorno — cualquier proceso
+        # del búnker podría leerla con printenv.
+        local TOKEN
+        TOKEN=$(grep -oP '(?<=AXIOM_GIT_TOKEN=")[^"]+' /run/axiom/env 2>/dev/null)
+        [ -z "$TOKEN" ] && { echo "❌ Token no disponible en /run/axiom/env."; return 1; }
         local CRED_FILE
         CRED_FILE=$(mktemp)
         chmod 600 "$CRED_FILE"
-        printf 'username=%s\npassword=%s\n' "$AXIOM_GIT_USER" "$AXIOM_GIT_TOKEN" > "$CRED_FILE"
+        printf 'username=%s\npassword=%s\n' "$AXIOM_GIT_USER" "$TOKEN" > "$CRED_FILE"
         git -c "credential.helper=store --file $CRED_FILE" "$@"
         local EXIT_CODE=$?
         rm -f "$CRED_FILE"

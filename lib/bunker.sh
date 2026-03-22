@@ -14,10 +14,11 @@ _escribir_bashrc() {
     local NOMBRE="$1" R_ENTORNO="$2"
 
     # ── Variables de entorno (expansión deliberada) ──
+    # Card 1: AXIOM_GIT_TOKEN eliminado — nunca se exporta al búnker.
+    # El token se lee on-demand desde /run/axiom/env (montado read-only en create).
     cat > "$R_ENTORNO/.bashrc" << BASH_VARS
     export AXIOM_GIT_USER="$AXIOM_GIT_USER"
     export AXIOM_GIT_EMAIL="$AXIOM_GIT_EMAIL"
-    export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
     export AXIOM_AUTH_MODE="${AXIOM_AUTH_MODE:-https}"
     export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-}"
     export OLLAMA_MODELS="/ai_config/models"
@@ -83,15 +84,21 @@ build() {
     fi
 
     echo "📦 Creando contenedor de build..."
+    # Card 2: se añade el volumen .env read-only para que el build script
+    # pueda leer el token on-demand sin recibirlo como variable de entorno.
     distrobox-create --name "$AXIOM_BUILD_CONTAINER" \
         --image archlinux:latest \
         --home "$BASE_ENV/$AXIOM_BUILD_CONTAINER" \
         --additional-flags "--volume $AI_CONFIG:/ai_config \
+        --volume \"$DIR/.env\":/run/axiom/env:ro \
         --device /dev/kfd --device /dev/dri \
         --security-opt label=disable --group-add video --group-add render" \
         --yes
 
-    local BUILD_SCRIPT="$BASE_ENV/$AXIOM_BUILD_CONTAINER/axiom-build.sh"
+    # Card 4: usar mktemp en lugar de ruta fija para evitar TOCTOU.
+    local BUILD_SCRIPT
+    BUILD_SCRIPT=$(mktemp /tmp/axiom-build-XXXXXX.sh)
+    chmod 700 "$BUILD_SCRIPT"
     mkdir -p "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
     local GPU_PKGS=""
@@ -128,10 +135,14 @@ go install github.com/Gentleman-Programming/engram/cmd/engram@latest &
 PID_EN=\$!
 
 (
-    AUTH_HEADER=""
-    [ -n "\${AXIOM_GIT_TOKEN:-}" ] && AUTH_HEADER="-H \"Authorization: Bearer \${AXIOM_GIT_TOKEN:-}\""
+    # Card 3: array de argumentos en lugar de eval para evitar inyección.
+    TOKEN=\$(grep -oP '(?<=AXIOM_GIT_TOKEN=")[^"]+' /run/axiom/env 2>/dev/null || echo "")
 
-    GA_LATEST=\$(eval curl -fsSL \$AUTH_HEADER https://api.github.com/repos/Gentleman-Programming/gentle-ai/releases/latest \
+    CURL_ARGS=(-fsSL --fail)
+    [ -n "\$TOKEN" ] && CURL_ARGS+=(-H "Authorization: Bearer \$TOKEN")
+
+    GA_LATEST=\$(curl "\${CURL_ARGS[@]}" \
+        "https://api.github.com/repos/Gentleman-Programming/gentle-ai/releases/latest" \
         | grep -o '"tag_name": *"[^"]*"' | grep -o '[0-9][^"]*' || echo "")
 
     [ -z "\$GA_LATEST" ] && GA_LATEST="0.1.0"
@@ -183,11 +194,13 @@ chmod -R +w ~/.cache/go ~/.cache 2>/dev/null || true
 sudo rm -rf /tmp/* ~/.cache/go /var/cache/pacman/pkg 2>/dev/null || true
 
 echo "✅ Build completo."
-rm -- "\$0"
 SCRIPT
 
-    chmod +x "$BUILD_SCRIPT"
-    AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN" distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
+    # Card 2: sin prefijo AXIOM_GIT_TOKEN= — el token lo lee el script desde /run/axiom/env.
+    distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
+
+    # Card 4: limpiar el script temporal tras ejecutar.
+    rm -f "$BUILD_SCRIPT"
 
     echo "📦 Exportando imagen $IMAGEN (esto puede tardar)..."
     podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
@@ -244,11 +257,13 @@ create() {
         echo "🔑 Socket SSH detectado y montado."
     fi
 
+    # Card 1: .env montado read-only para lectura on-demand del token en _git_run.
     distrobox-create --name "$NOMBRE" \
         --image "$IMAGEN" \
         --home "$R_ENTORNO" \
         --additional-flags "--volume $R_PROYECTO:/$NOMBRE \
         --volume $AI_CONFIG:/ai_config \
+        --volume \"$DIR/.env\":/run/axiom/env:ro \
         --device /dev/kfd --device /dev/dri \
         --security-opt label=disable --group-add video --group-add render \
         $GPU_VOLS $SSH_VOL" \
@@ -509,7 +524,7 @@ _escribir_starship() {
 
     format = """
 
-    [](fg:#88c0d0)$os[](fg:#88c0d0 bg:#81a1c1)$username[](fg:#81a1c1 bg:#4c566a)$directory[](fg:#4c566a bg:#a3be8c)$git_branch$git_status[](fg:#a3be8c bg:#5e81ac)$time[ ](fg:#5e81ac)
+    [](fg:#88c0d0)$os[](fg:#88c0d0 bg:#81a1c1)$username[](fg:#81a1c1 bg:#4c566a)$directory[](fg:#4c566a bg:#a3be8c)$git_branch$git_status[](fg:#a3be8c bg:#5e81ac)$time[ ](fg:#5e81ac)
 
     $character"""
 
@@ -525,7 +540,7 @@ _escribir_starship() {
 
     [os.symbols]
 
-    Fedora = " "
+    Fedora = " "
 
     Arch = "󰣇 "
 
@@ -563,7 +578,7 @@ _escribir_starship() {
 
     [git_branch]
 
-    symbol = " "
+    symbol = " "
 
     style = "bg:#a3be8c fg:#2e3440"
 
@@ -587,7 +602,7 @@ _escribir_starship() {
 
     style = "bg:#5e81ac fg:#eceff4"
 
-    format = "[  $time ]($style)"
+    format = "[  $time ]($style)"
 
 
 
