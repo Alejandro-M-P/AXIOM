@@ -1,4 +1,8 @@
 #!/bin/bash
+
+for dep in distrobox podman jq; do
+    command -v "$dep" &>/dev/null || { echo "❌ Falta dependencia: $dep"; exit 1; }
+done
 set -e # Abortar si hay errores
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,19 +23,36 @@ while [ -z "$GIT_USER" ]; do read -rp "1️⃣  Usuario de GitHub / GitHub Usern
 GIT_EMAIL=""
 while [ -z "$GIT_EMAIL" ]; do read -rp "2️⃣  Email de GitHub / GitHub Email: " GIT_EMAIL; done
 
-GIT_TOKEN=""
-while [ -z "$GIT_TOKEN" ]; do read -rp "3️⃣  Token de GitHub / GitHub Token (Classic/Fine-grained): " GIT_TOKEN; done
+echo ""
+echo "3️⃣  Modo de autenticación con GitHub / GitHub auth mode:"
+echo "   1. SSH (recomendado si ya tienes clave en GitHub / recommended if you have a key on GitHub)"
+echo "   2. HTTPS con token PAT / HTTPS with PAT token"
+echo ""
+read -rp "   Selecciona/Select [1/2] (Enter para/for 1): " AUTH_OPT
+AUTH_OPT=${AUTH_OPT:-1}
 
-read -rp "4️⃣  Directorio Base / Base Directory (Enter para/for $HOME/dev): " BASE_DIR
+case "$AUTH_OPT" in
+    2) AUTH_MODE="https" ;;
+    *) AUTH_MODE="ssh"   ;;
+esac
+
+GIT_TOKEN=""
+if [ "$AUTH_MODE" = "https" ]; then
+    while [ -z "$GIT_TOKEN" ]; do read -rp "4️⃣  Token de GitHub / GitHub Token (Classic/Fine-grained): " GIT_TOKEN; done
+else
+    echo "4️⃣  Token omitido en modo SSH. / Token skipped in SSH mode."
+fi
+
+read -rp "5️⃣  Directorio Base / Base Directory (Enter para/for $HOME/dev): " BASE_DIR
 BASE_DIR=${BASE_DIR:-$HOME/dev}
 
-read -rp "5️⃣  Directorio Modelos Ollama / Ollama Models Directory (Enter para/for $BASE_DIR/ai_config/models): " MODELS_DIR
+read -rp "6️⃣  Directorio Modelos Ollama / Ollama Models Directory (Enter para/for $BASE_DIR/ai_config/models): " MODELS_DIR
 MODELS_DIR=${MODELS_DIR:-$BASE_DIR/ai_config/models}
 
-read -rp "6️⃣  (Opcional/Optional) Forzar/Force GFX_VERSION para/for AMD (Enter para autodetectar / for autodetection): " GFX_VERSION
+read -rp "7️⃣  (Opcional/Optional) Forzar/Force GFX_VERSION para/for AMD (Enter para autodetectar / for autodetection): " GFX_VERSION
 
 echo ""
-echo "7️⃣  Modo de drivers GPU / GPU drivers mode:"
+echo "8️⃣  Modo de drivers GPU / GPU drivers mode:"
 echo "   1. Montar desde el host / Mount from host (recomendado/recommended — Bazzite, Fedora, Nobara...)"
 echo "   2. Instalar dentro de la imagen / Install inside the image (máxima portabilidad / max portability)"
 echo ""
@@ -45,10 +66,16 @@ esac
 
 # ─── 2. GENERACIÓN DE .ENV ─────────────────────────
 cat > "$DIR/.env" << EOF
+# ─── RUTAS AXIOM ─────────────────────────────────
+AXIOM_PATH="$DIR"
 # ─── IDENTIDAD GIT ───────────────────────────────
 AXIOM_GIT_USER="$GIT_USER"
 AXIOM_GIT_EMAIL="$GIT_EMAIL"
 AXIOM_GIT_TOKEN="$GIT_TOKEN"
+
+# ─── AUTENTICACIÓN GIT ───────────────────────────
+# Valores válidos: ssh | https
+AXIOM_AUTH_MODE="$AUTH_MODE"
 
 # ─── RUTAS BASE ──────────────────────────────────
 AXIOM_BASE_DIR="$BASE_DIR"
@@ -67,11 +94,14 @@ EOF
 echo ""
 echo "📂 Preparando estructura de archivos... / Preparing file structure..."
 mkdir -p "$DIR/lib"
-# Creamos los búnkeres y búnker de entorno
-mkdir -p "$BASE_DIR"/{ai_global/teams,ai_config/models,.entorno}
+# Creamos la jerarquía de búnkeres
+mkdir -p "$BASE_DIR"/{ai_config/models,ai_config/teams,.entorno}
 
-echo "🔐 Asegurando permisos de ejecución... / Securing execution permissions..."
-chmod +x "$DIR/AXIOM.sh"
+echo "🔐 Asegurando permisos de configuración... / Securing config permissions..."
+# Permisos 600: Solo tu usuario puede leer o escribir tus tokens
+chmod 600 "$DIR/.env"
+# Aseguramos que el script principal sea ejecutable
+chmod +x "$DIR/axiom.sh"
 [ -d "$DIR/lib" ] && chmod +x "$DIR/lib/"*.sh 2>/dev/null || true
 
 # ─── 4. CREACIÓN DEL COMANDO GLOBAL ───────────────
@@ -81,7 +111,7 @@ mkdir -p "$BIN_PATH"
 echo "🛠️  Creando acceso directo 'axiom' en $BIN_PATH... / Creating 'axiom' shortcut in $BIN_PATH..."
 cat > "$BIN_PATH/axiom" << EOF
 #!/bin/bash
-# Wrapper para ejecutar AXIOM desde cualquier lugar
+# Wrapper profesional para AXIOM
 export AXIOM_PATH="$DIR"
 bash "\$AXIOM_PATH/axiom.sh" "\$@"
 EOF
@@ -92,6 +122,14 @@ chmod +x "$BIN_PATH/axiom"
 echo ""
 echo "✅ ¡Instalación completada con éxito! / Installation completed successfully!"
 echo "------------------------------------"
+echo "🔑 Modo de autenticación / Auth mode: $AUTH_MODE"
+echo ""
+if [ "$AUTH_MODE" = "ssh" ]; then
+    echo "⚠️  SSH: Asegúrate de tener tu clave añadida al agente antes de usar push/clone:"
+    echo "   ssh-add ~/.ssh/id_ed25519"
+    echo "   (Bazzite con GNOME Keyring lo hace automáticamente al iniciar sesión)"
+    echo ""
+fi
 echo "🚀 Ahora puedes usar el comando 'axiom' en cualquier terminal. / You can now use the 'axiom' command in any terminal."
 echo ""
 echo "⚠️  NOTA/NOTE: Si 'axiom' no se reconoce / If 'axiom' is not recognized, añade esto a tu / add this to your ~/.bashrc:"

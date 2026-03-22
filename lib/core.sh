@@ -34,8 +34,26 @@ mostrar_logo
         echo "  axiom delete [nombre]    Eliminar búnker y entorno / Delete bunker and environment"
         echo "  axiom stop [nombre]      Detener búnker sin borrarlo / Stop bunker without deleting it"
         echo "  axiom reset              Limpieza total del sistema / Total system cleanup"
-        echo "  axiom reset-base         Borrar la imagen base / Delete the base image"
+        echo "  axiom rebuild            Borrar la imagen base / Delete the base image"
         echo "  axiom help               Mostrar esta ayuda / Show this help"
         
     fi
+}
+
+sync-agents() {
+    echo "🔄 Sincronizando Tutor con búnkeres... / Syncing Tutor with bunkers..."
+    if [ ! -f "$TUTOR_PATH" ]; then
+        echo "⚠️  Tutor no encontrado en $TUTOR_PATH"
+        return 1
+    fi
+
+    # Buscamos todos los .bashrc en la carpeta de entornos
+    for bashrc in "$BASE_ENV"/*/.bashrc; do
+        if [ -f "$bashrc" ]; then
+            local DESTINO="$(dirname "$bashrc")/.config/opencode/AGENTS.md"
+            mkdir -p "$(dirname "$DESTINO")"
+            cp "$TUTOR_PATH" "$DESTINO"
+        fi
+    done
+    echo "✅ Sincronización completada. / Sync complete."
 }

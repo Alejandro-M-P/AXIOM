@@ -10,6 +10,9 @@ detect_gpu() {
     local HAS_RDNA4=0 HAS_RDNA3=0 HAS_NVIDIA=0 HAS_INTEL=0
     local GFX_RDNA4="12.0.1" GFX_RDNA3="11.0.0"
     export GPU_NAME=""
+    
+        local ROCM_GFX=""
+    command -v rocminfo &>/dev/null && ROCM_GFX=$(rocminfo 2>/dev/null | grep -o 'gfx[0-9]*' | head -1)
 
     while IFS= read -r line; do
         local VENDOR DESC
@@ -18,8 +21,15 @@ detect_gpu() {
         case "${VENDOR,,}" in
             10de) HAS_NVIDIA=1; GPU_NAME="$DESC" ;;
             1002)
-                echo "$DESC" | grep -iqE '(8[0-9]{3}|9[0-9]{3})' && HAS_RDNA4=1 && GPU_NAME="$DESC"
-                echo "$DESC" | grep -iqE '(6[0-9]{3}|7[0-9]{3})' && HAS_RDNA3=1 && GPU_NAME="$DESC"
+                GPU_NAME="$DESC"
+                case "$ROCM_GFX" in
+                    gfx12*) HAS_RDNA4=1 ;;
+                    gfx11*|gfx10*) HAS_RDNA3=1 ;;
+                    *)
+                        echo "$DESC" | grep -iqE '(8[0-9]{3}|9[0-9]{3})' && HAS_RDNA4=1
+                        echo "$DESC" | grep -iqE '(6[0-9]{3}|7[0-9]{3})' && HAS_RDNA3=1
+                        ;;
+                esac
                 ;;
             8086) HAS_INTEL=1; GPU_NAME="$DESC" ;;
         esac
