@@ -303,11 +303,13 @@ reset() {
 
     echo "🔎 Escaneando búnkeres en el sistema... / Scanning bunkers in the system..."
     local LISTA_BUNKERES
-   if distrobox list --format json &>/dev/null; then
+    if distrobox list --format json &>/dev/null; then
         LISTA_BUNKERES=$(distrobox list --format json | jq -r '.[].name')
     else
         LISTA_BUNKERES=$(distrobox-list --no-color | awk -F'|' 'NR>1 {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
     fi
+    echo ""
+
 
     if [ -n "$LISTA_BUNKERES" ]; then
         echo "📂 Se han encontrado los siguientes búnkeres: / Found the following bunkers:"
