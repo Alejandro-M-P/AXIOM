@@ -28,7 +28,7 @@ BASH_VARS
     # Ahora $NOMBRE sí funciona porque lo exportamos arriba
     source "/$NOMBRE/lib/core.sh"
     source "/$NOMBRE/lib/git.sh"
-    # Borramos agents.sh (ya no existe, recuerda que lo movimos a core.sh)
+
 
     eval "$(starship init bash)"
     
