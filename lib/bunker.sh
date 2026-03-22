@@ -25,7 +25,7 @@ BASH_VARS
     source $AXIOM_PATH/lib/core.sh
     source $AXIOM_PATH/lib/git.sh
     eval "$(starship init bash)"
-    cd /$NOMBRE
+    cd $AXIOM_BASE_DIR/$NOMBRE
 
     # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
     Archive="$HOME/.axiom_done"
@@ -191,6 +191,9 @@ create() {
     if ! sudo -v; then echo "❌ Acceso denegado. / Access denied."; return 1; fi
 
     if distrobox-list --no-color | grep -qw "$NOMBRE"; then
+        if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ]; then
+            ssh-add -l &>/dev/null || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+        fi
         sync-agents
         distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
         return 0
@@ -216,7 +219,6 @@ create() {
     local GPU_VOLS=""
     [ "$AXIOM_ROCM_MODE" = "host" ] && GPU_VOLS=$(_gpu_volumes_host)
 
-    # Montar socket SSH solo si el modo es ssh y el socket existe
     local SSH_VOL=""
     if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ] && [ -n "${SSH_AUTH_SOCK:-}" ] && [ -S "$SSH_AUTH_SOCK" ]; then
         SSH_VOL="--volume $SSH_AUTH_SOCK:$SSH_AUTH_SOCK"
@@ -248,8 +250,13 @@ create() {
 
     _escribir_opencode_config "$NOMBRE" "$R_ENTORNO"
 
+    if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ]; then
+        ssh-add -l &>/dev/null || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    fi
     distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
 }
+
+
 
 
 delete() {
