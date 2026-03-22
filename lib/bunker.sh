@@ -9,43 +9,33 @@ _init_tutor() {
 
 _escribir_bashrc() {
     local NOMBRE="$1" R_ENTORNO="$2"
-
-    # 1. BLOQUE DE VARIABLES (Aquí SI se expande $NOMBRE porque NO tiene comillas)
     cat > "$R_ENTORNO/.bashrc" << BASH_VARS
-    export NOMBRE="$NOMBRE"
     export AXIOM_GIT_USER="$AXIOM_GIT_USER"
     export AXIOM_GIT_EMAIL="$AXIOM_GIT_EMAIL"
     export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
+    export AXIOM_AUTH_MODE="${AXIOM_AUTH_MODE:-https}"
+    export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-}"
 BASH_VARS
 
-    # 2. BLOQUE GFX (Se queda igual, fuera de los cats)
     if [[ -n "${GFX_VAL:-}" ]]; then
-        echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
+        echo "    export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
     fi
 
-    # 3. BLOQUE DE LÓGICA (Aquí NO se expande nada hasta que el búnker abre)
     cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
-    # Ahora $NOMBRE sí funciona porque lo exportamos arriba
-    source "/$NOMBRE/lib/core.sh"
-    source "/$NOMBRE/lib/git.sh"
-
-
+    source $AXIOM_PATH/lib/core.sh
+    source $AXIOM_PATH/lib/git.sh
     eval "$(starship init bash)"
-    
-    # Hook de IA
+    cd /$NOMBRE
+
+    # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
     Archive="$HOME/.axiom_done"
+
     if [ ! -f "$Archive" ]; then
         gentle-ai
         echo "done" > "$Archive"
     fi
-
-    # El CD siempre al final para aparecer en tu proyecto
-    cd "/$NOMBRE"
 BASH_RC
 }
-
-
-
 
 
 build() {
@@ -65,22 +55,18 @@ build() {
     fi
     echo ""
 
-    # Preparación de directorios globales
     mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams" "$AI_CONFIG/models"
     sudo chown -R "$USER:$USER" "$AI_GLOBAL" "$AI_CONFIG"
     _init_tutor
 
-    # ─── LIMPIEZA SEGURA DE PERMISOS (Fix Go Mod) ────────
     echo "🧹 Limpiando búnker de construcción anterior... / Cleaning previous build bunker..."
     distrobox-rm "$AXIOM_BUILD_CONTAINER" --force --yes 2>/dev/null || true
 
     if [ -d "$BASE_ENV/$AXIOM_BUILD_CONTAINER" ]; then
         echo "🔓 Desbloqueando caché de Go para eliminación... / Unlocking Go cache for deletion..."
-        # El comando clave: forzamos escritura recursiva
         chmod -R +w "$BASE_ENV/$AXIOM_BUILD_CONTAINER" 2>/dev/null
         rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
     fi
-    # ─────────────────────────────────────────────────────
 
     echo "📦 Creando contenedor de build... / Creating build container..."
     distrobox-create --name "$AXIOM_BUILD_CONTAINER" \
@@ -104,7 +90,6 @@ build() {
         esac
     fi
 
-    # Generamos el script interno
     cat > "$BUILD_SCRIPT" << SCRIPT
     #!/bin/bash
     set -uo pipefail
@@ -179,19 +164,19 @@ build() {
     rm -- "\$0"
 SCRIPT
 
-        chmod +x "$BUILD_SCRIPT"
-        distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
+    chmod +x "$BUILD_SCRIPT"
+    distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
 
-        echo "📦 Exportando imagen $IMAGEN (esto puede tardar)... / Exporting image $IMAGEN (this may take a while)..."
-        podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
+    echo "📦 Exportando imagen $IMAGEN (esto puede tardar)... / Exporting image $IMAGEN (this may take a while)..."
+    podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
 
-        echo "🧹 Limpieza final... / Final cleanup..."
+    echo "🧹 Limpieza final... / Final cleanup..."
     distrobox-rm "$AXIOM_BUILD_CONTAINER" --force --yes
-        chmod -R +w "$BASE_ENV/$AXIOM_BUILD_CONTAINER" 2>/dev/null
-        rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
+    chmod -R +w "$BASE_ENV/$AXIOM_BUILD_CONTAINER" 2>/dev/null
+    rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
 
-        echo ""
-        echo "✅ Imagen $IMAGEN lista. Ya puedes usar: axiom create [nombre] / Image $IMAGEN ready. You can now use: axiom create [name]"
+    echo ""
+    echo "✅ Imagen $IMAGEN lista. Ya puedes usar: axiom create [nombre] / Image $IMAGEN ready. You can now use: axiom create [name]"
 }
 
 
@@ -231,6 +216,13 @@ create() {
     local GPU_VOLS=""
     [ "$AXIOM_ROCM_MODE" = "host" ] && GPU_VOLS=$(_gpu_volumes_host)
 
+    # Montar socket SSH solo si el modo es ssh y el socket existe
+    local SSH_VOL=""
+    if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ] && [ -n "${SSH_AUTH_SOCK:-}" ] && [ -S "$SSH_AUTH_SOCK" ]; then
+        SSH_VOL="--volume $SSH_AUTH_SOCK:$SSH_AUTH_SOCK"
+        echo "🔑 Socket SSH detectado y montado. / SSH socket detected and mounted."
+    fi
+
     distrobox-create --name "$NOMBRE" \
         --image "$IMAGEN" \
         --home "$R_ENTORNO" \
@@ -239,7 +231,7 @@ create() {
         --volume $AI_CONFIG:/ai_config \
         --device /dev/kfd --device /dev/dri \
         --security-opt label=disable --group-add video --group-add render \
-        $GPU_VOLS" \
+        $GPU_VOLS $SSH_VOL" \
         --yes
 
     distrobox-enter -n "$NOMBRE" -- bash -c "
@@ -265,7 +257,6 @@ delete() {
     if [ -z "${1:-}" ]; then echo "❌ Uso/Usage: axiom delete [nombre/name]"; return 1; fi
     read -rp "📝 Razón técnica obligatoria / Mandatory technical reason: " REASON
     [ -z "$REASON" ] && echo "❌ Cancelado: se requiere justificación. / Canceled: justification required." && return 1
-    # Registro la razón en el global para que no sea código muerto
     echo "- Borrado búnker $1 (Razón: $REASON)" >> "$TUTOR_PATH"
 
     read -rp "❗ ¿Borrar búnker '$1'? / Delete bunker '$1'? (s/N/y/N): " CONFIRM
@@ -294,7 +285,6 @@ reset() {
     fi
     echo ""
 
-    # 🔍 Escaneo de búnkeres existentes
     echo "🔎 Escaneando búnkeres en el sistema... / Scanning bunkers in the system..."
     local LISTA_BUNKERES
     LISTA_BUNKERES=$(distrobox-list --no-color | awk -F'|' 'NR>1 {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
@@ -312,7 +302,6 @@ reset() {
     fi
     echo ""
 
-    # Ejecución del borrado de búnkeres
     if [[ "$BORRAR_TODO" =~ ^[sSyY]$ ]]; then
         read -rp "📝 Razón técnica para el reset total / Technical reason for full reset: " REASON
         if [ -z "$REASON" ]; then
@@ -326,7 +315,6 @@ reset() {
         for CAJA in $LISTA_BUNKERES; do
             echo "  🗑️  Eliminando / Deleting $CAJA..."
             distrobox-rm "$CAJA" --force --yes 2>/dev/null
-            # El parche de permisos para evitar el error anterior:
             if [ -d "$BASE_ENV/$CAJA" ]; then
                 chmod -R +w "$BASE_ENV/$CAJA" 2>/dev/null
                 rm -rf "$BASE_ENV/$CAJA"
@@ -335,7 +323,6 @@ reset() {
         echo "✅ Todos los búnkeres han sido eliminados. / All bunkers have been deleted."
     fi
 
-    # Borrado de la imagen base
     echo ""
     echo "🗑️  Eliminando imagen base de Podman... / Deleting Podman base image..."
     if podman rmi "$IMAGEN" --force 2>/dev/null; then
@@ -366,7 +353,7 @@ rebuild() {
 _escribir_opencode_config(){
     local NOMBRE="$1" R_ENTORNO="$2"
 
-        mkdir -p "$R_ENTORNO/.config/opencode"
+    mkdir -p "$R_ENTORNO/.config/opencode"
     local CONF="$R_ENTORNO/.config/opencode/opencode.json"
 
     if [ ! -f "$CONF" ]; then
@@ -385,17 +372,6 @@ _escribir_opencode_config(){
         },
         "sdd-orchestrator": {
         "description": "Gentleman personality + SDD delegate-only orchestrator",
-        "mode": "all",
-        "prompt": "{file:./AGENTS.md}",
-        "tools": {
-            "bash": true,
-            "edit": true,
-            "read": true,
-            "write": true
-        }
-        },
-        "sdd-apply": {
-        "description": "SDD delegate-only apply sub-agent",
         "mode": "all",
         "prompt": "{file:./AGENTS.md}",
         "tools": {
@@ -465,62 +441,111 @@ _escribir_opencode_config(){
     }
 OPENCODE_CONFIG
     else
-        # Si ya existe, solo inyectamos de forma segura los agentes SDD al final sin borrar lo demás
         jq '.agent = (.agent // {}) | .agent["sdd-orchestrator"] = { "description": "Gentleman personality + SDD delegate-only orchestrator", "mode": "all", "prompt": "{file:./AGENTS.md}", "tools": { "bash": true, "edit": true, "read": true, "write": true } } | .agent["sdd-apply"] = { "description": "SDD delegate-only apply sub-agent", "mode": "all", "prompt": "{file:./AGENTS.md}", "tools": { "bash": true, "edit": true, "read": true, "write": true } }' "$CONF" > "${CONF}.tmp" && mv "${CONF}.tmp" "$CONF"
     fi
-    }
+}
 
 
 _escribir_starship() {
-    local R_ENTORNO="$1"
+local R_ENTORNO="$1"
+
     mkdir -p "$R_ENTORNO/.config"
+
     cat > "$R_ENTORNO/.config/starship.toml" << 'STARSHIP'
+
     add_newline = true
 
+
+
     format = """
+
     [](fg:#88c0d0)$os[](fg:#88c0d0 bg:#81a1c1)$username[](fg:#81a1c1 bg:#4c566a)$directory[](fg:#4c566a bg:#a3be8c)$git_branch$git_status[](fg:#a3be8c bg:#5e81ac)$time[ ](fg:#5e81ac)
+
     $character"""
 
+
+
     [os]
+
     disabled = false
+
     style = "bg:#88c0d0 fg:#2e3440"
 
+
+
     [os.symbols]
+
     Fedora = " "
+
     Arch = "󰣇 "
 
+
+
     [username]
+
     show_always = true
+
     style_user = "bg:#81a1c1 fg:#eceff4"
+
     format = "[ $user ]($style)"
 
+
+
     [directory]
+
     style = "bg:#4c566a fg:#eceff4"
+
     format = "[ $path ]($style)"
+
     home_symbol = "~"
+
     truncation_length = 3
+
     fish_style_pwd_dir_length = 1
 
+
+
     [directory.substitutions]
+
     "/var/home/alejandro" = "~"
 
+
+
     [git_branch]
+
     symbol = " "
+
     style = "bg:#a3be8c fg:#2e3440"
+
     format = "[[ $symbol$branch ]($style)]($style)"
 
+
+
     [git_status]
+
     style = "bg:#a3be8c fg:#2e3440"
+
     format = "[[($all_status$ahead_behind )]($style)]($style)"
 
+
+
     [time]
+
     disabled = false
+
     time_format = "%R"
+
     style = "bg:#5e81ac fg:#eceff4"
+
     format = "[  $time ]($style)"
 
+
+
     [character]
+
     success_symbol = "[╰─>](bold #a3be8c) "
+
     error_symbol = "[╰─>](bold #bf616a) "
+
 STARSHIP
 }

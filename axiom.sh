@@ -28,9 +28,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             "$COMMAND" "$@"
         else
             echo "❌ Comando '$COMMAND' no reconocido. / Command '$COMMAND' not recognized."
-            ayuda
+            help
         fi
     else
-        ayuda
+        help
     fi
 fi
