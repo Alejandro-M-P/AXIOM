@@ -10,8 +10,7 @@ detect_gpu() {
     local HAS_RDNA4=0 HAS_RDNA3=0 HAS_NVIDIA=0 HAS_INTEL=0
     local GFX_RDNA4="12.0.1" GFX_RDNA3="11.0.0"
     export GPU_NAME=""
-
-    while IFS= read -r line; do
+    
         local ROCM_GFX=""
     command -v rocminfo &>/dev/null && ROCM_GFX=$(rocminfo 2>/dev/null | grep -o 'gfx[0-9]*' | head -1)
 

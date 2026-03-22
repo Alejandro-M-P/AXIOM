@@ -29,6 +29,10 @@ BASH_RC
 
     echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
     cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
+    if [ ! -f "$Archive" ]; then
+    gentle-ai
+    echo "done" > "$Archive"
+    fi
     # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
     Archive="$HOME/.axiom_done"
 
@@ -177,7 +181,7 @@ build() {
     rm -- "\$0"
 SCRIPT
     chmod +x "$BUILD_SCRIPT"
-    distrobox-enter -n "$AXIOM_BUILD_CONTAINER" --env AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN" -- bash "$BUILD_SCRIPT"
+    AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN" distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
 
     echo "📦 Exportando imagen $IMAGEN (esto puede tardar)... / Exporting image $IMAGEN (this may take a while)..."
     podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
