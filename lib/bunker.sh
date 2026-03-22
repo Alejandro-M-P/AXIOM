@@ -94,7 +94,7 @@ build() {
 
     cat > "$BUILD_SCRIPT" << SCRIPT
     #!/bin/bash
-    set -uo pipefail
+    set -euo pipefail
 
     export PATH="\$HOME/.local/bin:\$HOME/go/bin:/usr/local/bin:\$PATH"
     GPU_PKGS="${GPU_PKGS:-}"
@@ -139,10 +139,14 @@ build() {
     curl -fsSL https://ollama.com/install.sh | sh &
     PID_OL=\$!
 
-    wait \$PID_OC && echo "✅ opencode"
-    wait \$PID_EN && echo "✅ engram"
-    wait \$PID_GA && echo "✅ gentle-ai"
-    wait \$PID_OL && echo "✅ ollama"
+wait \$PID_OC || { echo "❌ opencode falló"; exit 1; }
+    echo "✅ opencode"
+    wait \$PID_EN || { echo "❌ engram falló"; exit 1; }
+    echo "✅ engram"
+    wait \$PID_GA || { echo "❌ gentle-ai falló"; exit 1; }
+    echo "✅ gentle-ai"
+    wait \$PID_OL || { echo "❌ ollama falló"; exit 1; }
+    echo "✅ ollama"
 
     echo "⚡ [4/4] agent-teams-lite..."
     ollama serve > /tmp/ollama-build.log 2>&1 &
@@ -165,7 +169,7 @@ build() {
     echo "✅ Build completo dentro del contenedor. / Build complete inside the container."
     rm -- "\$0"
 SCRIPT
-    set -euo pipefail
+
     chmod +x "$BUILD_SCRIPT"
     distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
 
