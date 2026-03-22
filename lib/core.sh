@@ -34,7 +34,7 @@ mostrar_logo
         echo "  axiom delete [nombre]    Eliminar búnker y entorno / Delete bunker and environment"
         echo "  axiom stop [nombre]      Detener búnker sin borrarlo / Stop bunker without deleting it"
         echo "  axiom reset              Limpieza total del sistema / Total system cleanup"
-        echo "  axiom reset-base         Borrar la imagen base / Delete the base image"
+        echo "  axiom rebuild            Borrar la imagen base / Delete the base image"
         echo "  axiom help               Mostrar esta ayuda / Show this help"
         
     fi

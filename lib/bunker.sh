@@ -14,10 +14,11 @@ _escribir_bashrc() {
     export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
     export AXIOM_AUTH_MODE="${AXIOM_AUTH_MODE:-https}"
     export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-}"
+    export OLLAMA_MODELS="/ai_config/models"
 BASH_VARS
 
-    if [[ -n "${GFX_VAL:-AXIOM_GFX_VAL:-}" ]]; then
-        echo "export HSA_OVERRIDE_GFX_VERSION=${GFX_VAL:-AXIOM_GFX_VAL:-}" >> "$R_ENTORNO/.bashrc"
+    if [[ -n "${GFX_VAL:-$AXIOM_GFX_VAL}" ]]; then
+        echo "export HSA_OVERRIDE_GFX_VERSION=${GFX_VAL:-$AXIOM_GFX_VAL}" >> "$R_ENTORNO/.bashrc"
     fi
 
     cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
@@ -57,8 +58,8 @@ build() {
     fi
     echo ""
 
-    mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams" "$AI_CONFIG/models"
-    sudo chown -R "$USER:$USER" "$AI_GLOBAL" "$AI_CONFIG"
+    mkdir -p "$AI_CONFIG/models" "$AI_CONFIG/teams" 
+    sudo chown -R "$USER:$USER"  "$AI_CONFIG"
     _init_tutor
 
     echo "🧹 Limpiando búnker de construcción anterior... / Cleaning previous build bunker..."
@@ -70,12 +71,11 @@ build() {
         rm -rf "$BASE_ENV/$AXIOM_BUILD_CONTAINER"
     fi
 
-    echo "📦 Creando contenedor de build... / Creating build container..."
+  echo "📦 Creando contenedor de build... / Creating build container..."
     distrobox-create --name "$AXIOM_BUILD_CONTAINER" \
         --image archlinux:latest \
         --home "$BASE_ENV/$AXIOM_BUILD_CONTAINER" \
-        --additional-flags "--volume $AI_GLOBAL:/ai_global \
-        --volume $AI_CONFIG:/ai_config \
+        --additional-flags "--volume $AI_CONFIG:/ai_config \
         --device /dev/kfd --device /dev/dri \
         --security-opt label=disable --group-add video --group-add render" \
         --yes
@@ -152,12 +152,14 @@ build() {
     ollama serve > /tmp/ollama-build.log 2>&1 &
     OLLAMA_PID=\$!
 
-   ELAPSED=0
+    ELAPSED=0
     until curl -s http://localhost:11434/ > /dev/null; do
         sleep 1
         ((ELAPSED++))
         [ \$ELAPSED -ge 60 ] && { echo "❌ Ollama no arrancó en 60s"; exit 1; }
     done
+    echo "✅ Ollama"
+
 
     git clone https://github.com/Gentleman-Programming/agent-teams-lite.git /tmp/agent-teams
     cd /tmp/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams-lite"
@@ -223,8 +225,7 @@ create() {
 
     echo "⚡ Creando búnker '$NOMBRE' desde $IMAGEN... / Creating bunker '$NOMBRE' from $IMAGEN..."
     mkdir -p "$R_PROYECTO" "$R_ENTORNO" "$AI_CONFIG/models"
-    mkdir -p "$AI_GLOBAL/models" "$AI_GLOBAL/teams"
-    sudo chown -R "$USER:$USER" "$AI_GLOBAL" "$AI_CONFIG"
+
     _init_tutor
 
     local GPU_VOLS=""
@@ -240,7 +241,6 @@ create() {
         --image "$IMAGEN" \
         --home "$R_ENTORNO" \
         --additional-flags "--volume $R_PROYECTO:/$NOMBRE \
-        --volume $AI_GLOBAL:/ai_global \
         --volume $AI_CONFIG:/ai_config \
         --device /dev/kfd --device /dev/dri \
         --security-opt label=disable --group-add video --group-add render \
