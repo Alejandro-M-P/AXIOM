@@ -28,7 +28,7 @@ BASH_VARS
 BASH_RC
 
     echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
-cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
+    cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
     # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
     Archive="$HOME/.axiom_done"
 
@@ -255,7 +255,7 @@ create() {
 
     mkdir -p "$R_ENTORNO/.config/opencode"
     [ -f "$TUTOR_PATH" ] && cp "$TUTOR_PATH" "$R_ENTORNO/.config/opencode/AGENTS.md"
-    sync-agents
+    
 
     _escribir_opencode_config "$NOMBRE" "$R_ENTORNO"
 
@@ -303,7 +303,11 @@ reset() {
 
     echo "🔎 Escaneando búnkeres en el sistema... / Scanning bunkers in the system..."
     local LISTA_BUNKERES
-    LISTA_BUNKERES=$(distrobox-list --no-color | awk -F'|' 'NR>1 {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
+   if distrobox list --format json &>/dev/null; then
+        LISTA_BUNKERES=$(distrobox list --format json | jq -r '.[].name')
+    else
+        LISTA_BUNKERES=$(distrobox-list --no-color | awk -F'|' 'NR>1 {gsub(/[[:space:]]/, "", $2); if($2!="") print $2}')
+    fi
 
     if [ -n "$LISTA_BUNKERES" ]; then
         echo "📂 Se han encontrado los siguientes búnkeres: / Found the following bunkers:"
