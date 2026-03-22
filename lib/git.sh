@@ -19,7 +19,12 @@ push() {
     else
         [ -z "$AXIOM_GIT_TOKEN" ] && { echo "❌ Token vacío. / Empty token."; return 1; }
         echo "🔑 Modo HTTPS + PAT"
-        git -c credential.helper="$(_git_auth_cmd)" push "$@"
+        local CRED_FILE
+        CRED_FILE=$(mktemp)
+        chmod 600 "$CRED_FILE"
+        printf 'username=%s\npassword=%s\n' "$AXIOM_GIT_USER" "$AXIOM_GIT_TOKEN" > "$CRED_FILE"
+        git -c "credential.helper=store --file $CRED_FILE" push "$@"
+        rm -f "$CRED_FILE"
     fi
 }
 
@@ -48,12 +53,18 @@ git-clone() {
     if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ]; then
         echo "🔑 Modo SSH"
         git clone "git@github.com:${REPO}.git" "$DIR"
+
     else
         [ -z "$AXIOM_GIT_TOKEN" ] && echo "❌ No se encontró / Not found AXIOM_GIT_TOKEN" && return 1
         echo "🔑 Modo HTTPS + PAT"
-        git -c "credential.helper=$(_git_auth_cmd)" clone "https://github.com/${REPO}.git" "$DIR"
+        local CRED_FILE
+        CRED_FILE=$(mktemp)
+        chmod 600 "$CRED_FILE"
+        printf 'username=%s\npassword=%s\n' "$AXIOM_GIT_USER" "$AXIOM_GIT_TOKEN" > "$CRED_FILE"
+        git -c "credential.helper=store --file $CRED_FILE" clone "https://github.com/${REPO}.git" "$DIR"
+        rm -f "$CRED_FILE"
     fi
-    echo "✅ Repo clonado. / Repo cloned."
+        echo "✅ Repo clonado. / Repo cloned."
 }
 
 branch() {
