@@ -80,15 +80,30 @@ Ejecutas `axiom create mi-proyecto` y en 30 segundos tienes un entorno completo 
 ## 🛡️ Herramientas Internas (Dentro del Búnker)
 
 ### Sistema de Agentes e IA
-* `open`: Inicia y abre `opencode`.
-* `sync-agents`: Copia `tutor.md` a la configuración local de los agentes (`AGENTS.md`).
-* `save-rule <regla>`: Guarda una regla en `tutor.md` obligando a dar una justificación técnica.
-* `diagnostics`: Ejecuta un diagnóstico interno del búnker.
+| Comando | Descripción |
+| :--- | :--- |
+| `open` | Inicia y abre `opencode`. |
+| `sync-agents` | Copia `tutor.md` a la configuración local de los agentes (`AGENTS.md`). |
+| `save-rule <regla>`| Guarda una regla en `tutor.md` obligando a dar una justificación técnica. |
+| `diagnostics` | Ejecuta un diagnóstico interno del búnker. |
 
 ### Git Interactivo (Basado en fzf)
-AXIOM sobreescribe los comandos de Git para agilizar flujos y evitar errores:
-* `git status` / `git commit` / `git log`: Interfaces visuales con *diff* a tiempo real y selección con `<Tab>`.
-* `git branch` / `git merge` / `git rebase`: Selectores interactivos para ramas y estrategias.
+Dentro del búnker, dispones de comandos propios que sobreescriben Git para agilizar flujos y evitar errores visualmente:
+
+| Comando | Descripción |
+| :--- | :--- |
+| `status` | Estado interactivo con *diff* visual a tiempo real. |
+| `clone [u/r]` | Clona un repositorio indicando directamente `usuario/repo`. |
+| `commit [msg]` | Selección de archivos con `<Tab>` antes de confirmar el commit. |
+| `branch` | Creación interactiva de nuevas ramas. |
+| `switch` | Cambio visual entre ramas existentes. |
+| `branch-delete`| Borrado seguro y visual de ramas locales y/o remotas. |
+| `push` / `pull`| Sincronización con selección interactiva de *remote* y rama. |
+| `merge` / `rebase`| Selectores interactivos para origen y estrategias de integración. |
+| `log` | Historial a color con vista previa del código modificado. |
+| `stash` | Gestión interactiva (guardar, aplicar, borrar, ver contenido). |
+| `remote` | Gestión visual de remotes (añadir, ver, eliminar). |
+| `tag` | Creación y gestión interactiva de etiquetas. |
 
 ---
 
@@ -174,24 +189,6 @@ Normal con imágenes de 38GB (modo `image`). Puede tardar 15 minutos. Verifica q
 
 ## 🤝 Contribuir
 Haz fork, crea una rama descriptiva (`feat/nueva-funcion`), commitea con claridad y abre un Pull Request explicando el porqué. Lo que más ayuda: Soporte para distros/GPUs no contempladas y optimizaciones del `build`.
-
----
-
-## 📜 Créditos y proyectos relacionados
-
-AXIOM no existiría sin estos proyectos. Si algo falla o quieres profundizar, aquí están las fuentes originales:
-
-| Proyecto | Repositorio | Para qué se usa |
-| :--- | :--- | :--- |
-| Distrobox | [89luca89/distrobox](https://github.com/89luca89/distrobox) | Motor de contenedores del sistema |
-| Podman | [containers/podman](https://github.com/containers/podman) | Runtime de contenedores |
-| opencode | [sst/opencode](https://github.com/sst/opencode) | Editor de código con IA |
-| Ollama | [ollama/ollama](https://github.com/ollama/ollama) | Modelos de lenguaje local |
-| engram | [Gentleman-Programming/engram](https://github.com/Gentleman-Programming/engram) | Memoria persistente entre sesiones |
-| gentle-ai | [Gentleman-Programming/gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) | Interfaz de agentes IA |
-| agent-teams-lite | [Gentleman-Programming/agent-teams-lite](https://github.com/Gentleman-Programming/agent-teams-lite) | Coordinación de múltiples agentes |
-| Starship | [starship/starship](https://github.com/starship/starship) | Prompt del terminal |
-| Gentleman Programming | [Gentleman-Programming](https://github.com/Gentleman-Programming) | Stack de IA y curso de referencia |
 
 ---
 
