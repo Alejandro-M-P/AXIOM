@@ -1,4 +1,8 @@
 #!/bin/bash
+
+for dep in distrobox podman jq; do
+    command -v "$dep" &>/dev/null || { echo "❌ Falta dependencia: $dep"; exit 1; }
+done
 set -e # Abortar si hay errores
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -91,7 +95,7 @@ echo ""
 echo "📂 Preparando estructura de archivos... / Preparing file structure..."
 mkdir -p "$DIR/lib"
 # Creamos la jerarquía de búnkeres
-mkdir -p "$BASE_DIR"/{ai_global/teams,ai_config/models,.entorno}
+mkdir -p "$BASE_DIR"/{ai_config/models,ai_config/teams,.entorno}
 
 echo "🔐 Asegurando permisos de configuración... / Securing config permissions..."
 # Permisos 600: Solo tu usuario puede leer o escribir tus tokens
