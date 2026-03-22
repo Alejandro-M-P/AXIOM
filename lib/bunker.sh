@@ -118,7 +118,7 @@ build() {
 
     (
         AUTH_HEADER=""
-        [ -n "${AXIOM_GIT_TOKEN:-}" ] && AUTH_HEADER="-H \"Authorization: Bearer ${AXIOM_GIT_TOKEN:-}\""
+        [ -n "\${AXIOM_GIT_TOKEN:-}" ] && AUTH_HEADER="-H \"Authorization: Bearer \${AXIOM_GIT_TOKEN:-}\""
 
         GA_LATEST=\$(eval curl -fsSL \$AUTH_HEADER https://api.github.com/repos/Gentleman-Programming/gentle-ai/releases/latest | grep -o '"tag_name": *"[^"]*"' | grep -o '[0-9][^"]*' || echo "latest")
 
