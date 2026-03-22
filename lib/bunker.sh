@@ -6,24 +6,36 @@ _init_tutor() {
         touch "$TUTOR_PATH"
     fi
 }
-
 _escribir_bashrc() {
- cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
-    source $AXIOM_PATH/lib/core.sh
-    source $AXIOM_PATH/lib/git.sh
-    eval "$(starship init bash)"
+    local NOMBRE="$1" R_ENTORNO="$2"
+    cat > "$R_ENTORNO/.bashrc" << BASH_VARS
+    export AXIOM_GIT_USER="$AXIOM_GIT_USER"
+    export AXIOM_GIT_EMAIL="$AXIOM_GIT_EMAIL"
+    export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
+    export AXIOM_AUTH_MODE="${AXIOM_AUTH_MODE:-https}"
+    export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-}"
+BASH_VARS
+
+    if [[ -n "${GFX_VAL:-}" ]]; then
+        echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
+    fi
+
+    cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
+source $AXIOM_PATH/lib/core.sh
+source $AXIOM_PATH/lib/git.sh
+eval "$(starship init bash)"
 BASH_RC
 
-echo "    cd \$AXIOM_BASE_DIR/$NOMBRE" >> "$R_ENTORNO/.bashrc"
+    echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
 
-cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
-    # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
-    Archive="$HOME/.axiom_done"
+    cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
+# Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
+Archive="$HOME/.axiom_done"
 
-    if [ ! -f "$Archive" ]; then
-        gentle-ai
-        echo "done" > "$Archive"
-    fi
+if [ ! -f "$Archive" ]; then
+    gentle-ai
+    echo "done" > "$Archive"
+fi
 BASH_RC
 }
 
