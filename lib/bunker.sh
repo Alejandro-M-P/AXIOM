@@ -15,6 +15,12 @@ _escribir_bashrc() {
     export AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN"
 BASH_VARS
 
+
+if [[ -n "${GFX_VAL:-}" ]]; then
+        echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
+    fi
+
+
         # Importamos los módulos dentro del búnker
         cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
     source /usr/local/bin/core.sh
@@ -22,12 +28,24 @@ BASH_VARS
     source /usr/local/bin/agents.sh
     eval "$(starship init bash)"
     cd /$NOMBRE
-BASH_RC
 
-    if [[ -n "${GFX_VAL:-}" ]]; then
-        echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
+
+
+    # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
+
+    Archive="$HOME/.axiom_done"
+
+    if [ ! -f "$Archive" ]; then
+        gentle-ai
+        echo "done" > "$Archive"
     fi
+BASH_RC
 }
+
+
+
+
+
 
 build() {
     mostrar_logo

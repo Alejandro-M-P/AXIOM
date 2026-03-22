@@ -67,11 +67,14 @@ EOF
 echo ""
 echo "📂 Preparando estructura de archivos... / Preparing file structure..."
 mkdir -p "$DIR/lib"
-# Creamos los búnkeres y búnker de entorno
+# Creamos la jerarquía de búnkeres
 mkdir -p "$BASE_DIR"/{ai_global/teams,ai_config/models,.entorno}
 
-echo "🔐 Asegurando permisos de ejecución... / Securing execution permissions..."
-chmod +x "$DIR/AXIOM.sh"
+echo "🔐 Asegurando permisos de configuración... / Securing config permissions..."
+# Permisos 600: Solo tu usuario puede leer o escribir tus tokens
+chmod 600 "$DIR/.env"
+# Aseguramos que el script principal (ahora en minúsculas) sea ejecutable
+chmod +x "$DIR/axiom.sh"
 [ -d "$DIR/lib" ] && chmod +x "$DIR/lib/"*.sh 2>/dev/null || true
 
 # ─── 4. CREACIÓN DEL COMANDO GLOBAL ───────────────
@@ -81,13 +84,12 @@ mkdir -p "$BIN_PATH"
 echo "🛠️  Creando acceso directo 'axiom' en $BIN_PATH... / Creating 'axiom' shortcut in $BIN_PATH..."
 cat > "$BIN_PATH/axiom" << EOF
 #!/bin/bash
-# Wrapper para ejecutar AXIOM desde cualquier lugar
+# Wrapper profesional para AXIOM
 export AXIOM_PATH="$DIR"
 bash "\$AXIOM_PATH/axiom.sh" "\$@"
 EOF
 
 chmod +x "$BIN_PATH/axiom"
-
 # ─── 5. FINALIZACIÓN ──────────────────────────────
 echo ""
 echo "✅ ¡Instalación completada con éxito! / Installation completed successfully!"
