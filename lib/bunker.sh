@@ -16,26 +16,26 @@ _escribir_bashrc() {
     export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-}"
 BASH_VARS
 
-    if [[ -n "${GFX_VAL:-}" ]]; then
-        echo "export HSA_OVERRIDE_GFX_VERSION=$GFX_VAL" >> "$R_ENTORNO/.bashrc"
+    if [[ -n "${GFX_VAL:-AXIOM_GFX_VAL:-}" ]]; then
+        echo "export HSA_OVERRIDE_GFX_VERSION=${GFX_VAL:-AXIOM_GFX_VAL:-}" >> "$R_ENTORNO/.bashrc"
     fi
 
     cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
-source $AXIOM_PATH/lib/core.sh
-source $AXIOM_PATH/lib/git.sh
-eval "$(starship init bash)"
+    source $AXIOM_PATH/lib/core.sh
+    source $AXIOM_PATH/lib/git.sh
+    eval "$(starship init bash)"
 BASH_RC
 
     echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
 
     cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
-# Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
-Archive="$HOME/.axiom_done"
+    # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
+    Archive="$HOME/.axiom_done"
 
-if [ ! -f "$Archive" ]; then
+    if [ ! -f "$Archive" ]; then
     gentle-ai
     echo "done" > "$Archive"
-fi
+    fi
 BASH_RC
 }
 
