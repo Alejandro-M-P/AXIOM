@@ -28,8 +28,7 @@ BASH_VARS
 BASH_RC
 
     echo "cd /$NOMBRE" >> "$R_ENTORNO/.bashrc"
-
-    cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
+cat >> "$R_ENTORNO/.bashrc" << 'BASH_RC'
     # Validar si gentle-ai esta instalado o no porque si no esta instalado opencode no va a funcionar
     Archive="$HOME/.axiom_done"
 
@@ -37,6 +36,7 @@ BASH_RC
     gentle-ai
     echo "done" > "$Archive"
     fi
+    sync-agents
 BASH_RC
 }
 
@@ -176,9 +176,8 @@ build() {
     echo "✅ Build completo dentro del contenedor. / Build complete inside the container."
     rm -- "\$0"
 SCRIPT
-
     chmod +x "$BUILD_SCRIPT"
-    distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
+    distrobox-enter -n "$AXIOM_BUILD_CONTAINER" --env AXIOM_GIT_TOKEN="$AXIOM_GIT_TOKEN" -- bash "$BUILD_SCRIPT"
 
     echo "📦 Exportando imagen $IMAGEN (esto puede tardar)... / Exporting image $IMAGEN (this may take a while)..."
     podman commit "$AXIOM_BUILD_CONTAINER" "$IMAGEN"
@@ -205,9 +204,8 @@ create() {
 
     if distrobox-list --no-color | grep -qw "$NOMBRE"; then
         if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ]; then
-            ssh-add -l &>/dev/null || ssh-add ~/.ssh/id_ed25519 2>/dev/null
-        fi
-        sync-agents
+        ssh-add -l &>/dev/null || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+    fi
         distrobox-enter "$NOMBRE" -- bash --rcfile "$R_ENTORNO/.bashrc" -i
         return 0
     fi
