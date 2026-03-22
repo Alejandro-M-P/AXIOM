@@ -139,7 +139,7 @@ build() {
     curl -fsSL https://ollama.com/install.sh | sh &
     PID_OL=\$!
 
-wait \$PID_OC || { echo "❌ opencode falló"; exit 1; }
+    wait \$PID_OC || { echo "❌ opencode falló"; exit 1; }
     echo "✅ opencode"
     wait \$PID_EN || { echo "❌ engram falló"; exit 1; }
     echo "✅ engram"
@@ -152,7 +152,12 @@ wait \$PID_OC || { echo "❌ opencode falló"; exit 1; }
     ollama serve > /tmp/ollama-build.log 2>&1 &
     OLLAMA_PID=\$!
 
-    until curl -s http://localhost:11434/ > /dev/null; do sleep 1; done
+   ELAPSED=0
+    until curl -s http://localhost:11434/ > /dev/null; do
+        sleep 1
+        ((ELAPSED++))
+        [ \$ELAPSED -ge 60 ] && { echo "❌ Ollama no arrancó en 60s"; exit 1; }
+    done
 
     git clone https://github.com/Gentleman-Programming/agent-teams-lite.git /tmp/agent-teams
     cd /tmp/agent-teams && ./scripts/setup.sh --all && echo "✅ agent-teams-lite"
