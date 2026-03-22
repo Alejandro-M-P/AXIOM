@@ -36,6 +36,15 @@ Si el búnker se rompe, lo borras y creas otro. 30 segundos. Sin drama.
 
 ---
 
+## Seguridad (AXIOM Vault)
+
+AXIOM implementa medidas estrictas para proteger tus credenciales y el host:
+- **Tokens en volúmenes Read-Only:** El token de GitHub nunca se exporta como variable de entorno. Se lee de forma *on-demand* desde un volumen montado como solo lectura (`/run/axiom/env`), evitando que procesos maliciosos o extensiones del búnker puedan capturarlo mediante `printenv`.
+- **Prevención de TOCTOU:** Se utiliza `mktemp` en operaciones críticas (como la creación de scripts de build o archivos temporales de credenciales de Git) para bloquear ataques de condición de carrera.
+- **Mitigación de Inyecciones:** Los comandos interactúan con las variables sensibles a través de arrays de bash en lugar de evaluar *strings* planos, previniendo la inyección de comandos.
+
+---
+
 ## Requisitos
 
 - Distrobox ≥ 1.7

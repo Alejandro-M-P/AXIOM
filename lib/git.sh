@@ -2,7 +2,7 @@
 # ─── MÓDULO GIT: OPERACIONES SEGURAS E INTERACTIVAS ────────────────
 
 _git_check() {
-    git rev-parse --git-dir &>/dev/null || { echo "❌ No estás en un repositorio git."; return 1; }
+    git rev-parse --git-dir &>/dev/null || { echo "❌ No estás en un repositorio git. / Not in a git repository."; return 1; }
 }
 
 _git_configure() {
@@ -14,12 +14,12 @@ _git_run() {
     if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ]; then
         git "$@"
     else
-        # Card 1: leer el token on-demand desde el volumen read-only.
-        # Nunca se exporta como variable de entorno — cualquier proceso
-        # del búnker podría leerla con printenv.
+        # Card 1: Leer el token on-demand desde el volumen read-only. / Read the token on-demand from read-only volume.
+        # Nunca se exporta como variable de entorno / Never exported as environment variable —
+        # cualquier proceso del búnker podría leerla con printenv. / any bunker process could read it with printenv.
         local TOKEN
         TOKEN=$(grep -oP '(?<=AXIOM_GIT_TOKEN=")[^"]+' /run/axiom/env 2>/dev/null)
-        [ -z "$TOKEN" ] && { echo "❌ Token no disponible en /run/axiom/env."; return 1; }
+        [ -z "$TOKEN" ] && { echo "❌ Token no disponible en /run/axiom/env. / Token not available in /run/axiom/env."; return 1; }
         local CRED_FILE
         CRED_FILE=$(mktemp)
         chmod 600 "$CRED_FILE"
@@ -32,7 +32,7 @@ _git_run() {
 }
 
 _fzf_check() {
-    command -v fzf &>/dev/null || { echo "❌ fzf no encontrado. Ejecuta: sudo pacman -S fzf"; return 1; }
+    command -v fzf &>/dev/null || { echo "❌ fzf no encontrado. Ejecuta / fzf not found. Run: sudo pacman -S fzf"; return 1; }
 }
 
 _listar_ramas_locales() {
@@ -53,20 +53,20 @@ _listar_remotes() {
 clone() {
     local REPO="${1:-}"
     if [ -z "$REPO" ]; then
-        read -rp "📦 Repositorio (usuario/repo): " REPO
-        [ -z "$REPO" ] && echo "❌ Cancelado." && return 1
+        read -rp "📦 Repositorio (usuario/repo) / Repository (user/repo): " REPO
+        [ -z "$REPO" ] && echo "❌ Cancelado. / Canceled." && return 1
     fi
     local DIR_DEFAULT
     DIR_DEFAULT=$(basename "$REPO")
-    read -rp "📂 Carpeta destino (Enter para '$DIR_DEFAULT'): " DIR
+    read -rp "📂 Carpeta destino (Enter para '$DIR_DEFAULT') / Destination folder (Enter for '$DIR_DEFAULT'): " DIR
     DIR="${DIR:-$DIR_DEFAULT}"
-    echo "⬇️  Clonando $REPO → $DIR ..."
+    echo "⬇️  Clonando / Cloning $REPO → $DIR ..."
     if [ "${AXIOM_AUTH_MODE:-https}" = "ssh" ]; then
         git clone "git@github.com:${REPO}.git" "$DIR"
     else
         _git_run clone "https://github.com/${REPO}.git" "$DIR"
     fi
-    echo "✅ Repo clonado en ./$DIR"
+    echo "✅ Repo clonado en / Repo cloned in ./$DIR"
 }
 
 status() {

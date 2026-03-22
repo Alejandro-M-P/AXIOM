@@ -1,5 +1,5 @@
 #!/bin/bash
-# ─── MÓDULO BUNKERS: GESTIÓN Y VISIBILIDAD ─────────────────────────
+# ─── MÓDULO BUNKER: LECTURA Y ESTADO ──────────
 
 _bunker_estado() {
     local NOMBRE="$1"
@@ -171,52 +171,4 @@ info() {
     fi
     echo "  └─────────────────────────────────────────┘"
     echo ""
-}
-
-prune() {
-    mostrar_logo
-    if [ ! -d "$BASE_ENV" ]; then
-        echo "ℹ️  No existe el directorio de entornos: $BASE_ENV"
-        return 0
-    fi
-
-    local NOMBRES_DISTROBOX
-    NOMBRES_DISTROBOX=$(_bunker_lista_nombres)
-
-    local HUERFANOS=()
-    while IFS= read -r -d '' DIR; do
-        local NOMBRE
-        NOMBRE=$(basename "$DIR")
-        [ "$NOMBRE" = "axiom-build" ] && continue
-        if ! echo "$NOMBRES_DISTROBOX" | grep -qx "$NOMBRE"; then
-            HUERFANOS+=("$NOMBRE")
-        fi
-    done < <(find "$BASE_ENV" -mindepth 1 -maxdepth 1 -type d -print0)
-
-    if [ ${#HUERFANOS[@]} -eq 0 ]; then
-        echo "✅ No hay entornos huérfanos. Todo limpio."
-        return 0
-    fi
-
-    echo ""
-    echo "🔍 Entornos huérfanos encontrados:"
-    for H in "${HUERFANOS[@]}"; do
-        local TAM
-        TAM=$(_bunker_tamanio "$H")
-        printf "  • %-25s %s\n" "$H" "$TAM"
-    done
-    echo ""
-
-    read -rp "🗑️  ¿Eliminar todos estos entornos huérfanos? (s/N): " OK
-    [[ "$OK" =~ ^[sSyY]$ ]] || { echo "❌ Cancelado."; return 0; }
-
-    read -rp "📝 Razón técnica: " REASON
-    [ -z "$REASON" ] && echo "❌ Se requiere una justificación." && return 1
-
-    for H in "${HUERFANOS[@]}"; do
-        echo "  🗑️  Eliminando: $H"
-        chmod -R +w "$BASE_ENV/$H" 2>/dev/null
-        rm -rf "$BASE_ENV/$H"
-    done
-    echo "✅ Entornos huérfanos eliminados."
 }

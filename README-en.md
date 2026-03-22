@@ -36,6 +36,15 @@ If the bunker breaks, you delete it and create another one. 30 seconds. No drama
 
 ---
 
+## Security (AXIOM Vault)
+
+AXIOM implements strict measures to protect your credentials and host:
+- **Tokens in Read-Only Volumes:** The GitHub token is never exported as an environment variable. It is read on-demand from a read-only mounted volume (`/run/axiom/env`), preventing malicious processes or bunker extensions from capturing it via `printenv`.
+- **TOCTOU Prevention:** `mktemp` is used in critical operations (like generating build scripts or temporary Git credentials files) to block race condition attacks.
+- **Injection Mitigation:** Commands interact with sensitive variables through bash arrays rather than evaluating flat strings, preventing command injection.
+
+---
+
 ## Requirements
 
 - Distrobox >= 1.7
