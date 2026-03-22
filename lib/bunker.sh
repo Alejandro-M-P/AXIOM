@@ -165,7 +165,7 @@ build() {
     echo "✅ Build completo dentro del contenedor. / Build complete inside the container."
     rm -- "\$0"
 SCRIPT
-
+    set -euo pipefail
     chmod +x "$BUILD_SCRIPT"
     distrobox-enter -n "$AXIOM_BUILD_CONTAINER" -- bash "$BUILD_SCRIPT"
 
