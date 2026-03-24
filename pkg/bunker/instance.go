@@ -157,27 +157,14 @@ func (m *Manager) Stop() error {
 		return nil
 	}
 
-	hardware := resolveBuildGPU(cfg)
-	imageName := baseImageName(hardware.Type)
-	var rows []styles.BunkerRow
+	var activeNames []string
 	for _, name := range names {
-		if bunkerStatus(name) != "running" {
-			continue
+		if bunkerStatus(name) == "running" {
+			activeNames = append(activeNames, name)
 		}
-		rows = append(rows, styles.BunkerRow{
-			Name:        name,
-			Status:      bunkerStatus(name),
-			Size:        bunkerEnvSize(cfg, name),
-			LastEntry:   bunkerLastEntry(cfg, name),
-			GitBranch:   bunkerGitBranch(cfg, name),
-			Image:       imageName,
-			GPU:         hardware.Type,
-			ProjectPath: humanPath(bunkerProjectPath(cfg, name)),
-			EnvPath:     humanPath(bunkerEnvPath(cfg, name)),
-		})
 	}
 
-	if len(rows) == 0 {
+	if len(activeNames) == 0 {
 		fmt.Println(styles.GetLogo())
 		fmt.Println(styles.RenderBunkerCard(
 			"Stop Búnker",
@@ -189,37 +176,22 @@ func (m *Manager) Stop() error {
 		return nil
 	}
 
-	selected, err := selectBunkerRow(rows)
+	selected, err := selectBunkerInteractive("Búnkeres Activos", "Pulsa Enter para detener este búnker", activeNames)
 	if err != nil {
 		return err
 	}
 
-	if selected.Status == "stopped" {
-		fmt.Println(styles.GetLogo())
-		fmt.Println(styles.RenderBunkerCard(
-			selected.Name,
-			"El búnker ya está parado.",
-			[]styles.BunkerDetail{{Label: "Estado", Value: selected.Status}, {Label: "Entorno", Value: selected.EnvPath}},
-			nil,
-			"No fue necesario hacer cambios.",
-		))
-		return nil
-	}
-
-	if err := runCommandQuiet("distrobox-stop", selected.Name, "--yes"); err != nil {
+	if err := runCommandQuiet("distrobox-stop", selected, "--yes"); err != nil {
 		return err
 	}
 
 	fmt.Println(styles.GetLogo())
 	fmt.Println(styles.RenderBunkerCard(
-		selected.Name,
+		selected,
 		"El búnker se ha parado correctamente.",
 		[]styles.BunkerDetail{
 			{Label: "Estado", Value: "stopped"},
-			{Label: "Imagen", Value: selected.Image},
-			{Label: "GPU", Value: selected.GPU},
-			{Label: "Entorno", Value: selected.EnvPath},
-			{Label: "Proyecto", Value: selected.ProjectPath},
+			{Label: "Entorno", Value: humanPath(bunkerEnvPath(cfg, selected))},
 		},
 		nil,
 		"El entorno sigue intacto y puedes volver a abrirlo con axiom create <nombre>.",
@@ -229,22 +201,24 @@ func (m *Manager) Stop() error {
 
 // Delete elimina un búnker y permite decidir si también se borra el código del proyecto.
 func (m *Manager) Delete(name string) error {
-	_ = strings.TrimSpace(name)
+	name = strings.TrimSpace(name)
 
 	cfg, err := m.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("no se pudo leer .env: %w", err)
 	}
 
-	names, err := listBunkerNames(cfg)
-	if err != nil {
-		return err
+	if name == "" {
+		names, err := listBunkerNames(cfg)
+		if err != nil {
+			return err
+		}
+		selected, err := selectBunkerInteractive("Eliminar Búnker", "Pulsa Enter para eliminar este búnker", names)
+		if err != nil {
+			return err
+		}
+		name = selected
 	}
-	selected, err := selectBunkerName(names)
-	if err != nil {
-		return err
-	}
-	name = selected
 
 	envDir := cfg.BuildWorkspaceDir(name)
 	projectDir := filepath.Join(cfg.BaseDir, name)
@@ -558,18 +532,6 @@ func isYes(value string) bool {
 	return trimmed == "s" || trimmed == "y" || trimmed == "si" || trimmed == "sí" || trimmed == "yes"
 }
 
-type bunkerSummary struct {
-	Name        string
-	Status      string
-	Size        string
-	LastEntry   string
-	GitBranch   string
-	Image       string
-	GPU         string
-	ProjectPath string
-	EnvPath     string
-}
-
 // List muestra el estado de los búnkeres detectados en el sistema.
 func (m *Manager) List() error {
 	cfg, err := m.LoadConfig()
@@ -582,8 +544,8 @@ func (m *Manager) List() error {
 		return err
 	}
 
-	fmt.Println(styles.GetLogo())
 	if len(names) == 0 {
+		fmt.Println(styles.GetLogo())
 		fmt.Println(styles.RenderBunkerCard(
 			"Búnkeres",
 			"Estado actual del sistema AXIOM",
@@ -594,58 +556,12 @@ func (m *Manager) List() error {
 		return nil
 	}
 
-	hardware := resolveBuildGPU(cfg)
-	imageName := baseImageName(hardware.Type)
-
-	var rows []styles.BunkerRow
-	for _, name := range names {
-		summary := bunkerSummary{
-			Name:        name,
-			Status:      bunkerStatus(name),
-			Size:        bunkerEnvSize(cfg, name),
-			LastEntry:   bunkerLastEntry(cfg, name),
-			GitBranch:   bunkerGitBranch(cfg, name),
-			Image:       imageName,
-			GPU:         hardware.Type,
-			ProjectPath: humanPath(bunkerProjectPath(cfg, name)),
-			EnvPath:     humanPath(bunkerEnvPath(cfg, name)),
-		}
-		rows = append(rows, styles.BunkerRow{
-			Name:        summary.Name,
-			Status:      summary.Status,
-			Size:        summary.Size,
-			LastEntry:   summary.LastEntry,
-			GitBranch:   summary.GitBranch,
-			Image:       summary.Image,
-			GPU:         summary.GPU,
-			ProjectPath: summary.ProjectPath,
-			EnvPath:     summary.EnvPath,
-		})
-	}
-
-	selected, err := selectBunkerRow(rows)
+	selected, err := selectBunkerInteractive("Búnkeres Disponibles", "Pulsa Enter para ver la ficha técnica", names)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderBunkerCard(
-		selected.Name,
-		"Ficha del búnker seleccionado.",
-		[]styles.BunkerDetail{
-			{Label: "Estado", Value: selected.Status},
-			{Label: "Imagen", Value: selected.Image},
-			{Label: "GPU", Value: selected.GPU},
-			{Label: "Entorno", Value: selected.EnvPath},
-			{Label: "Proyecto", Value: selected.ProjectPath},
-			{Label: "Tamaño", Value: selected.Size},
-			{Label: "Última actividad", Value: selected.LastEntry},
-			{Label: "Rama git", Value: defaultString(selected.GitBranch, "-")},
-		},
-		nil,
-		"Usa axiom delete para eliminar este búnker o axiom create para entrar si ya existe.",
-	))
-	return nil
+	return m.Info(selected)
 }
 
 func bunkerStatus(name string) string {
@@ -720,4 +636,134 @@ func humanPath(path string) string {
 
 func bunkerTimestamp(t time.Time) string {
 	return t.Format("2006-01-02")
+}
+
+func (m *Manager) Prune() error {
+	cfg, err := m.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	envBaseDir := filepath.Join(cfg.BaseDir, ".entorno")
+	entries, err := os.ReadDir(envBaseDir)
+	if err != nil {
+		return nil
+	}
+
+	var activeNames []string
+	output, err := runCommandOutputQuiet("distrobox-list", "--no-color")
+	if err == nil {
+		for _, line := range strings.Split(output, "\n") {
+			if !strings.Contains(line, "|") {
+				continue
+			}
+			parts := strings.Split(line, "|")
+			if len(parts) < 2 {
+				continue
+			}
+			name := strings.TrimSpace(parts[1])
+			if name != "" {
+				activeNames = append(activeNames, name)
+			}
+		}
+	}
+
+	activeMap := make(map[string]bool)
+	for _, n := range activeNames {
+		activeMap[n] = true
+	}
+
+	var orphans []string
+	for _, entry := range entries {
+		if !entry.IsDir() || entry.Name() == defaultBuildContainerName {
+			continue
+		}
+		if !activeMap[entry.Name()] {
+			orphans = append(orphans, entry.Name())
+		}
+	}
+
+	fmt.Println(styles.GetLogo())
+	if len(orphans) == 0 {
+		fmt.Println(styles.RenderBunkerCard(
+			"Prune",
+			"No hay entornos huérfanos.",
+			nil,
+			nil,
+			"Todo está limpio.",
+		))
+		return nil
+	}
+
+	fmt.Println(styles.RenderBunkerCard(
+		"Limpiar Entornos Huérfanos",
+		"Se detectaron directorios en .entorno/ sin contenedor asociado.",
+		[]styles.BunkerDetail{{Label: "Huérfanos", Value: fmt.Sprintf("%d detectados", len(orphans))}},
+		orphans,
+		"¿Deseas eliminarlos para liberar espacio?",
+	))
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("\n🗑️  ¿Eliminar todos estos entornos huérfanos? (s/N): ")
+	confirm, _ := reader.ReadString('\n')
+	if !isYes(confirm) {
+		return nil
+	}
+
+	steps := make([]styles.LifecycleStep, 0, len(orphans))
+	for _, h := range orphans {
+		steps = append(steps, styles.LifecycleStep{Title: "Eliminar huérfano", Detail: h, Status: styles.LifecyclePending})
+	}
+
+	renderPrune := func(current []styles.LifecycleStep) {
+		fmt.Print("\033[H\033[2J")
+		fmt.Println(styles.GetLogo())
+		fmt.Println(styles.RenderLifecycle("Prune", "Limpiando entornos huérfanos", current))
+	}
+
+	renderPrune(steps)
+
+	for i, h := range orphans {
+		steps[i].Status = styles.LifecycleRunning
+		renderPrune(steps)
+		_ = removePathWritable(filepath.Join(envBaseDir, h))
+		steps[i].Status = styles.LifecycleDone
+		renderPrune(steps)
+	}
+	
+	fmt.Println(styles.RenderBunkerCard("Prune Completado", "Se liberó el espacio de los entornos huérfanos.", nil, nil, ""))
+	return nil
+}
+
+func (m *Manager) Info(name string) error {
+	if strings.TrimSpace(name) == "" {
+		return m.List()
+	}
+
+	cfg, err := m.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	hardware := resolveBuildGPU(cfg)
+	imageName := baseImageName(hardware.Type)
+
+	fmt.Println(styles.GetLogo())
+	fmt.Println(styles.RenderBunkerCard(
+		name,
+		"Ficha técnica del búnker",
+		[]styles.BunkerDetail{
+			{Label: "Estado", Value: bunkerStatus(name)},
+			{Label: "Imagen", Value: imageName},
+			{Label: "GPU", Value: hardware.Type},
+			{Label: "Entorno", Value: humanPath(bunkerEnvPath(cfg, name))},
+			{Label: "Proyecto", Value: humanPath(bunkerProjectPath(cfg, name))},
+			{Label: "Tamaño", Value: bunkerEnvSize(cfg, name)},
+			{Label: "Última actividad", Value: bunkerLastEntry(cfg, name)},
+			{Label: "Rama git", Value: defaultString(bunkerGitBranch(cfg, name), "-")},
+		},
+		nil,
+		"Usa axiom delete para eliminar o axiom create para entrar.",
+	))
+	return nil
 }

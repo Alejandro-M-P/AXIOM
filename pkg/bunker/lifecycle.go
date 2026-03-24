@@ -1,6 +1,7 @@
 package bunker
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -680,4 +681,122 @@ func runCommandOutputQuiet(name string, args ...string) (string, error) {
 		return "", fmt.Errorf("%s %s: %w\n%s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
 	}
 	return strings.TrimSpace(string(output)), nil
+}
+
+func (m *Manager) Rebuild() error {
+	cfg, err := m.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	hardware := resolveBuildGPU(cfg)
+	targetImage := baseImageName(hardware.Type)
+
+	fmt.Println(styles.GetLogo())
+	fmt.Println(styles.RenderBunkerCard(
+		"Reconstruir Imagen Base",
+		"Se eliminará la imagen actual y se lanzará un nuevo build.",
+		[]styles.BunkerDetail{
+			{Label: "Imagen", Value: targetImage},
+			{Label: "GPU", Value: hardware.Type},
+		},
+		nil,
+		"Los búnkeres existentes NO se verán afectados.",
+	))
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("🔄 ¿Continuar con la reconstrucción? (s/N): ")
+	confirm, _ := reader.ReadString('\n')
+	if !isYes(confirm) {
+		return nil
+	}
+
+	steps := []styles.LifecycleStep{
+		{Title: "Eliminar imagen base", Detail: targetImage, Status: styles.LifecycleRunning},
+	}
+	fmt.Print("\033[H\033[2J")
+	fmt.Println(styles.GetLogo())
+	fmt.Println(styles.RenderLifecycle("Rebuild", "Preparando limpieza", steps))
+
+	_ = runCommandQuiet("podman", "rmi", targetImage, "--force")
+	steps[0].Status = styles.LifecycleDone
+	fmt.Print("\033[H\033[2J")
+	fmt.Println(styles.GetLogo())
+	fmt.Println(styles.RenderLifecycle("Rebuild", "Preparando limpieza", steps))
+
+	return m.Build()
+}
+
+func (m *Manager) Reset() error {
+	cfg, err := m.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	hardware := resolveBuildGPU(cfg)
+	targetImage := baseImageName(hardware.Type)
+	names, err := listBunkerNames(cfg)
+	if err != nil {
+		names = []string{}
+	}
+
+	fmt.Println(styles.GetLogo())
+	fmt.Println(styles.RenderBunkerCard(
+		"Reset Total del Sistema",
+		"Esto eliminará TODOS los búnkeres, sus entornos locales y la imagen base.",
+		[]styles.BunkerDetail{
+			{Label: "Búnkeres", Value: fmt.Sprintf("%d detectados", len(names))},
+			{Label: "Imagen", Value: targetImage},
+		},
+		names,
+		"ADVERTENCIA: Esta acción no se puede deshacer.",
+	))
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("⚠️  ¿Borrar TODOS los búnkeres y la imagen base? (s/N): ")
+	confirm, _ := reader.ReadString('\n')
+	if !isYes(confirm) {
+		return nil
+	}
+
+	fmt.Print("📝 Razón técnica para el reset total: ")
+	reason, _ := reader.ReadString('\n')
+	if strings.TrimSpace(reason) == "" {
+		return fmt.Errorf("operación cancelada: se requiere justificación técnica")
+	}
+
+	_ = appendTutorLog(cfg.TutorPath(), "- Reset global ejecutado (Razón: "+strings.TrimSpace(reason)+")")
+
+	steps := make([]styles.LifecycleStep, 0, len(names)+1)
+	for _, name := range names {
+		steps = append(steps, styles.LifecycleStep{Title: "Eliminar búnker", Detail: name, Status: styles.LifecyclePending})
+	}
+	steps = append(steps, styles.LifecycleStep{Title: "Eliminar imagen base", Detail: targetImage, Status: styles.LifecyclePending})
+
+	renderReset := func(current []styles.LifecycleStep) {
+		fmt.Print("\033[H\033[2J")
+		fmt.Println(styles.GetLogo())
+		fmt.Println(styles.RenderLifecycle("Reset Total", "Destruyendo todo el sistema AXIOM", current))
+	}
+
+	renderReset(steps)
+
+	for i, name := range names {
+		steps[i].Status = styles.LifecycleRunning
+		renderReset(steps)
+		_ = runCommandQuiet("distrobox-rm", name, "--force", "--yes")
+		_ = removePathWritable(cfg.BuildWorkspaceDir(name))
+		steps[i].Status = styles.LifecycleDone
+		renderReset(steps)
+	}
+
+	lastIdx := len(steps) - 1
+	steps[lastIdx].Status = styles.LifecycleRunning
+	renderReset(steps)
+	_ = runCommandQuiet("podman", "rmi", targetImage, "--force")
+	steps[lastIdx].Status = styles.LifecycleDone
+	renderReset(steps)
+
+	fmt.Println(styles.RenderBunkerCard("Reset Completado", "El sistema AXIOM ha sido limpiado por completo.", nil, nil, "Usa 'axiom build' para generar una base nueva."))
+	return nil
 }

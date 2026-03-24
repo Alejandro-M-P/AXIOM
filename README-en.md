@@ -60,7 +60,7 @@ axiom build
 
 ## 💻 Basic Usage: Host Commands
 
-Run `axiom create my-project` and in 30 seconds you have a fully equipped environment.
+Run `axiom create my-project` and in 30 seconds you have a fully equipped environment. 
 
 | Command | Description |
 | :--- | :--- |
@@ -69,10 +69,12 @@ Run `axiom create my-project` and in 30 seconds you have a fully equipped enviro
 | `axiom list` | Shows detected bunkers with status, size, last entry, and git branch. |
 | `axiom create <name>` | Creates a new bunker from the base image or enters an existing one. |
 | `axiom delete [name]` | Deletes a bunker. If no name is provided, it opens an arrow-key selector. |
-| `axiom eliminar [name]` | Spanish alias for `axiom delete`. |
 | `axiom delete-image` | Deletes the active base image and shows detected AXIOM images. |
-| `axiom image-delete` | Alias for `axiom delete-image`. |
-| `axiom prune-images` | Alias for `axiom delete-image`. |
+| `axiom stop` | Stops the execution of an active bunker. |
+| `axiom info [name]` | Shows the detailed summary card of a bunker. |
+| `axiom prune` | Cleans up orphan environments with no container. |
+| `axiom rebuild` | Rebuilds the base image. |
+| `axiom reset` | Deletes ALL bunkers and images (Total reset). |
 
 ### Current Go Migration Layout
 The host-side logic already ported to Go lives in `pkg/bunker` and is split by responsibility:

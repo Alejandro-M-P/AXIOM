@@ -70,10 +70,12 @@ Ejecutas `axiom create mi-proyecto` y en 30 segundos tienes un entorno completo 
 | `axiom list` | Lista los búnkeres detectados con estado, tamaño, última entrada y rama git. |
 | `axiom create <nombre>` | Crea un nuevo búnker desde la imagen base o entra en uno existente. |
 | `axiom delete [nombre]` | Elimina un búnker. Si no pasas nombre, abre un selector con flechas. |
-| `axiom eliminar [nombre]` | Alias en español de `axiom delete`. |
 | `axiom delete-image` | Elimina la imagen base activa y muestra las imágenes AXIOM detectadas. |
-| `axiom image-delete` | Alias de `axiom delete-image`. |
-| `axiom prune-images` | Alias de `axiom delete-image`. |
+| `axiom stop` | Detiene la ejecución de un búnker activo. |
+| `axiom info [nombre]` | Muestra la ficha detallada de un búnker. |
+| `axiom prune` | Limpia entornos huérfanos sin contenedor. |
+| `axiom rebuild` | Reconstruye la imagen base. |
+| `axiom reset` | Elimina TODOS los búnkeres e imágenes (Reset total). |
 
 ### Estado actual de la migración a Go
 La lógica de host que ya está portada vive en `pkg/bunker` y se organiza así:
@@ -179,7 +181,7 @@ AXIOM no instala dependencias cada vez que creas un proyecto.
 AXIOM separa el código fuente del sistema operativo del contenedor:
 * **El Código:** Vive en `~/dev/mi-proyecto` (tu host) y se monta en `/mi-proyecto` dentro del búnker.
 * **El Sistema (Home):** Vive en `~/dev/.entorno/mi-proyecto`. Aquí están las configuraciones de Opencode, historiales de Bash, cachés, etc. 
-* Si ejecutas `axiom delete`, se destruye el contenedor de Podman y el directorio `.entorno/`. **Tu código solo se borra si lo confirmas explícitamente durante `axiom delete` o `axiom eliminar`.**
+* Si ejecutas `axiom delete`, se destruye el contenedor de Podman y el directorio `.entorno/`. **Tu código solo se borra si lo confirmas explícitamente durante `axiom delete`.**
 
 ---
 
