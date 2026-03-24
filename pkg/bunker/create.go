@@ -163,7 +163,7 @@ func (m *Manager) Delete(name string) error {
 		"Se eliminará el contenedor y podrás decidir si también borrar el código.",
 		[]styles.BunkerDetail{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}, {Label: "Proyecto", Value: projectDir}},
 		nil,
-		"La razón técnica se guardará en tutor.md antes de borrar.",
+		"La eliminación no registrará cambios en tutor.md.",
 	))
 
 	reader := bufio.NewReader(os.Stdin)
@@ -184,9 +184,6 @@ func (m *Manager) Delete(name string) error {
 	}
 	deleteCode := isYes(deleteProject)
 
-	if err := appendTutorLog(cfg.TutorPath(), fmt.Sprintf("- Borrado búnker %s (Razón: %s | Código: %s)", name, reason, yesNo(deleteCode))); err != nil {
-		return err
-	}
 
 	fmt.Printf("❗ ¿Confirmas el borrado del búnker '%s'? (s/N): ", name)
 	confirm, err := reader.ReadString('\n')
@@ -254,7 +251,7 @@ func (m *Manager) Delete(name string) error {
 		"La desinstalación terminó correctamente.",
 		[]styles.BunkerDetail{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}, {Label: "Código borrado", Value: yesNo(deleteCode)}},
 		nil,
-		"La operación quedó registrada en tutor.md.",
+		"La eliminación terminó sin modificar tutor.md.",
 	))
 	return nil
 }

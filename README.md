@@ -65,15 +65,12 @@ Ejecutas `axiom create mi-proyecto` y en 30 segundos tienes un entorno completo 
 
 | Comando | Descripción |
 | :--- | :--- |
-| `axiom create <nombre>` | Crea un nuevo búnker desde la imagen base o entra en uno existente. |
-| `axiom list` | Muestra estado, tamaño, rama de git y última entrada de todos los búnkeres. |
-| `axiom info <nombre>` | Muestra detalles técnicos, imagen base y rutas exactas de un búnker. |
-| `axiom stop <nombre>` | Detiene la ejecución del contenedor sin borrar sus datos. |
+| `axiom help` | Muestra la ayuda de los comandos disponibles en la implementación Go actual. |
 | `axiom build` | Construye la imagen base con GPU y herramientas IA. |
-| `axiom rebuild` | Reconstruye la imagen base (los búnkeres existentes no se ven afectados). |
-| `axiom delete <nombre>` | Destruye completamente el búnker y su entorno *(Exige justificación técnica)*. |
-| `axiom prune` | Limpia los directorios de entornos huérfanos. |
-| `axiom reset` | Reset total: elimina todos los búnkeres y la imagen base *(Exige justificación)*. |
+| `axiom create <nombre>` | Crea un nuevo búnker desde la imagen base o entra en uno existente. |
+| `axiom delete [nombre]` | Elimina un búnker. Si no pasas nombre, abre un selector con flechas. |
+| `axiom eliminar [nombre]` | Alias en español de `axiom delete`. |
+| `axiom delete-image` | Elimina la imagen base activa y muestra las imágenes AXIOM detectadas. |
 
 ---
 
@@ -167,7 +164,7 @@ AXIOM no instala dependencias cada vez que creas un proyecto.
 AXIOM separa el código fuente del sistema operativo del contenedor:
 * **El Código:** Vive en `~/dev/mi-proyecto` (tu host) y se monta en `/mi-proyecto` dentro del búnker.
 * **El Sistema (Home):** Vive en `~/dev/.entorno/mi-proyecto`. Aquí están las configuraciones de Opencode, historiales de Bash, cachés, etc. 
-* Si ejecutas `axiom delete`, solo se destruye el contenedor de Podman y el directorio `.entorno/`. **Tu código jamás se toca.**
+* Si ejecutas `axiom delete`, solo se destruye el contenedor de Podman y el directorio `.entorno/`. **Tu código solo se borra si lo confirmas explícitamente al ejecutar `axiom delete` o `axiom eliminar`.**
 
 ---
 

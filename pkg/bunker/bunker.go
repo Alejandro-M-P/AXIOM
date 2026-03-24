@@ -42,6 +42,8 @@ func NewManager(rootDir string) *Manager {
 // Cada comando de bunker se resuelve aquí y luego se delega a su implementación.
 func (m *Manager) Run(command string, args []string) error {
 	switch strings.ToLower(strings.TrimSpace(command)) {
+	case "help":
+		return m.Help()
 	case "build":
 		return m.Build()
 	case "create":
@@ -57,7 +59,7 @@ func (m *Manager) Run(command string, args []string) error {
 
 func KnownCommand(command string) bool {
 	switch strings.ToLower(strings.TrimSpace(command)) {
-	case "build", "create", "delete", "eliminar", "delete-image", "image-delete", "prune-images":
+	case "help", "build", "create", "delete", "eliminar", "delete-image", "image-delete", "prune-images":
 		return true
 	default:
 		return false
