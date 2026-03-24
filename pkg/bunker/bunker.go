@@ -44,8 +44,23 @@ func (m *Manager) Run(command string, args []string) error {
 	switch strings.ToLower(strings.TrimSpace(command)) {
 	case "build":
 		return m.Build()
+	case "create":
+		return m.Create(firstArg(args))
+	case "delete", "eliminar":
+		return m.Delete(firstArg(args))
+	case "delete-image", "image-delete", "prune-images":
+		return m.DeleteImage()
 	default:
 		return fmt.Errorf("comando bunker no soportado todavía: %s", command)
+	}
+}
+
+func KnownCommand(command string) bool {
+	switch strings.ToLower(strings.TrimSpace(command)) {
+	case "build", "create", "delete", "eliminar", "delete-image", "image-delete", "prune-images":
+		return true
+	default:
+		return false
 	}
 }
 
@@ -139,4 +154,11 @@ func (c EnvConfig) AIConfigDir() string {
 
 func (c EnvConfig) TutorPath() string {
 	return filepath.Join(c.AIConfigDir(), "teams", "tutor.md")
+}
+
+func firstArg(args []string) string {
+	if len(args) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(args[0])
 }

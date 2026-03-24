@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	bubbleprogress "github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -38,6 +39,10 @@ var (
 		Foreground(Gray).
 		Italic(true)
 
+	LifecycleSectionStyle = lipgloss.NewStyle().
+		Foreground(White).
+		Bold(true)
+
 	LifecycleStepPendingStyle = lipgloss.NewStyle().Foreground(Gray)
 	LifecycleStepRunningStyle = lipgloss.NewStyle().Foreground(Cyan).Bold(true)
 	LifecycleStepDoneStyle    = lipgloss.NewStyle().Foreground(Green).Bold(true)
@@ -47,22 +52,11 @@ var (
 )
 
 func RenderLifecycle(title, subtitle string, steps []LifecycleStep) string {
-	completed := 0
-	current := 0
-	for i, step := range steps {
-		if step.Status == LifecycleDone {
-			completed++
-		}
-		if step.Status == LifecycleRunning {
-			current = i + 1
-		}
-	}
-	if current == 0 && len(steps) > 0 {
-		current = completed
-		if current == 0 {
-			current = 1
-		}
-	}
+	return RenderLifecycleWithTasks(title, subtitle, steps, "", nil)
+}
+
+func RenderLifecycleWithTasks(title, subtitle string, steps []LifecycleStep, taskTitle string, taskSteps []LifecycleStep) string {
+	completed := countCompleted(steps)
 
 	var lines []string
 	lines = append(lines, LifecycleTitleStyle.Render(title))
@@ -82,12 +76,27 @@ func RenderLifecycle(title, subtitle string, steps []LifecycleStep) string {
 		lines = append(lines, renderLifecycleStep(label, step.Status))
 	}
 
+	if strings.TrimSpace(taskTitle) != "" && len(taskSteps) > 0 {
+		taskDone := countCompleted(taskSteps)
+		lines = append(lines, "")
+		lines = append(lines, LifecycleSectionStyle.Render(taskTitle))
+		lines = append(lines, renderProgressBar(taskDone, len(taskSteps)))
+		lines = append(lines, LifecycleMetaStyle.Render(fmt.Sprintf("Instalacion: %d/%d", taskDone, len(taskSteps))))
+		for i, step := range taskSteps {
+			label := fmt.Sprintf("%d. %s", i+1, step.Title)
+			if strings.TrimSpace(step.Detail) != "" {
+				label += "  " + step.Detail
+			}
+			lines = append(lines, renderLifecycleStep(label, step.Status))
+		}
+	}
+
 	return LifecycleShellStyle.Render(strings.Join(lines, "\n"))
 }
 
-func RenderLifecycleError(title string, steps []LifecycleStep, err error, where string) string {
+func RenderLifecycleError(title string, steps []LifecycleStep, taskTitle string, taskSteps []LifecycleStep, err error, where string) string {
 	var lines []string
-	lines = append(lines, RenderLifecycle(title, "Error durante el ciclo de vida", steps))
+	lines = append(lines, RenderLifecycleWithTasks(title, "Error durante el ciclo de vida", steps, taskTitle, taskSteps))
 	lines = append(lines, lipgloss.NewStyle().Foreground(Red).Bold(true).Render("Error:"), err.Error())
 	if strings.TrimSpace(where) != "" {
 		lines = append(lines, LifecycleMetaStyle.Render("Ubicacion:"), LifecyclePathStyle.Render(where))
@@ -95,17 +104,26 @@ func RenderLifecycleError(title string, steps []LifecycleStep, err error, where 
 	return strings.Join(lines, "\n")
 }
 
+func countCompleted(steps []LifecycleStep) int {
+	completed := 0
+	for _, step := range steps {
+		if step.Status == LifecycleDone {
+			completed++
+		}
+	}
+	return completed
+}
+
 func renderProgressBar(done, total int) string {
 	if total <= 0 {
 		total = 1
 	}
-	width := 28
-	filled := done * width / total
-	if filled > width {
-		filled = width
-	}
-	bar := strings.Repeat("#", filled) + strings.Repeat("-", width-filled)
-	return lipgloss.NewStyle().Foreground(Cyan).Bold(true).Render("[" + bar + "]")
+	percent := float64(done) / float64(total)
+	bar := bubbleprogress.New(
+		bubbleprogress.WithWidth(28),
+		bubbleprogress.WithDefaultGradient(),
+	)
+	return bar.ViewAs(percent)
 }
 
 func renderLifecycleStep(label, status string) string {

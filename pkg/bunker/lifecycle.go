@@ -29,9 +29,11 @@ type buildContext struct {
 
 // buildProgress mantiene el estado visual del build para la UI.
 type buildProgress struct {
-	title    string
-	subtitle string
-	steps    []styles.LifecycleStep
+	title     string
+	subtitle  string
+	steps     []styles.LifecycleStep
+	taskTitle string
+	taskSteps []styles.LifecycleStep
 }
 
 // Build ejecuta el flujo completo de construccion de la imagen base.
@@ -60,7 +62,6 @@ func (m *Manager) Build() error {
 
 	cleanupDone := false
 	defer func() {
-		// Si alguna fase falla, intentamos desmontar el contenedor temporal.
 		if cleanupDone {
 			return
 		}
@@ -69,21 +70,21 @@ func (m *Manager) Build() error {
 	}()
 
 	if err := progress.runStep(2, func() error {
-		return m.installSystemBase(ctx)
+		return m.installSystemBase(ctx, progress)
 	}); err != nil {
 		progress.renderError(err, ctx.buildWorkspaceDir)
 		return err
 	}
 
 	if err := progress.runStep(3, func() error {
-		return m.installDeveloperTools(ctx)
+		return m.installDeveloperTools(ctx, progress)
 	}); err != nil {
 		progress.renderError(err, ctx.buildWorkspaceDir)
 		return err
 	}
 
 	if err := progress.runStep(4, func() error {
-		return m.installModelStack(ctx)
+		return m.installModelStack(ctx, progress)
 	}); err != nil {
 		progress.renderError(err, ctx.buildWorkspaceDir)
 		return err
@@ -109,7 +110,6 @@ func (m *Manager) Build() error {
 	return nil
 }
 
-// prepareBuildContext reune la configuracion y los valores derivados que el build necesita.
 func (m *Manager) prepareBuildContext() (buildContext, error) {
 	cfg, err := m.LoadConfig()
 	if err != nil {
@@ -127,7 +127,6 @@ func (m *Manager) prepareBuildContext() (buildContext, error) {
 	}, nil
 }
 
-// newBuildProgress define las fases funcionales que vera el usuario durante el build.
 func newBuildProgress(ctx buildContext) *buildProgress {
 	gpuModeText := "Drivers desde host"
 	if ctx.config.ROCMMode == "image" {
@@ -135,7 +134,7 @@ func newBuildProgress(ctx buildContext) *buildProgress {
 	}
 
 	return &buildProgress{
-		title: fmt.Sprintf("Construyendo %s", ctx.imageName),
+		title:    fmt.Sprintf("Construyendo %s", ctx.imageName),
 		subtitle: fmt.Sprintf("GPU: %s | Modo: %s", ctx.gpuInfo.Type, gpuModeText),
 		steps: []styles.LifecycleStep{
 			{Title: "Preparar directorios", Detail: ctx.config.AIConfigDir(), Status: styles.LifecyclePending},
@@ -148,8 +147,9 @@ func newBuildProgress(ctx buildContext) *buildProgress {
 	}
 }
 
-// runStep actualiza el estado visual antes y despues de ejecutar la accion real.
 func (p *buildProgress) runStep(index int, fn func() error) error {
+	p.taskTitle = ""
+	p.taskSteps = nil
 	for i := range p.steps {
 		if i < index && p.steps[i].Status != styles.LifecycleDone {
 			p.steps[i].Status = styles.LifecycleDone
@@ -166,25 +166,55 @@ func (p *buildProgress) runStep(index int, fn func() error) error {
 	}
 
 	p.steps[index].Status = styles.LifecycleDone
+	p.taskTitle = ""
+	p.taskSteps = nil
 	p.render()
 	return nil
 }
 
-// render repinta toda la pantalla para mantener una sensacion de flujo guiado.
+func (p *buildProgress) startTaskGroup(title string, steps []styles.LifecycleStep) {
+	p.taskTitle = title
+	p.taskSteps = steps
+	p.render()
+}
+
+func (p *buildProgress) runTask(index int, fn func() error) error {
+	for i := range p.taskSteps {
+		if i < index && p.taskSteps[i].Status != styles.LifecycleDone {
+			p.taskSteps[i].Status = styles.LifecycleDone
+		}
+		if i == index {
+			p.taskSteps[i].Status = styles.LifecycleRunning
+		}
+	}
+	p.render()
+
+	if err := fn(); err != nil {
+		if index >= 0 && index < len(p.taskSteps) {
+			p.taskSteps[index].Status = styles.LifecycleError
+		}
+		return err
+	}
+
+	if index >= 0 && index < len(p.taskSteps) {
+		p.taskSteps[index].Status = styles.LifecycleDone
+	}
+	p.render()
+	return nil
+}
+
 func (p *buildProgress) render() {
 	fmt.Print("\033[H\033[2J")
 	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderLifecycle(p.title, p.subtitle, p.steps))
+	fmt.Println(styles.RenderLifecycleWithTasks(p.title, p.subtitle, p.steps, p.taskTitle, p.taskSteps))
 }
 
-// renderError conserva el paso fallido y anade contexto util para depuracion.
 func (p *buildProgress) renderError(err error, where string) {
 	fmt.Print("\033[H\033[2J")
 	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderLifecycleError(p.title, p.steps, err, where))
+	fmt.Println(styles.RenderLifecycleError(p.title, p.steps, p.taskTitle, p.taskSteps, err, where))
 }
 
-// prepareSharedDirectories crea los directorios persistentes compartidos por los bunker.
 func (m *Manager) prepareSharedDirectories(ctx buildContext) error {
 	if err := os.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "models"), 0755); err != nil {
 		return err
@@ -198,7 +228,6 @@ func (m *Manager) prepareSharedDirectories(ctx buildContext) error {
 	return runCommandQuiet("sudo", "chown", "-R", currentUserGroup(), ctx.config.AIConfigDir())
 }
 
-// recreateBuildContainer fuerza un build limpio eliminando cualquier contenedor temporal previo.
 func (m *Manager) recreateBuildContainer(ctx buildContext) error {
 	_ = runCommandQuiet("distrobox-rm", m.buildContainerName, "--force", "--yes")
 	if err := removePathWritable(ctx.buildWorkspaceDir); err != nil {
@@ -219,7 +248,6 @@ func (m *Manager) recreateBuildContainer(ctx buildContext) error {
 	)
 }
 
-// buildContainerFlags concentra dispositivos, mounts y permisos del contenedor temporal.
 func (m *Manager) buildContainerFlags(ctx buildContext) string {
 	return fmt.Sprintf(
 		"--volume %s:/ai_config --volume %s:/run/axiom/env:ro --device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render",
@@ -228,8 +256,7 @@ func (m *Manager) buildContainerFlags(ctx buildContext) string {
 	)
 }
 
-// installSystemBase instala el sistema Arch minimo y, si toca, los paquetes GPU internos.
-func (m *Manager) installSystemBase(ctx buildContext) error {
+func (m *Manager) installSystemBase(ctx buildContext, progress *buildProgress) error {
 	packages := []string{"base-devel", "git", "curl", "jq", "wget", "nodejs", "npm", "go", "fzf", "starship"}
 	if ctx.config.ROCMMode == "image" {
 		switch {
@@ -242,25 +269,49 @@ func (m *Manager) installSystemBase(ctx buildContext) error {
 		}
 	}
 
-	args := append([]string{"sudo", "pacman", "-Sy", "--needed", "--noconfirm"}, packages...)
-	return m.runInContainer(args...)
+	progress.startTaskGroup("Instalando sistema base", []styles.LifecycleStep{
+		{Title: "Sincronizar repositorios", Detail: "pacman -Sy", Status: styles.LifecyclePending},
+		{Title: "Instalar paquetes base", Detail: fmt.Sprintf("%d paquetes", len(packages)), Status: styles.LifecyclePending},
+	})
+	if err := progress.runTask(0, func() error {
+		return m.runInContainer("sudo", "pacman", "-Sy", "--noconfirm")
+	}); err != nil {
+		return err
+	}
+	if err := progress.runTask(1, func() error {
+		args := append([]string{"sudo", "pacman", "-S", "--needed", "--noconfirm"}, packages...)
+		return m.runInContainer(args...)
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
-// installDeveloperTools instala herramientas de trabajo del bunker fuera del sistema base.
-func (m *Manager) installDeveloperTools(ctx buildContext) error {
-	if err := m.runInContainer("sudo", "npm", "install", "-g", "opencode-ai"); err != nil {
-		return err
-	}
-	if err := m.runInContainer("go", "install", "github.com/Gentleman-Programming/engram/cmd/engram@latest"); err != nil {
+func (m *Manager) installDeveloperTools(ctx buildContext, progress *buildProgress) error {
+	progress.startTaskGroup("Instalando herramientas de desarrollo", []styles.LifecycleStep{
+		{Title: "Instalar OpenCode", Detail: "npm global", Status: styles.LifecyclePending},
+		{Title: "Instalar Engram", Detail: "go install + copiar binario", Status: styles.LifecyclePending},
+		{Title: "Descargar gentle-ai", Detail: "release de GitHub", Status: styles.LifecyclePending},
+		{Title: "Activar gentle-ai", Detail: "/usr/local/bin", Status: styles.LifecyclePending},
+	})
+
+	if err := progress.runTask(0, func() error {
+		return m.runInContainer("sudo", "npm", "install", "-g", "opencode-ai")
+	}); err != nil {
 		return err
 	}
 
-	gopath, err := m.runInContainerOutput("go", "env", "GOPATH")
-	if err != nil {
-		return err
-	}
-	engramPath := filepath.ToSlash(filepath.Join(strings.TrimSpace(gopath), "bin", "engram"))
-	if err := m.runInContainer("sudo", "cp", "-f", engramPath, "/usr/local/bin/"); err != nil {
+	if err := progress.runTask(1, func() error {
+		if err := m.runInContainer("go", "install", "github.com/Gentleman-Programming/engram/cmd/engram@latest"); err != nil {
+			return err
+		}
+		gopath, err := m.runInContainerOutput("go", "env", "GOPATH")
+		if err != nil {
+			return err
+		}
+		engramPath := filepath.ToSlash(filepath.Join(strings.TrimSpace(gopath), "bin", "engram"))
+		return m.runInContainer("sudo", "cp", "-f", engramPath, "/usr/local/bin/")
+	}); err != nil {
 		return err
 	}
 
@@ -273,19 +324,29 @@ func (m *Manager) installDeveloperTools(ctx buildContext) error {
 		version,
 		version,
 	)
-	if err := m.runInContainer("curl", "-fsSL", assetURL, "-o", "/tmp/gentle-ai.tar.gz"); err != nil {
+
+	if err := progress.runTask(2, func() error {
+		if err := m.runInContainer("curl", "-fsSL", assetURL, "-o", "/tmp/gentle-ai.tar.gz"); err != nil {
+			return err
+		}
+		return m.runInContainer("tar", "-xzf", "/tmp/gentle-ai.tar.gz", "-C", "/tmp")
+	}); err != nil {
 		return err
 	}
-	if err := m.runInContainer("tar", "-xzf", "/tmp/gentle-ai.tar.gz", "-C", "/tmp"); err != nil {
+
+	if err := progress.runTask(3, func() error {
+		if err := m.runInContainer("sudo", "mv", "/tmp/gentle-ai", "/usr/local/bin/gentle-ai"); err != nil {
+			return err
+		}
+		if err := m.runInContainer("sudo", "chmod", "+x", "/usr/local/bin/gentle-ai"); err != nil {
+			return err
+		}
+		return m.runInContainer("rm", "-f", "/tmp/gentle-ai.tar.gz")
+	}); err != nil {
 		return err
 	}
-	if err := m.runInContainer("sudo", "mv", "/tmp/gentle-ai", "/usr/local/bin/gentle-ai"); err != nil {
-		return err
-	}
-	if err := m.runInContainer("sudo", "chmod", "+x", "/usr/local/bin/gentle-ai"); err != nil {
-		return err
-	}
-	return m.runInContainer("rm", "-f", "/tmp/gentle-ai.tar.gz")
+
+	return nil
 }
 
 func latestGentleAIVersion(token string) (string, error) {
@@ -319,15 +380,28 @@ func latestGentleAIVersion(token string) (string, error) {
 	return version, nil
 }
 
-// installModelStack prepara el runtime de modelos y su configuracion inicial.
-func (m *Manager) installModelStack(ctx buildContext) error {
-	if err := m.installOllama(ctx.gpuInfo.Type); err != nil {
+func (m *Manager) installModelStack(ctx buildContext, progress *buildProgress) error {
+	progress.startTaskGroup("Preparando stack IA", []styles.LifecycleStep{
+		{Title: "Instalar Ollama", Detail: ctx.gpuInfo.Type, Status: styles.LifecyclePending},
+		{Title: "Configurar agent-teams-lite", Detail: "setup inicial", Status: styles.LifecyclePending},
+		{Title: "Limpiar caches de build", Detail: "tmp + pacman", Status: styles.LifecyclePending},
+	})
+	if err := progress.runTask(0, func() error {
+		return m.installOllama(ctx.gpuInfo.Type)
+	}); err != nil {
 		return err
 	}
-	if err := m.installAgentTeamsLite(); err != nil {
+	if err := progress.runTask(1, func() error {
+		return m.installAgentTeamsLite()
+	}); err != nil {
 		return err
 	}
-	return m.cleanBuildCaches()
+	if err := progress.runTask(2, func() error {
+		return m.cleanBuildCaches()
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *Manager) installOllama(gpuType string) error {
@@ -368,7 +442,6 @@ func ollamaArch() (string, error) {
 	}
 }
 
-// installAgentTeamsLite levanta Ollama de forma temporal para ejecutar el setup inicial.
 func (m *Manager) installAgentTeamsLite() error {
 	ollamaCmd := exec.Command("distrobox-enter", "-n", m.buildContainerName, "--", "ollama", "serve")
 	logFile, err := os.OpenFile("/tmp/ollama-build.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -411,7 +484,6 @@ func (m *Manager) installAgentTeamsLite() error {
 	return nil
 }
 
-// waitForOllama hace polling del endpoint local hasta que Ollama responde.
 func (m *Manager) waitForOllama() error {
 	deadline := time.Now().Add(60 * time.Second)
 	for time.Now().Before(deadline) {
@@ -442,12 +514,10 @@ func (m *Manager) cleanBuildCaches() error {
 	return nil
 }
 
-// exportBuildImage congela el contenedor temporal en una imagen reutilizable.
 func (m *Manager) exportBuildImage(ctx buildContext) error {
 	return runCommandQuiet("podman", "commit", m.buildContainerName, ctx.imageName)
 }
 
-// destroyBuildContainer elimina el contenedor temporal y su home asociado.
 func (m *Manager) destroyBuildContainer(ctx buildContext) error {
 	if err := runCommandQuiet("distrobox-rm", m.buildContainerName, "--force", "--yes"); err != nil {
 		return err
@@ -455,13 +525,11 @@ func (m *Manager) destroyBuildContainer(ctx buildContext) error {
 	return removePathWritable(ctx.buildWorkspaceDir)
 }
 
-// runInContainer ejecuta comandos dentro del contenedor temporal en modo silencioso.
 func (m *Manager) runInContainer(args ...string) error {
 	containerArgs := append([]string{"-n", m.buildContainerName, "--"}, args...)
 	return runCommandQuiet("distrobox-enter", containerArgs...)
 }
 
-// runInteractiveInContainer permite responder prompts puntuales sin exponer ruido en la UI.
 func (m *Manager) runInteractiveInContainer(input string, args ...string) error {
 	containerArgs := append([]string{"-n", m.buildContainerName, "--"}, args...)
 	return runCommandWithInput("distrobox-enter", input, containerArgs...)
@@ -472,7 +540,6 @@ func (m *Manager) runInContainerOutput(args ...string) (string, error) {
 	return runCommandOutputQuiet("distrobox-enter", containerArgs...)
 }
 
-// resolveBuildGPU prioriza overrides del .env y cae a autodeteccion cuando no existen.
 func resolveBuildGPU(cfg EnvConfig) gpu.GPUInfo {
 	if cfg.GPUType != "" {
 		return gpu.GPUInfo{
@@ -490,7 +557,6 @@ func resolveBuildGPU(cfg EnvConfig) gpu.GPUInfo {
 	return hw
 }
 
-// normalizeGPUType convierte tipos amplios como amd en familias mas utiles para el build.
 func normalizeGPUType(gpuType, gfxVal string) string {
 	gpuType = strings.ToLower(strings.TrimSpace(gpuType))
 	gfxVal = strings.TrimSpace(gfxVal)
@@ -588,7 +654,6 @@ func removePathWritable(path string) error {
 	return os.RemoveAll(path)
 }
 
-// runCommandQuiet captura stdout/stderr y solo los expone si el comando falla.
 func runCommandQuiet(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	output, err := cmd.CombinedOutput()
