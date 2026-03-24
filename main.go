@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"axiom/pkg/bunker"
 	"axiom/pkg/install"
 	"axiom/pkg/ui"
-	"axiom/pkg/ui/styles" // Lo mantenemos para el mensaje de aviso
+	"axiom/pkg/ui/styles"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -16,26 +17,49 @@ func main() {
 		os.Exit(1)
 	}
 
-	dir, _ := os.Getwd()
-	isInit := len(os.Args) > 1 && os.Args[1] == "init"
-	
+	rootDir, _ := os.Getwd()
+	command := ""
+	if len(os.Args) > 1 {
+		command = os.Args[1]
+	}
+
+	// Cualquier comando operativo distinto de init se delega primero al orquestador.
+	// Asi evitamos que una configuracion existente bloquee comandos como build.
+	if command != "" && command != "init" {
+		manager := bunker.NewManager(rootDir)
+		if err := manager.Run(command, os.Args[2:]); err == nil {
+			return
+		} else if isKnownBunkerCommand(command) {
+			fmt.Println(styles.GetLogo())
+			fmt.Printf("❌ Error en el comando %q: %v\n", command, err)
+			os.Exit(1)
+		}
+	}
+
+	isInit := command == "init"
 	_, err := os.Stat(".env")
 	envExists := err == nil
 
-	// LÓGICA DE SALIDA LIMPIA:
+	// Si ya existe configuracion y no estamos reconfigurando, evitamos relanzar el asistente.
 	if envExists && !isInit {
-		// Solo aquí imprimimos el logo, porque no lanzamos la UI
-		fmt.Println(styles.GetLogo()) 
-		fmt.Printf("🛡️  AXIOM ya está configurado en: %s\n", dir)
+		fmt.Println(styles.GetLogo())
+		fmt.Printf("🛡️  AXIOM ya está configurado en: %s\n", rootDir)
 		fmt.Println("Usa 'axiom init' para reconfigurar el búnker.")
 		os.Exit(0)
 	}
 
-	// PARA EL INSTALADOR:
-	// No imprimimos nada aquí. El logo ya vive dentro de m.View() en form.go
-	p := tea.NewProgram(ui.NewModel(dir, envExists))
-	if _, err := p.Run(); err != nil {
+	program := tea.NewProgram(ui.NewModel(rootDir, envExists))
+	if _, err := program.Run(); err != nil {
 		fmt.Printf("Error en el búnker: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+func isKnownBunkerCommand(command string) bool {
+	switch command {
+	case "build":
+		return true
+	default:
+		return false
 	}
 }
