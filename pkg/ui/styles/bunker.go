@@ -18,12 +18,10 @@ var (
 		BorderForeground(Cyan).
 		Padding(1, 2).
 		Margin(1, 2).
-		Width(84)
+		Width(96)
 
 	BunkerTitleStyle = lipgloss.NewStyle().
-		Foreground(White).
-		Background(Dark).
-		Padding(0, 1).
+		Foreground(Cyan).
 		Bold(true)
 
 	BunkerSubtitleStyle = lipgloss.NewStyle().
@@ -83,16 +81,20 @@ func RenderBunkerWarning(title, subtitle string, details []BunkerDetail, items [
 }
 
 type BunkerRow struct {
-	Name      string
-	Status    string
-	Size      string
-	LastEntry string
-	GitBranch string
+	Name        string
+	Status      string
+	Size        string
+	LastEntry   string
+	GitBranch   string
+	Image       string
+	GPU         string
+	ProjectPath string
+	EnvPath     string
 }
 
 func RenderBunkerList(title, subtitle string, rows []BunkerRow, footer string) string {
 	const (
-		nameWidth   = 20
+		nameWidth   = 18
 		statusWidth = 10
 		sizeWidth   = 8
 		dateWidth   = 12
@@ -121,18 +123,9 @@ func RenderBunkerList(title, subtitle string, rows []BunkerRow, footer string) s
 			statusStyle = lipgloss.NewStyle().Foreground(Green).Bold(true)
 		}
 
-		branch := strings.TrimSpace(row.GitBranch)
-		if branch == "" {
-			branch = "-"
-		}
-		lastEntry := strings.TrimSpace(row.LastEntry)
-		if lastEntry == "" {
-			lastEntry = "-"
-		}
-		size := strings.TrimSpace(row.Size)
-		if size == "" {
-			size = "-"
-		}
+		branch := fallbackValue(row.GitBranch, "-")
+		lastEntry := fallbackValue(row.LastEntry, "-")
+		size := fallbackValue(row.Size, "-")
 
 		lines = append(lines, renderBunkerListRow(
 			lipgloss.NewStyle().Foreground(White).Bold(true).Render(padRight(row.Name, nameWidth)),
@@ -141,8 +134,20 @@ func RenderBunkerList(title, subtitle string, rows []BunkerRow, footer string) s
 			BunkerValueStyle.Render(padRight(lastEntry, dateWidth)),
 			BunkerValueStyle.Render(padRight(branch, branchWidth)),
 		))
+
+		meta := []string{
+			fmt.Sprintf("img: %s", fallbackValue(row.Image, "-")),
+			fmt.Sprintf("gpu: %s", fallbackValue(row.GPU, "-")),
+			fmt.Sprintf("env: %s", truncateText(fallbackValue(row.EnvPath, "-"), 34)),
+			fmt.Sprintf("project: %s", truncateText(fallbackValue(row.ProjectPath, "-"), 34)),
+		}
+		lines = append(lines, BunkerSubtitleStyle.Render("  "+strings.Join(meta, "  |  ")))
+		lines = append(lines, "")
 	}
 
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
 	if strings.TrimSpace(footer) != "" {
 		lines = append(lines, "")
 		lines = append(lines, BunkerSubtitleStyle.Render(footer))
@@ -160,4 +165,23 @@ func padRight(value string, width int) string {
 		return lipgloss.NewStyle().MaxWidth(width).Render(trimmed)
 	}
 	return trimmed + strings.Repeat(" ", width-lipgloss.Width(trimmed))
+}
+
+func truncateText(value string, width int) string {
+	trimmed := strings.TrimSpace(value)
+	if lipgloss.Width(trimmed) <= width {
+		return trimmed
+	}
+	if width <= 1 {
+		return lipgloss.NewStyle().MaxWidth(width).Render(trimmed)
+	}
+	return lipgloss.NewStyle().MaxWidth(width-1).Render(trimmed) + "..."
+}
+
+func fallbackValue(value, fallback string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return fallback
+	}
+	return trimmed
 }

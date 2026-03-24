@@ -52,9 +52,9 @@ func (m *Manager) Run(command string, args []string) error {
 		return m.List()
 	case "create":
 		return m.Create(firstArg(args))
-	case "delete", "eliminar":
+	case "delete":
 		return m.Delete(firstArg(args))
-	case "delete-image", "image-delete", "prune-images":
+	case "delete-image":
 		return m.DeleteImage()
 	default:
 		return fmt.Errorf("comando bunker no soportado todavía: %s", command)
@@ -63,7 +63,7 @@ func (m *Manager) Run(command string, args []string) error {
 
 func KnownCommand(command string) bool {
 	switch strings.ToLower(strings.TrimSpace(command)) {
-	case "help", "build", "list", "create", "delete", "eliminar", "delete-image", "image-delete", "prune-images":
+	case "help", "build", "list", "create", "delete", "delete-image":
 		return true
 	default:
 		return false
@@ -75,21 +75,20 @@ func (m *Manager) Help() error {
 	fmt.Println(styles.GetLogo())
 	fmt.Println(styles.RenderBunkerCard(
 		"AXIOM Help",
-		"Comandos disponibles del búnker en la versión Go actual.",
+		"Comandos disponibles del búnker.",
 		[]styles.BunkerDetail{
-			{Label: "Build", Value: "Construye la imagen base: axiom build"},
-			{Label: "List", Value: "Lista los búnkeres detectados: axiom list"},
-			{Label: "Create", Value: "Crea o abre un búnker: axiom create <nombre>"},
-			{Label: "Delete", Value: "Elimina un búnker por nombre o selector: axiom delete [nombre]"},
-			{Label: "Eliminar", Value: "Alias en español de delete: axiom eliminar [nombre]"},
-			{Label: "Delete Image", Value: "Elimina la imagen base activa: axiom delete-image"},
+			{Label: "axiom build", Value: "Construye la imagen base con GPU y herramientas IA."},
+			{Label: "axiom list", Value: "Abre un selector con búsqueda y muestra la ficha del búnker."},
+			{Label: "axiom create <nombre>", Value: "Crea un nuevo búnker o entra en uno existente."},
+			{Label: "axiom delete", Value: "Abre el selector de búnkeres y elimina el que elijas."},
+			{Label: "axiom delete-image", Value: "Elimina la imagen base activa."},
 		},
 		[]string{
-			"Si no pasas nombre en delete/eliminar, se abre un selector con flechas.",
+			"Si no pasas nombre en axiom delete, se abre un selector con flechas.",
 			"Al borrar un búnker puedes decidir si también se elimina el código del proyecto.",
-			"delete-image también muestra las imágenes de AXIOM detectadas antes y después.",
+			"axiom list ya muestra estado, imagen base, GPU y rutas clave de cada búnker.",
 		},
-		"Siguiente paso: seguir portando info, stop, rebuild, prune y reset.",
+		"",
 	))
 	return nil
 }

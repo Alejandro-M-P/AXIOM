@@ -136,24 +136,22 @@ func (m *Manager) Create(name string) error {
 
 // Delete elimina un búnker y permite decidir si también se borra el código del proyecto.
 func (m *Manager) Delete(name string) error {
-	name = strings.TrimSpace(name)
+	_ = strings.TrimSpace(name)
 
 	cfg, err := m.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("no se pudo leer .env: %w", err)
 	}
 
-	if name == "" {
-		names, err := listBunkerNames(cfg)
-		if err != nil {
-			return err
-		}
-		selected, err := selectBunkerName(names)
-		if err != nil {
-			return err
-		}
-		name = selected
+	names, err := listBunkerNames(cfg)
+	if err != nil {
+		return err
 	}
+	selected, err := selectBunkerName(names)
+	if err != nil {
+		return err
+	}
+	name = selected
 
 	envDir := cfg.BuildWorkspaceDir(name)
 	projectDir := filepath.Join(cfg.BaseDir, name)
@@ -164,7 +162,7 @@ func (m *Manager) Delete(name string) error {
 		"Se eliminará el contenedor y podrás decidir si también borrar el código.",
 		[]styles.BunkerDetail{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}, {Label: "Proyecto", Value: projectDir}},
 		nil,
-		"La eliminación no registrará cambios en tutor.md.",
+		"",
 	))
 
 	reader := bufio.NewReader(os.Stdin)
@@ -252,7 +250,7 @@ func (m *Manager) Delete(name string) error {
 		"La desinstalación terminó correctamente.",
 		[]styles.BunkerDetail{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}, {Label: "Código borrado", Value: yesNo(deleteCode)}},
 		nil,
-		"La eliminación terminó sin modificar tutor.md.",
+		"",
 	))
 	return nil
 }
@@ -468,11 +466,15 @@ func isYes(value string) bool {
 }
 
 type bunkerSummary struct {
-	Name      string
-	Status    string
-	Size      string
-	LastEntry string
-	GitBranch string
+	Name        string
+	Status      string
+	Size        string
+	LastEntry   string
+	GitBranch   string
+	Image       string
+	GPU         string
+	ProjectPath string
+	EnvPath     string
 }
 
 // List muestra el estado de los búnkeres detectados en el sistema.
@@ -499,29 +501,56 @@ func (m *Manager) List() error {
 		return nil
 	}
 
+	hardware := resolveBuildGPU(cfg)
+	imageName := baseImageName(hardware.Type)
+
 	var rows []styles.BunkerRow
 	for _, name := range names {
 		summary := bunkerSummary{
-			Name:      name,
-			Status:    bunkerStatus(name),
-			Size:      bunkerEnvSize(cfg, name),
-			LastEntry: bunkerLastEntry(cfg, name),
-			GitBranch: bunkerGitBranch(cfg, name),
+			Name:        name,
+			Status:      bunkerStatus(name),
+			Size:        bunkerEnvSize(cfg, name),
+			LastEntry:   bunkerLastEntry(cfg, name),
+			GitBranch:   bunkerGitBranch(cfg, name),
+			Image:       imageName,
+			GPU:         hardware.Type,
+			ProjectPath: humanPath(bunkerProjectPath(cfg, name)),
+			EnvPath:     humanPath(bunkerEnvPath(cfg, name)),
 		}
 		rows = append(rows, styles.BunkerRow{
-			Name:      summary.Name,
-			Status:    summary.Status,
-			Size:      summary.Size,
-			LastEntry: summary.LastEntry,
-			GitBranch: summary.GitBranch,
+			Name:        summary.Name,
+			Status:      summary.Status,
+			Size:        summary.Size,
+			LastEntry:   summary.LastEntry,
+			GitBranch:   summary.GitBranch,
+			Image:       summary.Image,
+			GPU:         summary.GPU,
+			ProjectPath: summary.ProjectPath,
+			EnvPath:     summary.EnvPath,
 		})
 	}
 
-	fmt.Println(styles.RenderBunkerList(
-		"Búnkeres",
-		"Estado, tamaño y actividad de los entornos detectados.",
-		rows,
-		fmt.Sprintf("Total: %d búnker(es)", len(rows)),
+	selected, err := selectBunkerRow(rows)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(styles.GetLogo())
+	fmt.Println(styles.RenderBunkerCard(
+		selected.Name,
+		"Ficha del búnker seleccionado.",
+		[]styles.BunkerDetail{
+			{Label: "Estado", Value: selected.Status},
+			{Label: "Imagen", Value: selected.Image},
+			{Label: "GPU", Value: selected.GPU},
+			{Label: "Entorno", Value: selected.EnvPath},
+			{Label: "Proyecto", Value: selected.ProjectPath},
+			{Label: "Tamaño", Value: selected.Size},
+			{Label: "Última actividad", Value: selected.LastEntry},
+			{Label: "Rama git", Value: defaultString(selected.GitBranch, "-")},
+		},
+		nil,
+		"Usa axiom delete para eliminar este búnker o axiom create para entrar si ya existe.",
 	))
 	return nil
 }
