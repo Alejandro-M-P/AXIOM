@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"axiom/pkg/ui/styles"
 )
@@ -464,4 +465,137 @@ func yesNo(value bool) string {
 func isYes(value string) bool {
 	trimmed := strings.ToLower(strings.TrimSpace(value))
 	return trimmed == "s" || trimmed == "y" || trimmed == "si" || trimmed == "sí" || trimmed == "yes"
+}
+
+type bunkerSummary struct {
+	Name      string
+	Status    string
+	Size      string
+	LastEntry string
+	GitBranch string
+}
+
+// List muestra el estado de los búnkeres detectados en el sistema.
+func (m *Manager) List() error {
+	cfg, err := m.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("no se pudo leer .env: %w", err)
+	}
+
+	names, err := listBunkerNames(cfg)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(styles.GetLogo())
+	if len(names) == 0 {
+		fmt.Println(styles.RenderBunkerCard(
+			"Búnkeres",
+			"Estado actual del sistema AXIOM",
+			nil,
+			nil,
+			"No hay búnkeres creados todavía. Usa: axiom create <nombre>",
+		))
+		return nil
+	}
+
+	var rows []styles.BunkerRow
+	for _, name := range names {
+		summary := bunkerSummary{
+			Name:      name,
+			Status:    bunkerStatus(name),
+			Size:      bunkerEnvSize(cfg, name),
+			LastEntry: bunkerLastEntry(cfg, name),
+			GitBranch: bunkerGitBranch(cfg, name),
+		}
+		rows = append(rows, styles.BunkerRow{
+			Name:      summary.Name,
+			Status:    summary.Status,
+			Size:      summary.Size,
+			LastEntry: summary.LastEntry,
+			GitBranch: summary.GitBranch,
+		})
+	}
+
+	fmt.Println(styles.RenderBunkerList(
+		"Búnkeres",
+		"Estado, tamaño y actividad de los entornos detectados.",
+		rows,
+		fmt.Sprintf("Total: %d búnker(es)", len(rows)),
+	))
+	return nil
+}
+
+func bunkerStatus(name string) string {
+	output, err := runCommandOutputQuiet("podman", "ps", "--format", "{{.Names}}")
+	if err != nil {
+		return "stopped"
+	}
+	for _, line := range strings.Split(output, "\n") {
+		if strings.TrimSpace(line) == name {
+			return "running"
+		}
+	}
+	return "stopped"
+}
+
+func bunkerEnvSize(cfg EnvConfig, name string) string {
+	path := cfg.BuildWorkspaceDir(name)
+	if _, err := os.Stat(path); err != nil {
+		return "-"
+	}
+	cmd := exec.Command("du", "-sh", path)
+	output, err := cmd.Output()
+	if err != nil {
+		return "-"
+	}
+	fields := strings.Fields(strings.TrimSpace(string(output)))
+	if len(fields) == 0 {
+		return "-"
+	}
+	return fields[0]
+}
+
+func bunkerGitBranch(cfg EnvConfig, name string) string {
+	projectPath := filepath.Join(cfg.BaseDir, name)
+	if _, err := os.Stat(filepath.Join(projectPath, ".git")); err != nil {
+		return "-"
+	}
+	output, err := runCommandOutputQuiet("git", "-C", projectPath, "branch", "--show-current")
+	if err != nil || strings.TrimSpace(output) == "" {
+		return "-"
+	}
+	return strings.TrimSpace(output)
+}
+
+func bunkerLastEntry(cfg EnvConfig, name string) string {
+	path := cfg.BuildWorkspaceDir(name)
+	info, err := os.Stat(path)
+	if err != nil {
+		return "-"
+	}
+	return info.ModTime().Format("2006-01-02")
+}
+
+func bunkerProjectPath(cfg EnvConfig, name string) string {
+	return filepath.Join(cfg.BaseDir, name)
+}
+
+func bunkerEnvPath(cfg EnvConfig, name string) string {
+	return cfg.BuildWorkspaceDir(name)
+}
+
+func humanPath(path string) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return path
+	}
+	if strings.HasPrefix(path, home) {
+		return strings.Replace(path, home, "~", 1)
+	}
+	return path
+}
+
+func bunkerTimestamp(t time.Time) string {
+	return t.Format("2006-01-02")
 }

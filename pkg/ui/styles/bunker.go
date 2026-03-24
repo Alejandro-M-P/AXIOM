@@ -81,3 +81,83 @@ func RenderBunkerWarning(title, subtitle string, details []BunkerDetail, items [
 	body := RenderBunkerCard(title, subtitle, details, items, "")
 	return body + "\n" + BunkerWarningStyle.Render(warning)
 }
+
+type BunkerRow struct {
+	Name      string
+	Status    string
+	Size      string
+	LastEntry string
+	GitBranch string
+}
+
+func RenderBunkerList(title, subtitle string, rows []BunkerRow, footer string) string {
+	const (
+		nameWidth   = 20
+		statusWidth = 10
+		sizeWidth   = 8
+		dateWidth   = 12
+		branchWidth = 14
+	)
+
+	var lines []string
+	lines = append(lines, BunkerTitleStyle.Render(title))
+	if strings.TrimSpace(subtitle) != "" {
+		lines = append(lines, BunkerSubtitleStyle.Render(subtitle))
+	}
+	lines = append(lines, "")
+	lines = append(lines, renderBunkerListRow(
+		BunkerLabelStyle.Render(padRight("BUNKER", nameWidth)),
+		BunkerLabelStyle.Render(padRight("ESTADO", statusWidth)),
+		BunkerLabelStyle.Render(padRight("TAM", sizeWidth)),
+		BunkerLabelStyle.Render(padRight("ULTIMA", dateWidth)),
+		BunkerLabelStyle.Render(padRight("RAMA", branchWidth)),
+	))
+
+	for _, row := range rows {
+		statusText := "stopped"
+		statusStyle := lipgloss.NewStyle().Foreground(Gray)
+		if strings.TrimSpace(row.Status) == "running" {
+			statusText = "running"
+			statusStyle = lipgloss.NewStyle().Foreground(Green).Bold(true)
+		}
+
+		branch := strings.TrimSpace(row.GitBranch)
+		if branch == "" {
+			branch = "-"
+		}
+		lastEntry := strings.TrimSpace(row.LastEntry)
+		if lastEntry == "" {
+			lastEntry = "-"
+		}
+		size := strings.TrimSpace(row.Size)
+		if size == "" {
+			size = "-"
+		}
+
+		lines = append(lines, renderBunkerListRow(
+			lipgloss.NewStyle().Foreground(White).Bold(true).Render(padRight(row.Name, nameWidth)),
+			statusStyle.Render(padRight(statusText, statusWidth)),
+			BunkerValueStyle.Render(padRight(size, sizeWidth)),
+			BunkerValueStyle.Render(padRight(lastEntry, dateWidth)),
+			BunkerValueStyle.Render(padRight(branch, branchWidth)),
+		))
+	}
+
+	if strings.TrimSpace(footer) != "" {
+		lines = append(lines, "")
+		lines = append(lines, BunkerSubtitleStyle.Render(footer))
+	}
+	return BunkerCardStyle.Render(strings.Join(lines, "\n"))
+}
+
+func renderBunkerListRow(columns ...string) string {
+	return strings.Join(columns, "  ")
+}
+
+func padRight(value string, width int) string {
+	trimmed := strings.TrimSpace(value)
+	if lipgloss.Width(trimmed) >= width {
+		return lipgloss.NewStyle().MaxWidth(width).Render(trimmed)
+	}
+	return trimmed + strings.Repeat(" ", width-lipgloss.Width(trimmed))
+}

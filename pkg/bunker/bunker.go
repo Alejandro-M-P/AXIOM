@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"axiom/pkg/ui/styles"
 )
 
 const defaultBuildContainerName = "axiom-build"
@@ -46,6 +48,8 @@ func (m *Manager) Run(command string, args []string) error {
 		return m.Help()
 	case "build":
 		return m.Build()
+	case "list":
+		return m.List()
 	case "create":
 		return m.Create(firstArg(args))
 	case "delete", "eliminar":
@@ -59,11 +63,35 @@ func (m *Manager) Run(command string, args []string) error {
 
 func KnownCommand(command string) bool {
 	switch strings.ToLower(strings.TrimSpace(command)) {
-	case "help", "build", "create", "delete", "eliminar", "delete-image", "image-delete", "prune-images":
+	case "help", "build", "list", "create", "delete", "eliminar", "delete-image", "image-delete", "prune-images":
 		return true
 	default:
 		return false
 	}
+}
+
+// Help muestra los comandos disponibles del orquestador bunker.
+func (m *Manager) Help() error {
+	fmt.Println(styles.GetLogo())
+	fmt.Println(styles.RenderBunkerCard(
+		"AXIOM Help",
+		"Comandos disponibles del búnker en la versión Go actual.",
+		[]styles.BunkerDetail{
+			{Label: "Build", Value: "Construye la imagen base: axiom build"},
+			{Label: "List", Value: "Lista los búnkeres detectados: axiom list"},
+			{Label: "Create", Value: "Crea o abre un búnker: axiom create <nombre>"},
+			{Label: "Delete", Value: "Elimina un búnker por nombre o selector: axiom delete [nombre]"},
+			{Label: "Eliminar", Value: "Alias en español de delete: axiom eliminar [nombre]"},
+			{Label: "Delete Image", Value: "Elimina la imagen base activa: axiom delete-image"},
+		},
+		[]string{
+			"Si no pasas nombre en delete/eliminar, se abre un selector con flechas.",
+			"Al borrar un búnker puedes decidir si también se elimina el código del proyecto.",
+			"delete-image también muestra las imágenes de AXIOM detectadas antes y después.",
+		},
+		"Siguiente paso: seguir portando info, stop, rebuild, prune y reset.",
+	))
+	return nil
 }
 
 func (m *Manager) LoadConfig() (EnvConfig, error) {

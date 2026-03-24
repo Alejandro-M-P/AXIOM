@@ -60,19 +60,31 @@ axiom build
 
 ## 💻 Basic Usage: Host Commands
 
-Run `axiom create my-project` and in 30 seconds you have a fully equipped environment. 
+Run `axiom create my-project` and in 30 seconds you have a fully equipped environment.
 
 | Command | Description |
 | :--- | :--- |
-| `axiom create <name>` | Creates a new bunker from the base image or enters an existing one. |
-| `axiom list` | Shows status, size, git branch, and last entry of all bunkers. |
-| `axiom info <name>` | Shows technical details, base image, and exact paths for a bunker. |
-| `axiom stop <name>` | Stops the container execution without deleting data. |
+| `axiom help` | Shows the commands currently available in the Go orchestrator. |
 | `axiom build` | Builds the base image with GPU and AI tools. |
-| `axiom rebuild` | Rebuilds the base image (does not affect existing bunkers). |
-| `axiom delete <name>` | Completely destroys the bunker and its environment *(Requires justification)*. |
-| `axiom prune` | Cleans up orphaned environment directories. |
-| `axiom reset` | Total reset: deletes all bunkers and the base image *(Requires justification)*. |
+| `axiom list` | Shows detected bunkers with status, size, last entry, and git branch. |
+| `axiom create <name>` | Creates a new bunker from the base image or enters an existing one. |
+| `axiom delete [name]` | Deletes a bunker. If no name is provided, it opens an arrow-key selector. |
+| `axiom eliminar [name]` | Spanish alias for `axiom delete`. |
+| `axiom delete-image` | Deletes the active base image and shows detected AXIOM images. |
+| `axiom image-delete` | Alias for `axiom delete-image`. |
+| `axiom prune-images` | Alias for `axiom delete-image`. |
+
+### Current Go Migration Layout
+The host-side logic already ported to Go lives in `pkg/bunker` and is split by responsibility:
+
+| Path | Responsibility |
+| :--- | :--- |
+| `pkg/bunker/bunker.go` | Orchestrator, `Manager`, command routing, and `.env` loading. |
+| `pkg/bunker/lifecycle.go` | `axiom build` lifecycle and base image flow. |
+| `pkg/bunker/instance.go` | `create`, `delete`, `list`, and base image deletion. |
+| `pkg/bunker/select.go` | Interactive bunker picker with arrow-key navigation. |
+| `pkg/bunker/templates.go` | Injection of `starship`, `opencode`, and bootstrap files. |
+| `pkg/ui/styles/` | Lifecycle and bunker rendering UI. |
 
 ---
 
@@ -165,7 +177,7 @@ AXIOM does not install dependencies every time you create a project.
 ### 3. Physical Isolation
 * **The Code:** Lives at `~/dev/my-project` (on the host) and is mounted at `/my-project` in the bunker.
 * **The System (Home):** Lives at `~/dev/.entorno/my-project`. Contains config, bashes, caches, etc.
-* Running `axiom delete` only destroys the Podman container and the `.entorno/` directory. **Your code is never touched.**
+* Running `axiom delete` destroys the Podman container and the `.entorno/` directory. **Your project code is only removed if you explicitly confirm that option during deletion.**
 
 ---
 

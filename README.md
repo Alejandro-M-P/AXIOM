@@ -65,12 +65,27 @@ Ejecutas `axiom create mi-proyecto` y en 30 segundos tienes un entorno completo 
 
 | Comando | Descripción |
 | :--- | :--- |
-| `axiom help` | Muestra la ayuda de los comandos disponibles en la implementación Go actual. |
+| `axiom help` | Muestra la ayuda de los comandos del orquestador Go actual. |
 | `axiom build` | Construye la imagen base con GPU y herramientas IA. |
+| `axiom list` | Lista los búnkeres detectados con estado, tamaño, última entrada y rama git. |
 | `axiom create <nombre>` | Crea un nuevo búnker desde la imagen base o entra en uno existente. |
 | `axiom delete [nombre]` | Elimina un búnker. Si no pasas nombre, abre un selector con flechas. |
 | `axiom eliminar [nombre]` | Alias en español de `axiom delete`. |
 | `axiom delete-image` | Elimina la imagen base activa y muestra las imágenes AXIOM detectadas. |
+| `axiom image-delete` | Alias de `axiom delete-image`. |
+| `axiom prune-images` | Alias de `axiom delete-image`. |
+
+### Estado actual de la migración a Go
+La lógica de host que ya está portada vive en `pkg/bunker` y se organiza así:
+
+| Ruta | Responsabilidad |
+| :--- | :--- |
+| `pkg/bunker/bunker.go` | Orquestador, `Manager`, router de comandos y carga de `.env`. |
+| `pkg/bunker/lifecycle.go` | Flujo de `axiom build` y ciclo de vida de la imagen base. |
+| `pkg/bunker/instance.go` | `create`, `delete`, `list` y borrado de imagen base. |
+| `pkg/bunker/select.go` | Selector interactivo para elegir búnkeres con flechas. |
+| `pkg/bunker/templates.go` | Inyección de `starship`, `opencode` y archivos de arranque. |
+| `pkg/ui/styles/` | Renderizado visual del ciclo de vida y vistas de bunker. |
 
 ---
 
@@ -164,7 +179,7 @@ AXIOM no instala dependencias cada vez que creas un proyecto.
 AXIOM separa el código fuente del sistema operativo del contenedor:
 * **El Código:** Vive en `~/dev/mi-proyecto` (tu host) y se monta en `/mi-proyecto` dentro del búnker.
 * **El Sistema (Home):** Vive en `~/dev/.entorno/mi-proyecto`. Aquí están las configuraciones de Opencode, historiales de Bash, cachés, etc. 
-* Si ejecutas `axiom delete`, solo se destruye el contenedor de Podman y el directorio `.entorno/`. **Tu código solo se borra si lo confirmas explícitamente al ejecutar `axiom delete` o `axiom eliminar`.**
+* Si ejecutas `axiom delete`, se destruye el contenedor de Podman y el directorio `.entorno/`. **Tu código solo se borra si lo confirmas explícitamente durante `axiom delete` o `axiom eliminar`.**
 
 ---
 
