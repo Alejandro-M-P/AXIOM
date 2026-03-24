@@ -52,6 +52,8 @@ func (m *Manager) Run(command string, args []string) error {
 		return m.List()
 	case "create":
 		return m.Create(firstArg(args))
+	case "stop":
+		return m.Stop()
 	case "delete":
 		return m.Delete(firstArg(args))
 	case "delete-image":
@@ -63,7 +65,7 @@ func (m *Manager) Run(command string, args []string) error {
 
 func KnownCommand(command string) bool {
 	switch strings.ToLower(strings.TrimSpace(command)) {
-	case "help", "build", "list", "create", "delete", "delete-image":
+	case "help", "build", "list", "create", "stop", "delete", "delete-image":
 		return true
 	default:
 		return false
@@ -80,6 +82,7 @@ func (m *Manager) Help() error {
 			{Label: "axiom build", Value: "Construye la imagen base con GPU y herramientas IA."},
 			{Label: "axiom list", Value: "Abre un selector con búsqueda y muestra la ficha del búnker."},
 			{Label: "axiom create <nombre>", Value: "Crea un nuevo búnker o entra en uno existente."},
+			{Label: "axiom stop", Value: "Abre el selector de búnkeres activos y para el que elijas."},
 			{Label: "axiom delete", Value: "Abre el selector de búnkeres y elimina el que elijas."},
 			{Label: "axiom delete-image", Value: "Elimina la imagen base activa."},
 		},

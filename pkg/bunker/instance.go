@@ -134,6 +134,99 @@ func (m *Manager) Create(name string) error {
 	return enterBunker(name, rcPath)
 }
 
+// Stop detiene un búnker activo sin borrar su entorno ni el proyecto.
+func (m *Manager) Stop() error {
+	cfg, err := m.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("no se pudo leer .env: %w", err)
+	}
+
+	names, err := listBunkerNames(cfg)
+	if err != nil {
+		return err
+	}
+	if len(names) == 0 {
+		fmt.Println(styles.GetLogo())
+		fmt.Println(styles.RenderBunkerCard(
+			"Stop Búnker",
+			"No hay búnkeres creados.",
+			nil,
+			nil,
+			"Usa axiom create <nombre> para crear uno nuevo.",
+		))
+		return nil
+	}
+
+	hardware := resolveBuildGPU(cfg)
+	imageName := baseImageName(hardware.Type)
+	var rows []styles.BunkerRow
+	for _, name := range names {
+		if bunkerStatus(name) != "running" {
+			continue
+		}
+		rows = append(rows, styles.BunkerRow{
+			Name:        name,
+			Status:      bunkerStatus(name),
+			Size:        bunkerEnvSize(cfg, name),
+			LastEntry:   bunkerLastEntry(cfg, name),
+			GitBranch:   bunkerGitBranch(cfg, name),
+			Image:       imageName,
+			GPU:         hardware.Type,
+			ProjectPath: humanPath(bunkerProjectPath(cfg, name)),
+			EnvPath:     humanPath(bunkerEnvPath(cfg, name)),
+		})
+	}
+
+	if len(rows) == 0 {
+		fmt.Println(styles.GetLogo())
+		fmt.Println(styles.RenderBunkerCard(
+			"Stop Búnker",
+			"No hay búnkeres activos ahora mismo.",
+			nil,
+			nil,
+			"Todos los búnkeres detectados ya están parados.",
+		))
+		return nil
+	}
+
+	selected, err := selectBunkerRow(rows)
+	if err != nil {
+		return err
+	}
+
+	if selected.Status == "stopped" {
+		fmt.Println(styles.GetLogo())
+		fmt.Println(styles.RenderBunkerCard(
+			selected.Name,
+			"El búnker ya está parado.",
+			[]styles.BunkerDetail{{Label: "Estado", Value: selected.Status}, {Label: "Entorno", Value: selected.EnvPath}},
+			nil,
+			"No fue necesario hacer cambios.",
+		))
+		return nil
+	}
+
+	if err := runCommandQuiet("distrobox-stop", selected.Name, "--yes"); err != nil {
+		return err
+	}
+
+	fmt.Println(styles.GetLogo())
+	fmt.Println(styles.RenderBunkerCard(
+		selected.Name,
+		"El búnker se ha parado correctamente.",
+		[]styles.BunkerDetail{
+			{Label: "Estado", Value: "stopped"},
+			{Label: "Imagen", Value: selected.Image},
+			{Label: "GPU", Value: selected.GPU},
+			{Label: "Entorno", Value: selected.EnvPath},
+			{Label: "Proyecto", Value: selected.ProjectPath},
+		},
+		nil,
+		"El entorno sigue intacto y puedes volver a abrirlo con axiom create <nombre>.",
+	))
+	return nil
+}
+
 // Delete elimina un búnker y permite decidir si también se borra el código del proyecto.
 func (m *Manager) Delete(name string) error {
 	_ = strings.TrimSpace(name)
