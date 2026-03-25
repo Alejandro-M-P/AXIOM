@@ -1,13 +1,15 @@
 [🇬🇧 English](README-en.md) | [🇪🇸 Español](README.md)
 
- # AXIOM Bunker System 🛡️ (Refactor Go Edition)
+# AXIOM Bunker System 🛡️ (Refactor Go Edition)
 
+```text
   █████╗ ██╗  ██╗██╗ ██████╗ ███╗   ███╗
  ██╔══██╗╚██╗██╔╝██║██╔═══██╗████╗ ████║
  ███████║ ╚███╔╝ ██║██║   ██║██╔████╔██║
  ██╔══██║ ██╔██╗ ██║██║   ██║██║╚██╔╝██║
  ██║  ██║██╔╝ ██╗██║╚██████╔╝██║ ╚═╝ ██║
  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚═╝
+
 
 > **Cero suciedad. Entornos inmutables. Desarrollo de alto rendimiento.**
 
