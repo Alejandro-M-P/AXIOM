@@ -447,10 +447,17 @@ func sshVolumeFlag() string {
 func hostGPUVolumeFlags(gpuType string) []string {
 	var flags []string
 	addPath := func(path string) {
-		flags = append(flags, fmt.Sprintf("--volume %s:%s:ro", path, path))
+		realPath, err := filepath.EvalSymlinks(path)
+		if err == nil && realPath != path {
+			// Resolver symlink: montamos el real apuntando al nombre original esperado
+			flags = append(flags, fmt.Sprintf("--volume %s:%s:ro", realPath, path))
+			flags = append(flags, fmt.Sprintf("--volume %s:%s:ro", realPath, realPath))
+		} else {
+			flags = append(flags, fmt.Sprintf("--volume %s:%s:ro", path, path))
+		}
 	}
 
-	switch gpuType {
+	switch strings.ToLower(strings.TrimSpace(gpuType)) {
 	case "rdna3", "rdna4", "amd", "generic":
 		for _, path := range []string{"/usr/lib/rocm", "/usr/lib64/rocm", "/opt/rocm"} {
 			if info, err := os.Stat(path); err == nil && info.IsDir() {
@@ -463,6 +470,8 @@ func hostGPUVolumeFlags(gpuType string) []string {
 			}
 		}
 	case "nvidia":
+		// Inyección nativa CDI (Container Device Interface) para NVIDIA moderno
+		flags = append(flags, "--device=nvidia.com/gpu=all")
 		for _, path := range []string{"/usr/lib/x86_64-linux-gnu/libcuda.so.1", "/usr/local/cuda"} {
 			if _, err := os.Stat(path); err == nil {
 				addPath(path)
