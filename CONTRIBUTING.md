@@ -1,11 +1,19 @@
-# 🤝 Contribuye a AXIOM
+# 🤝 Contribute to AXIOM
 
-¡Hola! Soy Alejandro, el único dev detrás de AXIOM. Busco aliados para terminar de jubilar el código en Bash y construir un orquestador robusto en Go.
+Hi! I'm Alejandro, the sole developer of AXIOM. I'm looking for allies to help me retire the old Bash code and build a robust orchestrator in Go.
 
-## 📜 Reglas de Oro
-1. **Go Nativo o nada**: No aceptamos llamadas a scripts de Bash (`os/exec` sobre archivos .sh). Queremos lógica pura en Go.
-2. **Los .sh son "Planos"**: Los archivos en `lib/` están ahí solo para que entiendas la lógica antigua y me ayudes a portarla a `pkg/`.
-3. **Seguridad primero**: Si encuentras un fallo en el manejo de contenedores de `pkg/bunker/lifecycle.go`, tu PR tiene prioridad máxima.
+## 📜 The Golden Rule: Native Go
+We don't want to rely on Bash scripts. The goal is for **AXIOM** to be a pure Go binary that manages your bunkers safely and efficiently. 
 
-## 🏗️ Cómo empezar
-El comando más estable ahora mismo es `axiom list`. Puedes empezar revisando cómo lee el sistema de archivos y ayudarme a estabilizar `axiom info` o `axiom build`.
+## 🚧 Current Situation
+I have already ported the **lifecycle** functions to Go. However, as an MVP, the code currently has:
+1. **Security flaws** in system interactions.
+2. **Logic bugs** that need polishing.
+
+## 🤝 How to Help
+If you know Go and System Security:
+* Help me audit and fix the functions in `pkg/bunker/lifecycle.go`.
+* Collaborate on the upcoming migration from `.env` to **TOML**.
+* Help ensure the selective cleanup of `~/.entorno/` is indestructible.
+
+Let's make immutable development clean and safe!
