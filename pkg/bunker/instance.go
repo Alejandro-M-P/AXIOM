@@ -80,10 +80,10 @@ func (m *Manager) Create(name string) error {
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(envDir, 0755); err != nil {
+	if err := os.MkdirAll(envDir, 0700); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(cfg.AIConfigDir(), "models"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(cfg.AIConfigDir(), "models"), 0700); err != nil {
 		return err
 	}
 	if err := ensureTutorFile(cfg.TutorPath()); err != nil {
@@ -365,9 +365,9 @@ func (m *Manager) DeleteImage() error {
 
 func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir string) string {
 	parts := []string{
-		fmt.Sprintf("--volume %s:/%s", projectDir, name),
-		fmt.Sprintf("--volume %s:/ai_config", cfg.AIConfigDir()),
-		fmt.Sprintf("--volume %s:/run/axiom/env:ro", filepath.Join(cfg.AxiomPath, ".env")),
+		fmt.Sprintf("--volume %s:/%s:z", projectDir, name),
+		fmt.Sprintf("--volume %s:/ai_config:z", cfg.AIConfigDir()),
+		fmt.Sprintf("--volume %s:/run/axiom/env:ro,z", filepath.Join(cfg.AxiomPath, ".env")),
 		"--device /dev/kfd",
 		"--device /dev/dri",
 		"--security-opt label=disable",

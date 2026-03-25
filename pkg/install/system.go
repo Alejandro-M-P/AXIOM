@@ -28,7 +28,7 @@ func PrepareFS(axiomPath, baseDir string) error {
 	// Jerarquía de búnkeres: ai_config/models, ai_config/teams, .entorno
 	subDirs := []string{"ai_config/models", "ai_config/teams", ".entorno"}
 	for _, sd := range subDirs {
-		if err := os.MkdirAll(filepath.Join(baseDir, sd), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(baseDir, sd), 0700); err != nil {
 			return err
 		}
 	}

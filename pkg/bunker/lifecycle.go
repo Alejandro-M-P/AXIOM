@@ -217,10 +217,10 @@ func (p *buildProgress) renderError(err error, where string) {
 }
 
 func (m *Manager) prepareSharedDirectories(ctx buildContext) error {
-	if err := os.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "models"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "models"), 0700); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "teams"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "teams"), 0700); err != nil {
 		return err
 	}
 	if err := ensureTutorFile(ctx.config.TutorPath()); err != nil {
@@ -234,7 +234,7 @@ func (m *Manager) recreateBuildContainer(ctx buildContext) error {
 	if err := removePathWritable(ctx.buildWorkspaceDir); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(ctx.buildWorkspaceDir, 0755); err != nil {
+	if err := os.MkdirAll(ctx.buildWorkspaceDir, 0700); err != nil {
 		return err
 	}
 
@@ -251,7 +251,7 @@ func (m *Manager) recreateBuildContainer(ctx buildContext) error {
 
 func (m *Manager) buildContainerFlags(ctx buildContext) string {
 	return fmt.Sprintf(
-		"--volume %s:/ai_config --volume %s:/run/axiom/env:ro --device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render",
+		"--volume %s:/ai_config:z --volume %s:/run/axiom/env:ro,z --device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render",
 		ctx.config.AIConfigDir(),
 		filepath.Join(ctx.config.AxiomPath, ".env"),
 	)
@@ -615,7 +615,7 @@ func baseImageName(gpuType string) string {
 }
 
 func ensureTutorFile(path string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
 	if _, err := os.Stat(path); err == nil {
@@ -623,7 +623,7 @@ func ensureTutorFile(path string) error {
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	file, err := os.OpenFile(path, os.O_CREATE, 0644)
+	file, err := os.OpenFile(path, os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}

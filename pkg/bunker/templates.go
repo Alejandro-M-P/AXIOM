@@ -52,7 +52,7 @@ type opencodeProvider struct {
 // No depende de core.sh ni git.sh: la preparación queda autocontenida en Go.
 func writeShellBootstrap(cfg EnvConfig, name, envDir, gfxOverride string) error {
 	path := filepath.Join(envDir, ".bashrc")
-	return os.WriteFile(path, []byte(renderShellBootstrap(cfg, name, gfxOverride)), 0644)
+	return os.WriteFile(path, []byte(renderShellBootstrap(cfg, name, gfxOverride)), 0600)
 }
 
 func renderShellBootstrap(cfg EnvConfig, name, gfxOverride string) string {
@@ -86,10 +86,10 @@ func renderShellBootstrap(cfg EnvConfig, name, gfxOverride string) string {
 
 func writeStarshipConfig(envDir string) error {
 	configDir := filepath.Join(envDir, ".config")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0700); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(configDir, "starship.toml"), []byte(starshipTemplate), 0644)
+	return os.WriteFile(filepath.Join(configDir, "starship.toml"), []byte(starshipTemplate), 0600)
 }
 
 func copyTutorToAgents(tutorPath, envDir string) error {
@@ -101,15 +101,15 @@ func copyTutorToAgents(tutorPath, envDir string) error {
 		return err
 	}
 	configDir := filepath.Join(envDir, ".config", "opencode")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0700); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(configDir, "AGENTS.md"), data, 0644)
+	return os.WriteFile(filepath.Join(configDir, "AGENTS.md"), data, 0600)
 }
 
 func writeOpencodeConfig(envDir string) error {
 	configDir := filepath.Join(envDir, ".config", "opencode")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0700); err != nil {
 		return err
 	}
 	path := filepath.Join(configDir, "opencode.json")
@@ -130,7 +130,7 @@ func writeOpencodeConfig(envDir string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(data, '\n'), 0644)
+	return os.WriteFile(path, append(data, '\n'), 0600)
 }
 
 func defaultOpencodeConfig() (opencodeConfig, error) {

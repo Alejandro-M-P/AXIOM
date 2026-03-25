@@ -316,12 +316,7 @@ func (m Model) View() string {
 	case StepConfirm:
 		body = m.renderBox("ADVERTENCIA", "¿Sobrescribir archivo .env existente?", "SÍ, CONTINUAR", "NO, SALIR")
 	case StepGitUser:
-		body = m.renderInput("USUARIO GITHUB", "Introduce tu usuario:", "ej: user
-		
-		
-		
-		
-		")
+		body = m.renderInput("USUARIO GITHUB", "Introduce tu usuario:", "ej: user")
 	case StepGitEmail:
 		body = m.renderInput("EMAIL GITHUB", "Introduce tu correo:", "ej: user@example.com")
 	case StepAuthMode:
