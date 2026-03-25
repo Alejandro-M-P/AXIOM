@@ -1,0 +1,19 @@
+# ---------------------------------------------------------
+# LOGS DE PROGRESO (Impresiones planas en terminal)
+# ---------------------------------------------------------
+
+[build]
+success = "\n✅ Imagen %s lista. Usa: axiom create [nombre]\n"
+
+[delete]
+cleaning = "\n🧹 Eliminando recursos..."
+
+[prune]
+cleaning = "\n🧹 Eliminando entornos huérfanos..."
+deleting_item = " - Eliminando %s..."
+
+[cli]
+configured = "🛡️  AXIOM ya está configurado en: %s"
+use_init = "Usa 'axiom init' para reconfigurar el búnker."
+error = "Error en el búnker: %v"
+technical_detail = "[Detalle técnico: %v]"

@@ -9,7 +9,6 @@ disabled = false
 style = "bg:#88c0d0 fg:#2e3440"
 
 [os.symbols]
-Fedora = " "
 Arch = "󰣇 "
 
 [username]

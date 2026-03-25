@@ -1,7 +1,6 @@
 package bunker
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 	"time"
 
 	"axiom/pkg/gpu"
-	"axiom/pkg/ui/styles"
 )
 
 type githubRelease struct {
@@ -30,11 +28,12 @@ type buildContext struct {
 
 // buildProgress mantiene el estado visual del build para la UI.
 type buildProgress struct {
+	ui        UI
 	title     string
 	subtitle  string
-	steps     []styles.LifecycleStep
+	steps     []LifecycleStep
 	taskTitle string
-	taskSteps []styles.LifecycleStep
+	taskSteps []LifecycleStep
 }
 
 // Build ejecuta el flujo completo de construccion de la imagen base.
@@ -44,7 +43,7 @@ func (m *Manager) Build() error {
 		return err
 	}
 
-	progress := newBuildProgress(ctx)
+	progress := newBuildProgress(ctx, m.UI)
 	progress.render()
 
 	if err := progress.runStep(0, func() error {
@@ -105,16 +104,16 @@ func (m *Manager) Build() error {
 		return err
 	}
 
-	progress.subtitle = fmt.Sprintf("Imagen lista: %s", ctx.imageName)
+	progress.subtitle = m.UI.GetText("build.success_sub", ctx.imageName)
 	progress.render()
-	fmt.Printf("\n✅ Imagen %s lista. Usa: axiom create [nombre]\n", ctx.imageName)
+	m.UI.ShowLog("build.success", ctx.imageName)
 	return nil
 }
 
 func (m *Manager) prepareBuildContext() (buildContext, error) {
 	cfg, err := m.LoadConfig()
 	if err != nil {
-		return buildContext{}, fmt.Errorf("no se pudo leer .env: %w", err)
+		return buildContext{}, fmt.Errorf("env_read_error: %w", err)
 	}
 
 	hardware := resolveBuildGPU(cfg)
@@ -128,22 +127,23 @@ func (m *Manager) prepareBuildContext() (buildContext, error) {
 	}, nil
 }
 
-func newBuildProgress(ctx buildContext) *buildProgress {
-	gpuModeText := "Drivers desde host"
+func newBuildProgress(ctx buildContext, ui UI) *buildProgress {
+	gpuModeText := ui.GetText("build.subtitle_host")
 	if ctx.config.ROCMMode == "image" {
-		gpuModeText = "Drivers dentro de la imagen"
+		gpuModeText = ui.GetText("build.subtitle_image")
 	}
 
 	return &buildProgress{
-		title:    fmt.Sprintf("Construyendo %s", ctx.imageName),
-		subtitle: fmt.Sprintf("GPU: %s | Modo: %s", ctx.gpuInfo.Type, gpuModeText),
-		steps: []styles.LifecycleStep{
-			{Title: "Preparar directorios", Detail: ctx.config.AIConfigDir(), Status: styles.LifecyclePending},
-			{Title: "Recrear contenedor temporal", Detail: ctx.buildWorkspaceDir, Status: styles.LifecyclePending},
-			{Title: "Instalar sistema base", Detail: "pacman + paquetes GPU", Status: styles.LifecyclePending},
-			{Title: "Instalar herramientas dev", Detail: "OpenCode, Engram, gentle-ai", Status: styles.LifecyclePending},
-			{Title: "Preparar stack IA", Detail: "Ollama + agent-teams-lite", Status: styles.LifecyclePending},
-			{Title: "Empaquetar imagen", Detail: ctx.imageName, Status: styles.LifecyclePending},
+		ui:       ui,
+		title:    ui.GetText("build.title", ctx.imageName),
+		subtitle: ui.GetText("build.subtitle_base", ctx.gpuInfo.Type, gpuModeText),
+		steps: []LifecycleStep{
+			{Title: ui.GetText("step.prepare_dirs"), Detail: ctx.config.AIConfigDir(), Status: LifecyclePending},
+			{Title: ui.GetText("step.recreate_container"), Detail: ctx.buildWorkspaceDir, Status: LifecyclePending},
+			{Title: ui.GetText("step.install_base"), Detail: ui.GetText("detail.base_pkgs"), Status: LifecyclePending},
+			{Title: ui.GetText("step.install_dev"), Detail: ui.GetText("detail.dev_tools"), Status: LifecyclePending},
+			{Title: ui.GetText("step.install_ai"), Detail: ui.GetText("detail.ai_stack"), Status: LifecyclePending},
+			{Title: ui.GetText("step.export_image"), Detail: ctx.imageName, Status: LifecyclePending},
 		},
 	}
 }
@@ -152,28 +152,28 @@ func (p *buildProgress) runStep(index int, fn func() error) error {
 	p.taskTitle = ""
 	p.taskSteps = nil
 	for i := range p.steps {
-		if i < index && p.steps[i].Status != styles.LifecycleDone {
-			p.steps[i].Status = styles.LifecycleDone
+		if i < index && p.steps[i].Status != LifecycleDone {
+			p.steps[i].Status = LifecycleDone
 		}
 		if i == index {
-			p.steps[i].Status = styles.LifecycleRunning
+			p.steps[i].Status = LifecycleRunning
 		}
 	}
 	p.render()
 
 	if err := fn(); err != nil {
-		p.steps[index].Status = styles.LifecycleError
+		p.steps[index].Status = LifecycleError
 		return err
 	}
 
-	p.steps[index].Status = styles.LifecycleDone
+	p.steps[index].Status = LifecycleDone
 	p.taskTitle = ""
 	p.taskSteps = nil
 	p.render()
 	return nil
 }
 
-func (p *buildProgress) startTaskGroup(title string, steps []styles.LifecycleStep) {
+func (p *buildProgress) startTaskGroup(title string, steps []LifecycleStep) {
 	p.taskTitle = title
 	p.taskSteps = steps
 	p.render()
@@ -181,39 +181,39 @@ func (p *buildProgress) startTaskGroup(title string, steps []styles.LifecycleSte
 
 func (p *buildProgress) runTask(index int, fn func() error) error {
 	for i := range p.taskSteps {
-		if i < index && p.taskSteps[i].Status != styles.LifecycleDone {
-			p.taskSteps[i].Status = styles.LifecycleDone
+		if i < index && p.taskSteps[i].Status != LifecycleDone {
+			p.taskSteps[i].Status = LifecycleDone
 		}
 		if i == index {
-			p.taskSteps[i].Status = styles.LifecycleRunning
+			p.taskSteps[i].Status = LifecycleRunning
 		}
 	}
 	p.render()
 
 	if err := fn(); err != nil {
 		if index >= 0 && index < len(p.taskSteps) {
-			p.taskSteps[index].Status = styles.LifecycleError
+			p.taskSteps[index].Status = LifecycleError
 		}
 		return err
 	}
 
 	if index >= 0 && index < len(p.taskSteps) {
-		p.taskSteps[index].Status = styles.LifecycleDone
+		p.taskSteps[index].Status = LifecycleDone
 	}
 	p.render()
 	return nil
 }
 
 func (p *buildProgress) render() {
-	fmt.Print("\033[H\033[2J")
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderLifecycleWithTasks(p.title, p.subtitle, p.steps, p.taskTitle, p.taskSteps))
+	p.ui.ClearScreen()
+	p.ui.ShowLogo()
+	p.ui.RenderLifecycle(p.title, p.subtitle, p.steps, p.taskTitle, p.taskSteps)
 }
 
 func (p *buildProgress) renderError(err error, where string) {
-	fmt.Print("\033[H\033[2J")
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderLifecycleError(p.title, p.steps, p.taskTitle, p.taskSteps, err, where))
+	p.ui.ClearScreen()
+	p.ui.ShowLogo()
+	p.ui.RenderLifecycleError(p.title, p.steps, p.taskTitle, p.taskSteps, err, where)
 }
 
 func (m *Manager) prepareSharedDirectories(ctx buildContext) error {
@@ -270,9 +270,9 @@ func (m *Manager) installSystemBase(ctx buildContext, progress *buildProgress) e
 		}
 	}
 
-	progress.startTaskGroup("Instalando sistema base", []styles.LifecycleStep{
-		{Title: "Sincronizar repositorios", Detail: "pacman -Sy", Status: styles.LifecyclePending},
-		{Title: "Instalar paquetes base", Detail: fmt.Sprintf("%d paquetes", len(packages)), Status: styles.LifecyclePending},
+	progress.startTaskGroup(m.UI.GetText("group.base"), []LifecycleStep{
+		{Title: m.UI.GetText("task.sync_repos"), Detail: m.UI.GetText("detail.sync_cmd"), Status: LifecyclePending},
+		{Title: m.UI.GetText("task.install_pkgs"), Detail: m.UI.GetText("detail.pkgs_count", len(packages)), Status: LifecyclePending},
 	})
 	if err := progress.runTask(0, func() error {
 		return m.runInContainer("sudo", "pacman", "-Sy", "--noconfirm")
@@ -289,11 +289,11 @@ func (m *Manager) installSystemBase(ctx buildContext, progress *buildProgress) e
 }
 
 func (m *Manager) installDeveloperTools(ctx buildContext, progress *buildProgress) error {
-	progress.startTaskGroup("Instalando herramientas de desarrollo", []styles.LifecycleStep{
-		{Title: "Instalar OpenCode", Detail: "npm global", Status: styles.LifecyclePending},
-		{Title: "Instalar Engram", Detail: "go install + copiar binario", Status: styles.LifecyclePending},
-		{Title: "Descargar gentle-ai", Detail: "release de GitHub", Status: styles.LifecyclePending},
-		{Title: "Activar gentle-ai", Detail: "/usr/local/bin", Status: styles.LifecyclePending},
+	progress.startTaskGroup(m.UI.GetText("group.dev"), []LifecycleStep{
+		{Title: m.UI.GetText("task.install_opencode"), Detail: m.UI.GetText("detail.npm_global"), Status: LifecyclePending},
+		{Title: m.UI.GetText("task.install_engram"), Detail: m.UI.GetText("detail.go_install"), Status: LifecyclePending},
+		{Title: m.UI.GetText("task.download_gentle"), Detail: m.UI.GetText("detail.gh_release"), Status: LifecyclePending},
+		{Title: m.UI.GetText("task.activate_gentle"), Detail: m.UI.GetText("detail.usr_local"), Status: LifecyclePending},
 	})
 
 	if err := progress.runTask(0, func() error {
@@ -366,7 +366,7 @@ func latestGentleAIVersion(token string) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("github releases respondio %s", resp.Status)
+		return "", fmt.Errorf("github_api_error")
 	}
 
 	var release githubRelease
@@ -376,16 +376,16 @@ func latestGentleAIVersion(token string) (string, error) {
 
 	version := strings.TrimSpace(strings.TrimPrefix(release.TagName, "v"))
 	if version == "" {
-		return "", fmt.Errorf("tag_name vacio")
+		return "", fmt.Errorf("github_api_empty")
 	}
 	return version, nil
 }
 
 func (m *Manager) installModelStack(ctx buildContext, progress *buildProgress) error {
-	progress.startTaskGroup("Preparando stack IA", []styles.LifecycleStep{
-		{Title: "Instalar Ollama", Detail: ctx.gpuInfo.Type, Status: styles.LifecyclePending},
-		{Title: "Configurar agent-teams-lite", Detail: "setup inicial", Status: styles.LifecyclePending},
-		{Title: "Limpiar caches de build", Detail: "tmp + pacman", Status: styles.LifecyclePending},
+	progress.startTaskGroup(m.UI.GetText("group.ai"), []LifecycleStep{
+		{Title: m.UI.GetText("task.install_ollama"), Detail: ctx.gpuInfo.Type, Status: LifecyclePending},
+		{Title: m.UI.GetText("task.config_teams"), Detail: m.UI.GetText("detail.setup_init"), Status: LifecyclePending},
+		{Title: m.UI.GetText("task.clean_caches"), Detail: m.UI.GetText("detail.tmp_pacman"), Status: LifecyclePending},
 	})
 	if err := progress.runTask(0, func() error {
 		return m.installOllama(ctx.gpuInfo.Type)
@@ -439,7 +439,7 @@ func ollamaArch() (string, error) {
 	case "arm64":
 		return "arm64", nil
 	default:
-		return "", fmt.Errorf("arquitectura no soportada para Ollama: %s", runtime.GOARCH)
+		return "", fmt.Errorf("unsupported_arch")
 	}
 }
 
@@ -493,7 +493,7 @@ func (m *Manager) waitForOllama() error {
 		}
 		time.Sleep(time.Second)
 	}
-	return fmt.Errorf("ollama no arranco en 60s")
+	return fmt.Errorf("ollama_timeout")
 }
 
 func (m *Manager) cleanBuildCaches() error {
@@ -692,37 +692,31 @@ func (m *Manager) Rebuild() error {
 	hardware := resolveBuildGPU(cfg)
 	targetImage := baseImageName(hardware.Type)
 
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderBunkerCard(
-		"Reconstruir Imagen Base",
-		"Se eliminará la imagen actual y se lanzará un nuevo build.",
-		[]styles.BunkerDetail{
+	confirm, _ := m.UI.AskConfirmInCard(
+		"rebuild",
+		[]Field{
 			{Label: "Imagen", Value: targetImage},
 			{Label: "GPU", Value: hardware.Type},
 		},
 		nil,
-		"Los búnkeres existentes NO se verán afectados.",
-	))
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("🔄 ¿Continuar con la reconstrucción? (s/N): ")
-	confirm, _ := reader.ReadString('\n')
-	if !isYes(confirm) {
+		"rebuild.confirm",
+	)
+	if !confirm {
 		return nil
 	}
 
-	steps := []styles.LifecycleStep{
-		{Title: "Eliminar imagen base", Detail: targetImage, Status: styles.LifecycleRunning},
+	steps := []LifecycleStep{
+		{Title: m.UI.GetText("rebuild.step_rm_image"), Detail: targetImage, Status: LifecycleRunning},
 	}
-	fmt.Print("\033[H\033[2J")
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderLifecycle("Rebuild", "Preparando limpieza", steps))
+	m.UI.ClearScreen()
+	m.UI.ShowLogo()
+	m.UI.RenderLifecycle(m.UI.GetText("rebuild.title"), m.UI.GetText("rebuild.subtitle"), steps, "", nil)
 
 	_ = runCommandQuiet("podman", "rmi", targetImage, "--force")
-	steps[0].Status = styles.LifecycleDone
-	fmt.Print("\033[H\033[2J")
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderLifecycle("Rebuild", "Preparando limpieza", steps))
+	steps[0].Status = LifecycleDone
+	m.UI.ClearScreen()
+	m.UI.ShowLogo()
+	m.UI.RenderLifecycle(m.UI.GetText("rebuild.title"), m.UI.GetText("rebuild.subtitle"), steps, "", nil)
 
 	return m.Build()
 }
@@ -740,63 +734,49 @@ func (m *Manager) Reset() error {
 		names = []string{}
 	}
 
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderBunkerCard(
-		"Reset Total del Sistema",
-		"Esto eliminará TODOS los búnkeres, sus entornos locales y la imagen base.",
-		[]styles.BunkerDetail{
-			{Label: "Búnkeres", Value: fmt.Sprintf("%d detectados", len(names))},
-			{Label: "Imagen", Value: targetImage},
-		},
-		names,
-		"ADVERTENCIA: Esta acción no se puede deshacer.",
-	))
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("⚠️  ¿Borrar TODOS los búnkeres y la imagen base? (s/N): ")
-	confirm, _ := reader.ReadString('\n')
-	if !isYes(confirm) {
+	confirm, reason, err := m.UI.AskReset([]Field{
+		{Label: "Búnkeres", Value: fmt.Sprintf("%d detectados", len(names))},
+		{Label: "Imagen", Value: targetImage},
+	}, names)
+	if err != nil {
+		return err
+	}
+	if !confirm {
 		return nil
 	}
 
-	fmt.Print("📝 Razón técnica para el reset total: ")
-	reason, _ := reader.ReadString('\n')
-	if strings.TrimSpace(reason) == "" {
-		return fmt.Errorf("operación cancelada: se requiere justificación técnica")
-	}
+	_ = appendTutorLog(cfg.TutorPath(), m.UI.GetText("reset.log_reason", strings.TrimSpace(reason)))
 
-	_ = appendTutorLog(cfg.TutorPath(), "- Reset global ejecutado (Razón: "+strings.TrimSpace(reason)+")")
-
-	steps := make([]styles.LifecycleStep, 0, len(names)+1)
+	steps := make([]LifecycleStep, 0, len(names)+1)
 	for _, name := range names {
-		steps = append(steps, styles.LifecycleStep{Title: "Eliminar búnker", Detail: name, Status: styles.LifecyclePending})
+		steps = append(steps, LifecycleStep{Title: m.UI.GetText("reset.step_rm_bunker"), Detail: name, Status: LifecyclePending})
 	}
-	steps = append(steps, styles.LifecycleStep{Title: "Eliminar imagen base", Detail: targetImage, Status: styles.LifecyclePending})
+	steps = append(steps, LifecycleStep{Title: m.UI.GetText("reset.step_rm_image"), Detail: targetImage, Status: LifecyclePending})
 
-	renderReset := func(current []styles.LifecycleStep) {
-		fmt.Print("\033[H\033[2J")
-		fmt.Println(styles.GetLogo())
-		fmt.Println(styles.RenderLifecycle("Reset Total", "Destruyendo todo el sistema AXIOM", current))
+	renderReset := func(current []LifecycleStep) {
+		m.UI.ClearScreen()
+		m.UI.ShowLogo()
+		m.UI.RenderLifecycle(m.UI.GetText("reset.title"), m.UI.GetText("reset.subtitle"), current, "", nil)
 	}
 
 	renderReset(steps)
 
 	for i, name := range names {
-		steps[i].Status = styles.LifecycleRunning
+		steps[i].Status = LifecycleRunning
 		renderReset(steps)
 		_ = runCommandQuiet("distrobox-rm", name, "--force", "--yes")
 		_ = removePathWritable(cfg.BuildWorkspaceDir(name))
-		steps[i].Status = styles.LifecycleDone
+		steps[i].Status = LifecycleDone
 		renderReset(steps)
 	}
 
 	lastIdx := len(steps) - 1
-	steps[lastIdx].Status = styles.LifecycleRunning
+	steps[lastIdx].Status = LifecycleRunning
 	renderReset(steps)
 	_ = runCommandQuiet("podman", "rmi", targetImage, "--force")
-	steps[lastIdx].Status = styles.LifecycleDone
+	steps[lastIdx].Status = LifecycleDone
 	renderReset(steps)
 
-	fmt.Println(styles.RenderBunkerCard("Reset Completado", "El sistema AXIOM ha sido limpiado por completo.", nil, nil, "Usa 'axiom build' para generar una base nueva."))
+	m.UI.ShowWarning(m.UI.GetText("reset.success_title"), m.UI.GetText("reset.success_desc"), nil, nil, m.UI.GetText("reset.success_footer"))
 	return nil
 }

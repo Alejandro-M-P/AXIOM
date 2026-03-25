@@ -20,6 +20,10 @@ var (
 		Margin(1, 2).
 		Width(96)
 
+	BunkerDangerCardStyle = BunkerCardStyle.Copy().
+		Border(lipgloss.DoubleBorder()).
+		BorderForeground(Red)
+
 	BunkerTitleStyle = lipgloss.NewStyle().
 		Foreground(Cyan).
 		Bold(true)
@@ -44,6 +48,10 @@ var (
 )
 
 func RenderBunkerCard(title, subtitle string, details []BunkerDetail, items []string, footer string) string {
+	return BunkerCardStyle.Render(strings.Join(BuildCardLines(title, subtitle, details, items, footer), "\n"))
+}
+
+func BuildCardLines(title, subtitle string, details []BunkerDetail, items []string, footer string) []string {
 	var lines []string
 	lines = append(lines, BunkerTitleStyle.Render(title))
 	if strings.TrimSpace(subtitle) != "" {
@@ -72,7 +80,7 @@ func RenderBunkerCard(title, subtitle string, details []BunkerDetail, items []st
 		lines = append(lines, "")
 		lines = append(lines, BunkerSubtitleStyle.Render(footer))
 	}
-	return BunkerCardStyle.Render(strings.Join(lines, "\n"))
+	return lines
 }
 
 func RenderBunkerWarning(title, subtitle string, details []BunkerDetail, items []string, warning string) string {

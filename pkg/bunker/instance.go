@@ -1,7 +1,6 @@
 package bunker
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,16 +8,20 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"axiom/pkg/ui/styles"
 )
 
 // Create crea o reusa un búnker y entra directamente dentro de él.
 func (m *Manager) Create(name string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return fmt.Errorf("uso: axiom create [nombre]")
+		return fmt.Errorf("missing_name")
 	}
+
+	cleanName, err := sanitizeBunkerName(name)
+	if err != nil {
+		return err
+	}
+	name = cleanName
 
 	cfg, err := m.LoadConfig()
 	if err != nil {
@@ -32,11 +35,10 @@ func (m *Manager) Create(name string) error {
 	imageName := baseImageName(hardware.Type)
 	sshMounted := sshVolumeFlag() != ""
 
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderBunkerCard(
-		"Crear Búnker",
-		"Preparando entorno de trabajo desde la imagen base",
-		[]styles.BunkerDetail{
+	m.UI.ShowLogo()
+	m.UI.ShowCommandCard(
+		"create",
+		[]Field{
 			{Label: "Nombre", Value: name},
 			{Label: "Imagen", Value: imageName},
 			{Label: "Proyecto", Value: projectDir},
@@ -45,36 +47,36 @@ func (m *Manager) Create(name string) error {
 			{Label: "SSH", Value: yesNo(sshMounted)},
 		},
 		nil,
-		"El búnker reutilizará la imagen base ya construida.",
-	))
+	)
 
 	if err := runCommandQuiet("sudo", "-v"); err != nil {
-		return fmt.Errorf("acceso denegado: %w", err)
+		return fmt.Errorf("access_denied")
 	}
 
 	if exists, err := distroboxExists(name); err != nil {
 		return err
 	} else if exists {
 		prepareSSHAgent(cfg)
-		fmt.Println(styles.RenderBunkerCard(
+		m.UI.ShowWarning(
 			"Búnker Existente",
 			"Ya existe un contenedor con ese nombre; se abrirá directamente.",
-			[]styles.BunkerDetail{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}},
+			[]Field{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}},
 			nil,
 			"Reutilizando configuración previa.",
-		))
+		)
 		return enterBunker(name, rcPath)
 	}
 
 	if !podmanImageExists(imageName) {
 		available, _ := listAxiomImages()
-		return fmt.Errorf("no se encontró la imagen base %s. Ejecuta: axiom build\n%s", imageName, styles.RenderBunkerWarning(
+		m.UI.ShowWarning(
 			"Imagen Base No Disponible",
 			"No se puede crear el búnker sin una imagen previa.",
-			[]styles.BunkerDetail{{Label: "Esperada", Value: imageName}},
+			[]Field{{Label: "Esperada", Value: imageName}},
 			available,
 			"Construye primero la base con: axiom build",
-		))
+		)
+		return fmt.Errorf("missing_image")
 	}
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
@@ -115,7 +117,7 @@ WaitLoop:
 	for {
 		select {
 		case <-timeout:
-			return fmt.Errorf("timeout (30s): el búnker '%s' no pudo arrancar correctamente", name)
+			return fmt.Errorf("timeout")
 		case <-ticker.C:
 			if bunkerStatus(name) == "running" {
 				isReady = true
@@ -124,7 +126,7 @@ WaitLoop:
 		}
 	}
 	if !isReady {
-		return fmt.Errorf("fallo inesperado esperando al contenedor")
+		return fmt.Errorf("unexpected")
 	}
 	// Pequeña gracia de tiempo para asegurar que el entrypoint termine de poblar ~/.entorno/
 	time.Sleep(2 * time.Second)
@@ -151,13 +153,13 @@ WaitLoop:
 	}
 
 	prepareSSHAgent(cfg)
-	fmt.Println(styles.RenderBunkerCard(
+	m.UI.ShowWarning(
 		"Búnker Listo",
 		"El contenedor ya está preparado y se abrirá ahora.",
-		[]styles.BunkerDetail{{Label: "Nombre", Value: name}, {Label: "Imagen", Value: imageName}, {Label: "Entorno", Value: envDir}},
+		[]Field{{Label: "Nombre", Value: name}, {Label: "Imagen", Value: imageName}, {Label: "Entorno", Value: envDir}},
 		nil,
 		"Configuración aplicada: shell, starship y opencode.",
-	))
+	)
 	return enterBunker(name, rcPath)
 }
 
@@ -173,14 +175,14 @@ func (m *Manager) Stop() error {
 		return err
 	}
 	if len(names) == 0 {
-		fmt.Println(styles.GetLogo())
-		fmt.Println(styles.RenderBunkerCard(
-			"Stop Búnker",
+		m.UI.ShowLogo()
+		m.UI.ShowWarning(
+			"Sin búnkeres",
 			"No hay búnkeres creados.",
 			nil,
 			nil,
 			"Usa axiom create <nombre> para crear uno nuevo.",
-		))
+		)
 		return nil
 	}
 
@@ -192,14 +194,14 @@ func (m *Manager) Stop() error {
 	}
 
 	if len(activeNames) == 0 {
-		fmt.Println(styles.GetLogo())
-		fmt.Println(styles.RenderBunkerCard(
-			"Stop Búnker",
+		m.UI.ShowLogo()
+		m.UI.ShowWarning(
+			"Ninguno activo",
 			"No hay búnkeres activos ahora mismo.",
 			nil,
 			nil,
 			"Todos los búnkeres detectados ya están parados.",
-		))
+		)
 		return nil
 	}
 
@@ -212,17 +214,16 @@ func (m *Manager) Stop() error {
 		return err
 	}
 
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderBunkerCard(
-		selected,
-		"El búnker se ha parado correctamente.",
-		[]styles.BunkerDetail{
+	m.UI.ShowLogo()
+	m.UI.ShowCommandCard(
+		"stop",
+		[]Field{
+			{Label: "Nombre", Value: selected},
 			{Label: "Estado", Value: "stopped"},
 			{Label: "Entorno", Value: humanPath(bunkerEnvPath(cfg, selected))},
 		},
 		nil,
-		"El entorno sigue intacto y puedes volver a abrirlo con axiom create <nombre>.",
-	))
+	)
 	return nil
 }
 
@@ -247,105 +248,52 @@ func (m *Manager) Delete(name string) error {
 		name = selected
 	}
 
+	cleanName, err := sanitizeBunkerName(name)
+	if err != nil {
+		return err
+	}
+	name = cleanName
+
 	envDir := cfg.BuildWorkspaceDir(name)
 	projectDir := filepath.Join(cfg.BaseDir, name)
 
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderBunkerCard(
-		"Eliminar Búnker",
-		"Se eliminará el contenedor y podrás decidir si también borrar el código.",
-		[]styles.BunkerDetail{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}, {Label: "Proyecto", Value: projectDir}},
-		nil,
-		"",
-	))
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("📝 Razón técnica obligatoria: ")
-	reason, err := reader.ReadString('\n')
+	confirm, reason, deleteCode, err := m.UI.AskDelete(name, []Field{
+		{Label: "Nombre", Value: name},
+		{Label: "Entorno", Value: envDir},
+		{Label: "Proyecto", Value: projectDir},
+	})
 	if err != nil {
 		return err
 	}
-	reason = strings.TrimSpace(reason)
-	if reason == "" {
-		return fmt.Errorf("cancelado: se requiere justificación")
-	}
-
-	fmt.Print("🗂️  ¿Borrar también el código del proyecto? (s/N): ")
-	deleteProject, err := reader.ReadString('\n')
-	if err != nil {
-		return err
-	}
-	deleteCode := isYes(deleteProject)
-
-
-	fmt.Printf("❗ ¿Confirmas el borrado del búnker '%s'? (s/N): ", name)
-	confirm, err := reader.ReadString('\n')
-	if err != nil {
-		return err
-	}
-	if !isYes(confirm) {
-		fmt.Println(styles.RenderBunkerWarning(
-			"Operación Cancelada",
-			"No se realizaron cambios.",
-			[]styles.BunkerDetail{{Label: "Búnker", Value: name}},
-			nil,
-			"El entorno y el código permanecen intactos.",
-		))
+	if !confirm {
 		return nil
 	}
 
-	steps := []styles.LifecycleStep{
-		{Title: "Eliminar contenedor", Detail: name, Status: styles.LifecyclePending},
-		{Title: "Eliminar entorno local", Detail: envDir, Status: styles.LifecyclePending},
-	}
-	if deleteCode {
-		steps = append(steps, styles.LifecycleStep{Title: "Eliminar código del proyecto", Detail: projectDir, Status: styles.LifecyclePending})
-	}
+	_ = appendTutorLog(cfg.TutorPath(), fmt.Sprintf("- Búnker '%s' eliminado (Razón: %s)", name, reason))
 
-	renderDelete := func(current []styles.LifecycleStep) {
-		fmt.Print("\033[H\033[2J")
-		fmt.Println(styles.GetLogo())
-		fmt.Println(styles.RenderLifecycle("Eliminando Búnker", "Desinstalando recursos del búnker", current))
-	}
+	m.UI.ShowLog("delete.cleaning")
 
-	renderDelete(steps)
-	steps[0].Status = styles.LifecycleRunning
-	renderDelete(steps)
 	if err := runCommandQuiet("distrobox-rm", name, "--force", "--yes"); err != nil {
-		steps[0].Status = styles.LifecycleError
-		renderDelete(steps)
 		return err
 	}
-	steps[0].Status = styles.LifecycleDone
 
-	steps[1].Status = styles.LifecycleRunning
-	renderDelete(steps)
 	if err := removePathWritable(envDir); err != nil {
-		steps[1].Status = styles.LifecycleError
-		renderDelete(steps)
 		return err
 	}
-	steps[1].Status = styles.LifecycleDone
 
 	if deleteCode {
-		steps[2].Status = styles.LifecycleRunning
-		renderDelete(steps)
 		if err := removeProjectPath(projectDir); err != nil {
-			steps[2].Status = styles.LifecycleError
-			renderDelete(steps)
 			return err
 		}
-		steps[2].Status = styles.LifecycleDone
 	}
 
-	renderDelete(steps)
-	fmt.Println(styles.RenderBunkerCard(
+	m.UI.ShowWarning(
 		"Búnker Eliminado",
 		"La desinstalación terminó correctamente.",
-		[]styles.BunkerDetail{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}, {Label: "Código borrado", Value: yesNo(deleteCode)}},
+		[]Field{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}, {Label: "Código borrado", Value: yesNo(deleteCode)}},
 		nil,
 		"",
-	))
+	)
 	return nil
 }
 
@@ -363,14 +311,15 @@ func (m *Manager) DeleteImage() error {
 		return err
 	}
 
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderBunkerCard(
-		"Eliminar Imagen Base",
-		"Se eliminará la imagen asociada a la GPU activa y se listan las disponibles.",
-		[]styles.BunkerDetail{{Label: "Objetivo", Value: targetImage}, {Label: "GPU", Value: hardware.Type}},
+	confirm, err := m.UI.AskConfirmInCard(
+		"delete-image",
+		[]Field{{Label: "Objetivo", Value: targetImage}, {Label: "GPU", Value: hardware.Type}},
 		images,
-		"Usa axiom build para reconstruirla cuando la necesites.",
-	))
+		"delete-image.confirm",
+	)
+	if err != nil || !confirm {
+		return nil
+	}
 
 	if err := runCommandQuiet("podman", "rmi", targetImage, "--force"); err != nil {
 		if !podmanImageExists(targetImage) {
@@ -380,13 +329,13 @@ func (m *Manager) DeleteImage() error {
 	}
 
 	remaining, _ := listAxiomImages()
-	fmt.Println(styles.RenderBunkerCard(
+	m.UI.ShowWarning(
 		"Imagen Eliminada",
 		"La imagen base se eliminó correctamente.",
-		[]styles.BunkerDetail{{Label: "Eliminada", Value: targetImage}},
+		[]Field{{Label: "Eliminada", Value: targetImage}},
 		remaining,
 		"Estas son las imágenes de AXIOM que siguen disponibles.",
-	))
+	)
 	return nil
 }
 
@@ -544,7 +493,7 @@ func removeProjectPath(path string) error {
 		return err
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("la ruta del proyecto no es un directorio: %s", path)
+		return fmt.Errorf("not_dir")
 	}
 	return removePathWritable(path)
 }
@@ -581,14 +530,14 @@ func (m *Manager) List() error {
 	}
 
 	if len(names) == 0 {
-		fmt.Println(styles.GetLogo())
-		fmt.Println(styles.RenderBunkerCard(
-			"Búnkeres",
-			"Estado actual del sistema AXIOM",
+		m.UI.ShowLogo()
+		m.UI.ShowWarning(
+			"Sin búnkeres",
+			"No se ha detectado ningún entorno.",
 			nil,
 			nil,
 			"No hay búnkeres creados todavía. Usa: axiom create <nombre>",
-		))
+		)
 		return nil
 	}
 
@@ -719,55 +668,36 @@ func (m *Manager) Prune() error {
 		}
 	}
 
-	fmt.Println(styles.GetLogo())
+	m.UI.ShowLogo()
 	if len(orphans) == 0 {
-		fmt.Println(styles.RenderBunkerCard(
-			"Prune",
+		m.UI.ShowWarning(
+			"Todo limpio",
 			"No hay entornos huérfanos.",
 			nil,
 			nil,
 			"Todo está limpio.",
-		))
+		)
 		return nil
 	}
 
-	fmt.Println(styles.RenderBunkerCard(
-		"Limpiar Entornos Huérfanos",
-		"Se detectaron directorios en .entorno/ sin contenedor asociado.",
-		[]styles.BunkerDetail{{Label: "Huérfanos", Value: fmt.Sprintf("%d detectados", len(orphans))}},
+	confirm, err := m.UI.AskConfirmInCard(
+		"prune",
+		[]Field{{Label: "Huérfanos", Value: fmt.Sprintf("%d detectados", len(orphans))}},
 		orphans,
-		"¿Deseas eliminarlos para liberar espacio?",
-	))
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("\n🗑️  ¿Eliminar todos estos entornos huérfanos? (s/N): ")
-	confirm, _ := reader.ReadString('\n')
-	if !isYes(confirm) {
+		"prune.confirm",
+	)
+	if err != nil || !confirm {
 		return nil
 	}
 
-	steps := make([]styles.LifecycleStep, 0, len(orphans))
+	m.UI.ShowLog("prune.cleaning")
+
 	for _, h := range orphans {
-		steps = append(steps, styles.LifecycleStep{Title: "Eliminar huérfano", Detail: h, Status: styles.LifecyclePending})
-	}
-
-	renderPrune := func(current []styles.LifecycleStep) {
-		fmt.Print("\033[H\033[2J")
-		fmt.Println(styles.GetLogo())
-		fmt.Println(styles.RenderLifecycle("Prune", "Limpiando entornos huérfanos", current))
-	}
-
-	renderPrune(steps)
-
-	for i, h := range orphans {
-		steps[i].Status = styles.LifecycleRunning
-		renderPrune(steps)
+		m.UI.ShowLog("prune.deleting_item", h)
 		_ = removePathWritable(filepath.Join(envBaseDir, h))
-		steps[i].Status = styles.LifecycleDone
-		renderPrune(steps)
 	}
-	
-	fmt.Println(styles.RenderBunkerCard("Prune Completado", "Se liberó el espacio de los entornos huérfanos.", nil, nil, ""))
+
+	m.UI.ShowWarning("Prune Completado", "Se liberó el espacio de los entornos huérfanos.", nil, nil, "")
 	return nil
 }
 
@@ -775,6 +705,12 @@ func (m *Manager) Info(name string) error {
 	if strings.TrimSpace(name) == "" {
 		return m.List()
 	}
+
+	cleanName, err := sanitizeBunkerName(name)
+	if err != nil {
+		return err
+	}
+	name = cleanName
 
 	cfg, err := m.LoadConfig()
 	if err != nil {
@@ -784,11 +720,11 @@ func (m *Manager) Info(name string) error {
 	hardware := resolveBuildGPU(cfg)
 	imageName := baseImageName(hardware.Type)
 
-	fmt.Println(styles.GetLogo())
-	fmt.Println(styles.RenderBunkerCard(
-		name,
-		"Ficha técnica del búnker",
-		[]styles.BunkerDetail{
+	m.UI.ShowLogo()
+	m.UI.ShowCommandCard(
+		"info",
+		[]Field{
+			{Label: "Nombre", Value: name},
 			{Label: "Estado", Value: bunkerStatus(name)},
 			{Label: "Imagen", Value: imageName},
 			{Label: "GPU", Value: hardware.Type},
@@ -799,7 +735,14 @@ func (m *Manager) Info(name string) error {
 			{Label: "Rama git", Value: defaultString(bunkerGitBranch(cfg, name), "-")},
 		},
 		nil,
-		"Usa axiom delete para eliminar o axiom create para entrar.",
-	))
+	)
 	return nil
+}
+
+func sanitizeBunkerName(name string) (string, error) {
+	clean := filepath.Clean(strings.TrimSpace(name))
+	if clean == "." || clean == ".." || strings.Contains(clean, "/") || strings.Contains(clean, "\\") {
+		return "", fmt.Errorf("invalid_name")
+	}
+	return clean, nil
 }

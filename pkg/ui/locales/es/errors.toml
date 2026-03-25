@@ -1,0 +1,83 @@
+# ---------------------------------------------------------
+# DICCIONARIO DE ERRORES (Traducción: Español)
+# ---------------------------------------------------------
+
+[create.invalid_name]
+title = "Nombre de Búnker Inválido"
+description = "El nombre proporcionado contiene caracteres no permitidos o rutas de salto de directorio (../)."
+action = "Asegúrate de usar solo letras, números y guiones. Ejemplo: axiom create proyecto-1"
+
+[create.missing_name]
+title = "Falta Argumento"
+description = "No has especificado el nombre del búnker que quieres crear."
+action = "Usa el formato exacto: axiom create [nombre]"
+
+[global.unknown]
+title = "Error Desconocido"
+description = "Ha ocurrido un error inesperado durante la ejecución de la tarea."
+action = "Revisa los logs o contacta con soporte."
+
+[global.unsupported_command]
+title = "Comando No Soportado"
+description = "El comando de búnker especificado no existe o no está soportado todavía."
+action = "Ejecuta 'axiom help' para ver la lista de comandos disponibles."
+
+[global.missing_base_dir]
+title = "Directorio Base No Definido"
+description = "La variable AXIOM_BASE_DIR no está configurada en el archivo .env."
+action = "Ejecuta 'axiom init' para reconfigurar el entorno."
+
+[create.access_denied]
+title = "Acceso Denegado"
+description = "No se pudo obtener permisos de administrador (sudo)."
+action = "Asegúrate de introducir la contraseña correctamente."
+
+[create.missing_image]
+title = "Imagen Base No Encontrada"
+description = "El búnker no se puede construir sin su imagen base."
+action = "Ejecuta 'axiom build' primero."
+
+[create.timeout]
+title = "Tiempo Agotado"
+description = "El búnker tardó demasiado en arrancar."
+action = "Verifica el estado del demonio Podman."
+
+[create.unexpected]
+title = "Fallo Inesperado"
+description = "El contenedor falló silenciosamente al inicializarse."
+action = "Intenta eliminarlo con 'axiom delete' y vuelve a crearlo."
+
+[delete.missing_reason]
+title = "Razón Obligatoria"
+description = "Se requiere una justificación técnica para eliminar el búnker."
+action = "Introduce un motivo cuando se te pregunte (ej. 'entorno corrupto')."
+
+[delete.not_dir]
+title = "Ruta Inválida"
+description = "La ruta seleccionada para el proyecto no es un directorio válido."
+action = "Asegúrate de que la ruta apunta a una carpeta correcta."
+
+[global.env_read_error]
+title = "Error de Configuración"
+description = "No se pudo leer el archivo .env principal."
+action = "Ejecuta 'axiom init' o revisa los permisos del archivo."
+
+[build.unsupported_arch]
+title = "Arquitectura No Soportada"
+description = "El stack de IA solo soporta arquitecturas amd64 y arm64."
+action = "Verifica la compatibilidad de tu sistema host."
+
+[build.github_api_error]
+title = "Error de Red (GitHub)"
+description = "La API de GitHub devolvió un error al intentar descargar binarios."
+action = "Verifica tu conexión a internet o el token de AXIOM_GIT_TOKEN."
+
+[build.github_api_empty]
+title = "Respuesta Vacía (GitHub)"
+description = "La API de GitHub no devolvió el formato esperado."
+action = "Reintenta la construcción más tarde."
+
+[build.ollama_timeout]
+title = "Tiempo Agotado (Ollama)"
+description = "El demonio local de Ollama no arrancó a tiempo durante la construcción."
+action = "Revisa los logs del build o reintenta 'axiom build'."

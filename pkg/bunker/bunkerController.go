@@ -29,6 +29,8 @@ type EnvConfig struct {
 type Manager struct {
 	rootDir            string
 	buildContainerName string
+	BaseDir string
+	UI UI
 }
 
 func NewManager(rootDir string) *Manager {
@@ -65,7 +67,7 @@ func (m *Manager) Run(command string, args []string) error {
 	case "info":
 		return m.Info(firstArg(args))
 	default:
-		return fmt.Errorf("comando bunker no soportado todavía: %s", command)
+		return fmt.Errorf("unsupported_command")
 	}
 }
 
@@ -146,7 +148,7 @@ func LoadEnvFile(path string) (EnvConfig, error) {
 		cfg.ROCMMode = "host"
 	}
 	if cfg.BaseDir == "" {
-		return EnvConfig{}, fmt.Errorf("AXIOM_BASE_DIR no está definido en %s", path)
+		return EnvConfig{}, fmt.Errorf("missing_base_dir")
 	}
 	if cfg.ModelsDir == "" {
 		cfg.ModelsDir = filepath.Join(cfg.BaseDir, "ai_config", "models")

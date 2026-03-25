@@ -1,0 +1,21 @@
+# ---------------------------------------------------------
+# PREGUNTAS INTERACTIVAS (Traducción: Español)
+# ---------------------------------------------------------
+
+[delete]
+reason = "📝 Razón técnica obligatoria: "
+code = "🗂️  ¿Borrar también el código del proyecto?"
+confirm = "❗ ¿Estás seguro de que quieres eliminar este búnker? Esta acción es irreversible."
+
+[reset]
+reason = "📝 Razón técnica para el reset total: "
+confirm = "⚠️  ¿Borrar TODOS los búnkeres y la imagen base?"
+
+[rebuild]
+confirm = "🔄 ¿Continuar con la reconstrucción de la imagen base?"
+
+[prune]
+confirm = "🗑️ ¿Confirmas la eliminación de estos entornos para liberar espacio?"
+
+[delete-image]
+confirm = "🗑️ ¿Confirmas la eliminación de esta imagen base? Esta acción no se puede deshacer."

@@ -1,0 +1,62 @@
+# ---------------------------------------------------------
+# TEXTOS DE CONSTRUCCIÓN Y CICLO DE VIDA
+# ---------------------------------------------------------
+
+[build]
+title = "Construyendo %s"
+subtitle_host = "Drivers desde host"
+subtitle_image = "Drivers dentro de la imagen"
+subtitle_base = "GPU: %s | Modo: %s"
+success_sub = "Imagen lista: %s"
+
+[step]
+prepare_dirs = "Preparar directorios"
+recreate_container = "Recrear contenedor temporal"
+install_base = "Instalar sistema base"
+install_dev = "Instalar herramientas dev"
+install_ai = "Preparar stack IA"
+export_image = "Empaquetar imagen"
+
+[detail]
+base_pkgs = "pacman + paquetes GPU"
+dev_tools = "OpenCode, Engram, gentle-ai"
+ai_stack = "Ollama + agent-teams-lite"
+sync_cmd = "pacman -Sy"
+pkgs_count = "%d paquetes"
+npm_global = "npm global"
+go_install = "go install + copiar binario"
+gh_release = "release de GitHub"
+usr_local = "/usr/local/bin"
+setup_init = "setup inicial"
+tmp_pacman = "tmp + pacman"
+
+[task]
+sync_repos = "Sincronizar repositorios"
+install_pkgs = "Instalar paquetes base"
+install_opencode = "Instalar OpenCode"
+install_engram = "Instalar Engram"
+download_gentle = "Descargar gentle-ai"
+activate_gentle = "Activar gentle-ai"
+install_ollama = "Instalar Ollama"
+config_teams = "Configurar agent-teams-lite"
+clean_caches = "Limpiar caches de build"
+
+[group]
+base = "Instalando sistema base"
+dev = "Instalando herramientas de desarrollo"
+ai = "Preparando stack IA"
+
+[rebuild]
+title = "Rebuild"
+subtitle = "Preparando limpieza"
+step_rm_image = "Eliminar imagen base"
+
+[reset]
+title = "Reset Total"
+subtitle = "Destruyendo todo el sistema AXIOM"
+step_rm_bunker = "Eliminar búnker"
+step_rm_image = "Eliminar imagen base"
+log_reason = "- Reset global ejecutado (Razón: %s)"
+success_title = "Reset Completado"
+success_desc = "El sistema AXIOM ha sido limpiado por completo."
+success_footer = "Usa 'axiom build' para generar una base nueva."
