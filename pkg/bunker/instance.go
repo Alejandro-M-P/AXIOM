@@ -102,6 +102,33 @@ func (m *Manager) Create(name string) error {
 		return err
 	}
 
+	// Forzamos el arranque para que el entrypoint de distrobox inicie la configuración
+	_ = runCommandQuiet("podman", "start", name)
+
+	// Espera activa: comprobamos que el búnker esté 'running'
+	timeout := time.After(30 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	isReady := false
+WaitLoop:
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout (30s): el búnker '%s' no pudo arrancar correctamente", name)
+		case <-ticker.C:
+			if bunkerStatus(name) == "running" {
+				isReady = true
+				break WaitLoop
+			}
+		}
+	}
+	if !isReady {
+		return fmt.Errorf("fallo inesperado esperando al contenedor")
+	}
+	// Pequeña gracia de tiempo para asegurar que el entrypoint termine de poblar ~/.entorno/
+	time.Sleep(2 * time.Second)
+
 	if err := runCommandQuiet("distrobox-enter", "-n", name, "--", "sudo", "pacman", "-Syu", "--noconfirm", "--needed"); err != nil {
 		return err
 	}

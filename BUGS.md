@@ -10,7 +10,7 @@ Este documento detalla los fallos conocidos y tareas pendientes durante la migra
 ## 🔴 Críticos y 
 - [x] **Seguridad de Volúmenes**: Las funciones nativas de `build` y `create` necesitan auditoría en el manejo de permisos de contenedores rootless.Seguridad
 - [x] **Inyección de GPU**: Fallos esporádicos al detectar y montar drivers NVIDIA/AMD desde el binario de Go en `build`.
-- [ ] **Persistencia**: El contenido de `~/.entorno/` a veces no se monta correctamente en el primer inicio.
+- [x] **Persistencia**: El contenido de `~/.entorno/` a veces no se monta correctamente en el primer inicio.
 - [ ] **[ID-BUG-001] Path Traversal**: Vulnerabilidad crítica en `Create`, `Delete` e `Info` al concatenar el nombre del búnker directamente en las rutas sin usar `filepath.Clean()`.
 - [x] **[ID-BUG-005] Permisos Laxos**: `os.MkdirAll` crea carpetas en `.entorno/` con `0755` en lugar del restrictivo `0700`, exponiendo configuraciones a otros usuarios del host.
 
@@ -53,7 +53,7 @@ This document details the known issues and pending tasks during the migration fr
 ### 🔴 Critical & Security
 - [x] **Volume Security**: Native `build` and `create` functions need auditing regarding rootless container permission handling.
 - [x] **GPU Injection**: Sporadic failures when detecting and mounting NVIDIA/AMD drivers from the Go binary in `build`.
-- [ ] **Persistence**: `~/.entorno/` contents sometimes fail to mount correctly on the first startup.
+- [x] **Persistence**: `~/.entorno/` contents sometimes fail to mount correctly on the first startup.
 - [ ] **[ID-BUG-001] Path Traversal**: Critical vulnerability in `Create`, `Delete`, and `Info` where bunker names are concatenated directly into paths without using `filepath.Clean()`.
 - [x] **[ID-BUG-005] Loose Permissions**: `os.MkdirAll` creates folders in `.entorno/` with `0755` instead of the restrictive `0700`, exposing configs to other host users.
 
