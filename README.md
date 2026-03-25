@@ -21,29 +21,39 @@ Ideal para sistemas atómicos (Bazzite, Fedora Silverblue) o cualquier entorno d
 
 ---
 
-## 🏗️ Estado Actual del Refactor (WIP)
+## 🏗️ Estado de la Migración a Go (WIP)
 
-Esta rama es un laboratorio activo. La lógica se está moviendo de Bash a Go para ganar en estabilidad y velocidad de ejecución.
+Actualmente AXIOM se encuentra en una transición profunda de scripts en Bash (`lib/*.sh`) a un binario robusto compilado en Go. El objetivo es eliminar la fragilidad de depender de `os/exec`, manejar estados de forma estricta y proporcionar una base para una futura API o TUI compleja.
+
+### 🗺️ Hoja de Ruta Arquitectónica (Visión)
+- **De Shell a Nativo**: Reemplazar llamadas a utilidades CLI (`du`, `grep`, `awk`) por librerías nativas de Go (`filepath.WalkDir`, `encoding/json`, `go-git`).
+- **Desacoplamiento UI / Core**: Extraer la lógica interactiva (prints directos, lectura de `stdin` con `bufio`) del Core (`Manager`) hacia una capa de presentación externa (BubbleTea / Cobra).
+- **Orquestación Avanzada**: Abandonar la ejecución de comandos `podman` por subprocesos y conectar AXIOM directamente al **socket REST API de Podman**.
+- **Gestión de Configuración**: Dejar atrás el frágil parseo manual de `.env` a favor de un estándar profesional usando `config.toml`.
+- **Concurrencia Segura**: Implementar `Goroutines` controladas con `sync.WaitGroup` para tareas masivas (como `axiom prune` en paralelo) y usar `context` para evitar procesos zombis en el sistema.
 
 ### Mapa de Funcionalidades
 
-| Comando | Estado | Observaciones |
+| Comando | Estado | Notas de Migración |
 | :--- | :--- | :--- |
-| axiom list | Terminado | Lista búnkeres con tamaño, estado y rama git actual. |
-| axiom info | Terminado | Ficha técnica detallada del contenedor y hardware. |
-| axiom build | bugs | Implementando la inyección dinámica de drivers GPU. |
-| axiom create | Bugs | Problemas conocidos con la persistencia del $HOME. |
-| axiom delete |  bugs | Funciona el borrado básico; falta el selector visual interactivo. |
-| axiom purge | bugs  | Lógica de limpieza profunda aún no portada de Bash. |
+| `axiom list` | ✅ Portado | Falta refactorizar para usar decodificación JSON en vez de parseo manual de strings. |
+| `axiom info` | ✅ Portado | Pendiente blindar contra vulnerabilidades de *Path Traversal* validando rutas. |
+| `axiom build` | 🚧 En proceso | Inyección de drivers GPU. Pendiente de auditar bloqueos en prompts de `sudo`. |
+| `axiom create` | 🚧 En proceso | Ajustando persistencia del `$HOME` con permisos estrictamente aislados (`0700`). |
+| `axiom delete` | 🚧 En proceso | Funciona, pero requiere extraer los bloqueos interactivos (`stdin`) fuera del Core. |
+| `axiom prune` | ⏳ Pendiente | Requiere reescribirse usando concurrencia nativa para borrado en paralelo. |
+| `axiom purge` | ⏳ Pendiente | Lógica de limpieza profunda aún no portada de Bash. |
+| **Git Tools** | ⏳ Pendiente | Reemplazar los flujos interactivos de `lib/git.sh` por llamadas a `go-git`. |
 
 
 
-## 🔒 Seguridad y Arquitectura (Go Core)
+## 🔒 Seguridad y Arquitectura (AXIOM Vault en Go)
 
 El núcleo en pkg/bunker abandona la ejecución procedimental por un modelo de Manager de Estados:
-- Seguridad de Tipos: Validación estricta de rutas y configuraciones antes de tocar el socket de Podman.
-- Sanitización de Ejecución: Los comandos externos se lanzan mediante slices de argumentos tipados, eliminando riesgos de inyección.
 - Aislamiento de Secretos: Los tokens se inyectan en /run/axiom/env como volúmenes de solo lectura (Vault).
+- Prevención de Vulnerabilidades: Auditoría activa contra *Path Traversal* (`filepath.Clean`) y permisos laxos al crear directorios (asegurando `os.MkdirAll` con `0700`).
+- Sanitización de Ejecución: Los comandos externos (mientras se migran a API nativas) se lanzan mediante arrays tipados en lugar de evaluar strings, bloqueando inyecciones.
+- Control de Zombis: Migración hacia `exec.CommandContext` para abortar subprocesos colgados automáticamente.
 
 ---
 

@@ -77,16 +77,32 @@ Run `axiom create my-project` and in 30 seconds you have a fully equipped enviro
 | `axiom reset` | Deletes ALL bunkers and images (Total reset). |
 
 ### Current Go Migration Layout
-The host-side logic already ported to Go lives in `pkg/bunker` and is split by responsibility:
+AXIOM is currently undergoing a massive refactor to replace Bash scripts (`lib/*.sh`) with a robust Go binary. The current code layout lives in `pkg/` but is actively evolving to decouple logic from presentation:
 
-| Path | Responsibility |
+| Go Port Progress | Status | Architectural Notes |
 | :--- | :--- |
-| `pkg/bunker/bunker.go` | Orchestrator, `Manager`, command routing, and `.env` loading. |
-| `pkg/bunker/lifecycle.go` | `axiom build` lifecycle and base image flow. |
-| `pkg/bunker/instance.go` | `create`, `delete`, `list`, and base image deletion. |
-| `pkg/bunker/select.go` | Interactive bunker picker with arrow-key navigation. |
-| `pkg/bunker/templates.go` | Injection of `starship`, `opencode`, and bootstrap files. |
-| `pkg/ui/styles/` | Lifecycle and bunker rendering UI. |
+| `axiom list` | ✅ Ported | Needs to decode Podman/Distrobox JSONs instead of relying on string parsing. |
+| `axiom info` | ✅ Ported | Needs path sanitization (`filepath.Clean`) to mitigate *Path Traversal* risks. |
+| `axiom build` | 🚧 WIP | GPU injection in progress. Sudo prompts occasionally hang the execution context. |
+| `axiom create` | 🚧 WIP | Adjusting `$HOME` persistence and enforcing strictly secure `0700` permissions. |
+| `axiom delete` | 🚧 WIP | Working, but needs decoupling from the `stdin` UI blocks in the core Manager. |
+| `axiom prune` | ⏳ Pending | Needs to be rewritten leveraging Goroutines for concurrent background deletion. |
+| **Git Tools** | ⏳ Pending | The interactive bash commands (`lib/git.sh`) will be replaced using `go-git`. |
+
+### 🗺️ Technical Vision & Roadmap
+The main goal of the Go refactor is to establish a secure, immutable, and scalable orchestrator:
+1. **Native over Shell:** Replacing OS tools (`du`, `grep`) with pure Go libraries (`filepath.WalkDir`, `go-git`).
+2. **UI Decoupling:** Moving all console prints, ANSI codes, and `stdin` requests out of the core logic and into a pure presentation layer (BubbleTea).
+3. **Podman REST API:** Moving away from executing `podman` as a shell subprocess and talking directly to the Podman API socket.
+4. **TOML Configs:** Retiring `.env` for a structured `config.toml` standard.
+5. **Safe Concurrency:** Using `sync.WaitGroup` for multi-bunker operations and `context` to prevent zombie processes.
+
+### Security Hotfixes under Audit
+- **[ID-BUG-001] Path Traversal:** Strengthening user inputs when concatenating bunker paths.
+- **[ID-BUG-005] Loose Permissions:** Enforcing `0700` across all OS directories created by the `Manager`.
+- **[ID-BUG-011] Error Silencing:** Restoring error wrapping across external commands to trace execution failures properly.
+
+Check out `BUGS.md` and `CONTRIBUTING.md` if you want to help out!
 
 ---
 

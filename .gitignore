@@ -2,3 +2,5 @@
 .entorno/
 *.log
 axiom
+.zencoder
+.zenflow
