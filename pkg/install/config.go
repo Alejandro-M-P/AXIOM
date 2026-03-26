@@ -9,19 +9,31 @@ import (
 // Config guarda los datos que recolectamos en el formulario TUI.
 // Los campos deben coincidir con lo que capturamos en pkg/ui/form.go.
 type Config struct {
-	GitUser    string
-	GitEmail   string
-	GitToken   string
-	AuthMode   string // "ssh" o "https"
-	BaseDir    string
-	ModelsDir  string
+	// --- IDENTIDAD Y AUTENTICACIÓN ---
+	GitUser  string
+	GitEmail string
+	GitToken string
+	AuthMode string // "ssh" o "https"
+
+	// --- DIRECTORIOS CORE ---
+	BaseDir   string
+	ModelsDir string
+
+	// --- HARDWARE ---
 	GfxVersion string // Valor GFX para AMD (ej: gfx1100)
 	GpuType    string // amd, nvidia o intel
 	RocmMode   string // host o image
+
+	// --- FUTURO: ECOSISTEMA Y TUI (WIP) ---
+	Language    string // "es" o "en" para soportar la Política "Cero Strings"
+	Theme       string // Tema de la TUI ("default", "dracula", "nord")
+	CatalogPath string // Ruta al catalog.toml (permite usar catálogos custom/remotos)
+	LogLevel    string // "debug", "info", "warn", "error"
 }
 
 // Save escribe el archivo .env con permisos 600 (Seguridad AXIOM).
 // Este archivo será el cerebro que lea el comando 'axiom build'.
+// NOTA FUTURA: Migrar a 'config.toml' para soportar arrays y tablas (ID-BUG-Pendiente).
 func (c Config) Save(axiomPath string) error {
 	envPath := filepath.Join(axiomPath, ".env")
 
@@ -43,7 +55,14 @@ AXIOM_MODELS_DIR="%s"
 # ─── HARDWARE & DRIVERS ─────────────────────────
 AXIOM_GPU_TYPE="%s"
 AXIOM_GFX_VAL="%s"
-AXIOM_ROCM_MODE="%s"`,
+AXIOM_ROCM_MODE="%s"
+
+# ─── UI & ECOSISTEMA (BETA) ─────────────────────
+AXIOM_UI_LANGUAGE="%s"
+AXIOM_UI_THEME="%s"
+AXIOM_CATALOG_PATH="%s"
+AXIOM_LOG_LEVEL="%s"
+`,
 		axiomPath,    // 1. AXIOM_PATH
 		c.GitUser,    // 2. AXIOM_GIT_USER
 		c.GitEmail,   // 3. AXIOM_GIT_EMAIL
@@ -54,8 +73,21 @@ AXIOM_ROCM_MODE="%s"`,
 		c.GpuType,    // 8. AXIOM_GPU_TYPE
 		c.GfxVersion, // 9. AXIOM_GFX_VAL
 		c.RocmMode,   // 10. AXIOM_ROCM_MODE
+		// Valores futuros (con defaults si están vacíos)
+		defaultString(c.Language, "es"),
+		defaultString(c.Theme, "default"),
+		defaultString(c.CatalogPath, filepath.Join(axiomPath, "catalog.toml")),
+		defaultString(c.LogLevel, "info"),
 	)
 
 	// El permiso 0600 (rw-------) es obligatorio para proteger el GIT_TOKEN.
 	return os.WriteFile(envPath, []byte(content), 0600)
+}
+
+// defaultString devuelve un valor por defecto si la cadena está vacía.
+func defaultString(val, def string) string {
+	if val == "" {
+		return def
+	}
+	return val
 }
