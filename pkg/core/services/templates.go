@@ -58,6 +58,7 @@ func writeShellBootstrap(cfg EnvConfig, name, envDir, gfxOverride string) error 
 func renderShellBootstrap(cfg EnvConfig, name, gfxOverride string) string {
 	var lines []string
 	lines = append(lines,
+		"eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",
 		fmt.Sprintf("export AXIOM_PATH=%q", cfg.AxiomPath),
 		fmt.Sprintf("export AXIOM_GIT_USER=%q", cfg.GitUser),
 		fmt.Sprintf("export AXIOM_GIT_EMAIL=%q", cfg.GitEmail),

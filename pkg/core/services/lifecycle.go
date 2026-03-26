@@ -1,23 +1,16 @@
 package bunker
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"axiom/pkg/gpu"
 )
-
-type githubRelease struct {
-	TagName string `json:"tag_name"`
-}
 
 type buildContext struct {
 	config            EnvConfig
@@ -285,15 +278,20 @@ func (m *Manager) installSystemBase(ctx buildContext, progress *buildProgress) e
 	}); err != nil {
 		return err
 	}
+	if err := progress.runTask(2, func() error {
+		cmd := "NONINTERACTIVE=1 /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+		return m.runInContainer("bash", "-c", cmd)
+	}); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (m *Manager) installDeveloperTools(ctx buildContext, progress *buildProgress) error {
 	progress.startTaskGroup(m.UI.GetText("group.dev"), []LifecycleStep{
 		{Title: m.UI.GetText("task.install_opencode"), Detail: m.UI.GetText("detail.npm_global"), Status: LifecyclePending},
-		{Title: m.UI.GetText("task.install_engram"), Detail: m.UI.GetText("detail.go_install"), Status: LifecyclePending},
-		{Title: m.UI.GetText("task.download_gentle"), Detail: m.UI.GetText("detail.gh_release"), Status: LifecyclePending},
-		{Title: m.UI.GetText("task.activate_gentle"), Detail: m.UI.GetText("detail.usr_local"), Status: LifecyclePending},
+		{Title: "Configurando Homebrew Tap", Detail: "Gentleman-Programming/homebrew-tap", Status: LifecyclePending},
+		{Title: "Instalando herramientas de desarrollo", Detail: "brew install engram gentle-ai", Status: LifecyclePending},
 	})
 
 	if err := progress.runTask(0, func() error {
@@ -302,47 +300,16 @@ func (m *Manager) installDeveloperTools(ctx buildContext, progress *buildProgres
 		return err
 	}
 
+	brewPath := "/home/linuxbrew/.linuxbrew/bin/brew"
+
 	if err := progress.runTask(1, func() error {
-		if err := m.runInContainer("go", "install", "github.com/Gentleman-Programming/engram/cmd/engram@latest"); err != nil {
-			return err
-		}
-		gopath, err := m.runInContainerOutput("go", "env", "GOPATH")
-		if err != nil {
-			return err
-		}
-		engramPath := filepath.ToSlash(filepath.Join(strings.TrimSpace(gopath), "bin", "engram"))
-		return m.runInContainer("sudo", "cp", "-f", engramPath, "/usr/local/bin/")
+		return m.runInContainer(brewPath, "tap", "Gentleman-Programming/homebrew-tap")
 	}); err != nil {
 		return err
 	}
-
-	version, err := latestGentleAIVersion(ctx.config.GitToken)
-	if err != nil {
-		version = "0.1.0"
-	}
-	assetURL := fmt.Sprintf(
-		"https://github.com/Gentleman-Programming/gentle-ai/releases/download/v%s/gentle-ai_%s_linux_amd64.tar.gz",
-		version,
-		version,
-	)
 
 	if err := progress.runTask(2, func() error {
-		if err := m.runInContainer("curl", "-fsSL", assetURL, "-o", "/tmp/gentle-ai.tar.gz"); err != nil {
-			return err
-		}
-		return m.runInContainer("tar", "-xzf", "/tmp/gentle-ai.tar.gz", "-C", "/tmp")
-	}); err != nil {
-		return err
-	}
-
-	if err := progress.runTask(3, func() error {
-		if err := m.runInContainer("sudo", "mv", "/tmp/gentle-ai", "/usr/local/bin/gentle-ai"); err != nil {
-			return err
-		}
-		if err := m.runInContainer("sudo", "chmod", "+x", "/usr/local/bin/gentle-ai"); err != nil {
-			return err
-		}
-		return m.runInContainer("rm", "-f", "/tmp/gentle-ai.tar.gz")
+		return m.runInContainer(brewPath, "install", "engram", "gentle-ai")
 	}); err != nil {
 		return err
 	}
@@ -350,41 +317,9 @@ func (m *Manager) installDeveloperTools(ctx buildContext, progress *buildProgres
 	return nil
 }
 
-func latestGentleAIVersion(token string) (string, error) {
-	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/repos/Gentleman-Programming/gentle-ai/releases/latest", nil)
-	if err != nil {
-		return "", err
-	}
-	if strings.TrimSpace(token) != "" {
-		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("github_api_error")
-	}
-
-	var release githubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return "", err
-	}
-
-	version := strings.TrimSpace(strings.TrimPrefix(release.TagName, "v"))
-	if version == "" {
-		return "", fmt.Errorf("github_api_empty")
-	}
-	return version, nil
-}
-
 func (m *Manager) installModelStack(ctx buildContext, progress *buildProgress) error {
 	progress.startTaskGroup(m.UI.GetText("group.ai"), []LifecycleStep{
 		{Title: m.UI.GetText("task.install_ollama"), Detail: ctx.gpuInfo.Type, Status: LifecyclePending},
-		{Title: m.UI.GetText("task.config_teams"), Detail: m.UI.GetText("detail.setup_init"), Status: LifecyclePending},
 		{Title: m.UI.GetText("task.clean_caches"), Detail: m.UI.GetText("detail.tmp_pacman"), Status: LifecyclePending},
 	})
 	if err := progress.runTask(0, func() error {
@@ -393,11 +328,6 @@ func (m *Manager) installModelStack(ctx buildContext, progress *buildProgress) e
 		return err
 	}
 	if err := progress.runTask(1, func() error {
-		return m.installAgentTeamsLite()
-	}); err != nil {
-		return err
-	}
-	if err := progress.runTask(2, func() error {
 		return m.cleanBuildCaches()
 	}); err != nil {
 		return err
@@ -441,59 +371,6 @@ func ollamaArch() (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported_arch")
 	}
-}
-
-func (m *Manager) installAgentTeamsLite() error {
-	ollamaCmd := exec.Command("distrobox-enter", "-n", m.buildContainerName, "--", "ollama", "serve")
-	logFile, err := os.OpenFile("/tmp/ollama-build.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
-	}
-	defer logFile.Close()
-
-	ollamaCmd.Stdout = logFile
-	ollamaCmd.Stderr = logFile
-	if err := ollamaCmd.Start(); err != nil {
-		return err
-	}
-
-	stopped := false
-	defer func() {
-		if stopped || ollamaCmd.Process == nil {
-			return
-		}
-		_ = ollamaCmd.Process.Kill()
-		_, _ = ollamaCmd.Process.Wait()
-	}()
-
-	if err := m.waitForOllama(); err != nil {
-		return err
-	}
-	_ = m.runInContainer("rm", "-rf", "/tmp/agent-teams")
-	if err := m.runInContainer("git", "clone", "https://github.com/Gentleman-Programming/agent-teams-lite.git", "/tmp/agent-teams"); err != nil {
-		return err
-	}
-	if err := m.runInteractiveInContainer("1\n", "/tmp/agent-teams/scripts/setup.sh", "--all"); err != nil {
-		return err
-	}
-
-	if ollamaCmd.Process != nil {
-		_ = ollamaCmd.Process.Kill()
-		_, _ = ollamaCmd.Process.Wait()
-		stopped = true
-	}
-	return nil
-}
-
-func (m *Manager) waitForOllama() error {
-	deadline := time.Now().Add(60 * time.Second)
-	for time.Now().Before(deadline) {
-		if _, err := m.runInContainerOutput("curl", "-s", "http://localhost:11434/"); err == nil {
-			return nil
-		}
-		time.Sleep(time.Second)
-	}
-	return fmt.Errorf("ollama_timeout")
 }
 
 func (m *Manager) cleanBuildCaches() error {
