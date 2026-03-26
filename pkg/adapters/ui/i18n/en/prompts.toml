@@ -1,0 +1,11 @@
+[select_active]
+title = "Active Bunkers"
+desc = "Press Enter to stop this bunker"
+
+[delete_bunker]
+title = "Delete Bunker"
+desc = "Press Enter to delete this bunker"
+
+[select_available]
+title = "Available Bunkers"
+desc = "Press Enter to see the technical sheet"
