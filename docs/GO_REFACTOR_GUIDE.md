@@ -1,72 +1,72 @@
-# 🗺️ Guía de Ruta: Refactorización a Go Nativo
+# 🗺️ Roadmap Guide: Native Go Refactor
 
-Este documento es tu brújula. Detalla el orden lógico para implementar la nueva **Arquitectura de Catálogo** y la **Migración Completa a Go**, evitando que te bloquees por dependencias circulares.
-
----
-
-## 📌 FASE 1: El Cerebro del Catálogo (Prioridad Alta)
-*El objetivo de esta fase es que AXIOM entienda qué puede instalar sin tenerlo hardcodeado.*
-
-1. **Crear `catalog.toml` (Raíz del proyecto):**
-   - Diseñar el archivo con las categorías `[Categorias.IA]`, `[Categorias.DB]`, etc.
-   - Añadir herramientas de prueba (Ollama, Go, PostgreSQL).
-
-2. **Escribir el Parser (`pkg/catalog/parser.go`):**
-   - Implementar las estructuras de Go (`Item`, `Category`, `Catalog`).
-   - Usar `github.com/BurntSushi/toml` o similar para leer el `catalog.toml`.
-   - Crear función `LoadCatalog(path string)` que devuelva los datos estructurados.
-
-3. **Diseñar el Gestor de Estado (`pkg/bunker/state.go`):**
-   - Lógica para leer y escribir el `state.json` dentro de cada `.entorno/`.
-   - Debe registrar: ¿Qué Slot es? (DEV, DATA, RANDOM), ¿Qué herramientas tiene instaladas?
+This document is your compass. It details the logical order to implement the new **Catalog Architecture** and the **Complete Go Migration**, preventing you from getting blocked by circular dependencies.
 
 ---
 
-## 📌 FASE 2: Interfaz de Usuario (TUI) Dinámica
-*Hacer que la terminal muestre las opciones leídas en la Fase 1.*
+## 📌 PHASE 1: The Catalog Brain (High Priority)
+*The goal of this phase is for AXIOM to understand what it can install without having it hardcoded.*
 
-1. **Adaptador de Formulario (BubbleTea):**
-   - Modificar la TUI de `axiom build` para que reciba las `Categories` del parser.
-   - Generar dinámicamente listas de checkboxes basándose en los `Items` del catálogo.
+1. **Create `catalog.toml` (Project root):**
+   - Design the file with categories `[Categories.AI]`, `[Categories.DB]`, etc.
+   - Add test tools (Ollama, Go, PostgreSQL).
 
-2. **Flujo de Selección:**
-   - Pantalla 1: Elegir "Slot" (DEV, DATA, RANDOM).
-   - Pantalla 2 (Si es DEV/DATA): Mostrar checkboxes dinámicos del catálogo.
-   - Pantalla 3: Resumen final ("Vas a instalar: Ollama, Go").
+2. **Write the Parser (`pkg/catalog/parser.go`):**
+   - Implement Go structs (`Item`, `Category`, `Catalog`).
+   - Use `github.com/BurntSushi/toml` or similar to read `catalog.toml`.
+   - Create `LoadCatalog(path string)` function returning structured data.
 
----
-
-## 📌 FASE 3: El Motor de Aprovisionamiento (`bunker/instance.go`)
-*Reemplazar el monstruoso script `build` en Bash por lógica en Go.*
-
-1. **Refactor de la función `Build()`:**
-   - Ya no ejecuta el script hardcodeado de `bunker_lifecycle.sh`.
-   - Ahora lee el `state.json` generado por la TUI.
-   - Itera sobre las herramientas seleccionadas y ejecuta la propiedad `script` de cada `Item` del catálogo.
-
-2. **Limpieza de Bash:**
-   - Eliminar por fin la lógica de instalación de `opencode`, `gentle-ai`, etc., del código Bash.
+3. **Design the State Manager (`pkg/bunker/state.go`):**
+   - Logic to read and write `state.json` inside each `.entorno/`.
+   - It must register: What Slot is it? (DEV, DATA, RANDOM), What tools are installed?
 
 ---
 
-## 📌 FASE 4: Módulos Pendientes y Deuda Técnica (El sprint final)
+## 📌 PHASE 2: Dynamic User Interface (TUI)
+*Make the terminal show options read in Phase 1.*
 
-1. **Migración del `config.toml` (Adiós `.env`):**
-   - Resolver el bug **[ID-BUG-013]**.
-   - Crear `pkg/config/` para manejar configuración en TOML. El `.env` es frágil para strings complejos.
+1. **Form Adapter (BubbleTea):**
+   - Modify the `axiom build` TUI to receive `Categories` from the parser.
+   - Dynamically generate checkbox lists based on catalog `Items`.
 
-2. **Destruir `lib/git.sh`:**
-   - Las funciones de Git en Bash son propensas a fallos interactivos.
-   - Crear `pkg/git/` y usar comandos nativos (`exec.Command` bien controlados o la librería `go-git`).
-   - Integrar flujos de confirmación (commit, push, branch) en las tarjetas de la TUI.
-
-3. **Seguridad y Procesos (Resolución de Bugs Críticos):**
-   - Aplicar `filepath.Clean()` en **TODAS** las rutas **[ID-BUG-001]**.
-   - Reemplazar todos los `exec.Command` por `exec.CommandContext` para evitar procesos zombis en el host **[ID-BUG-015]**.
-   - Cambiar los permisos de `os.MkdirAll` de `0755` a `0700` **[ID-BUG-005]**.
+2. **Selection Flow:**
+   - Screen 1: Choose "Slot" (DEV, DATA, RANDOM).
+   - Screen 2 (If DEV/DATA): Show dynamic checkboxes from the catalog.
+   - Screen 3: Final summary ("You are going to install: Ollama, Go").
 
 ---
 
-## 💡 Notas para el Desarrollador (Tú)
-* **Regla de Oro:** Si tocas lógica de negocio (pkg/bunker), **NO PUEDES** imprimir en pantalla (`fmt.Println`). Solo emitir eventos a la UI.
-* **Iteración Corta:** No intentes hacer el motor de provisionamiento entero de golpe. Haz primero que el comando `axiom build` sepa leer el catálogo e imprimir en consola: *"Instalaría esto y esto..."* antes de ejecutar comandos reales en el contenedor.
+## 📌 PHASE 3: Provisioning Engine (`bunker/instance.go`)
+*Replace the monstrous `build` Bash script with Go logic.*
+
+1. **Refactor `Build()` function:**
+   - No longer executes the hardcoded `bunker_lifecycle.sh` script.
+   - Now reads the `state.json` generated by the TUI.
+   - Iterates over selected tools and executes the `script` property of each catalog `Item`.
+
+2. **Bash Cleanup:**
+   - Finally remove installation logic for `opencode`, `gentle-ai`, etc., from Bash code.
+
+---
+
+## 📌 PHASE 4: Pending Modules & Technical Debt (The final sprint)
+
+1. **Migrate `config.toml` (Goodbye `.env`):**
+   - Resolve bug **[ID-BUG-013]**.
+   - Create `pkg/config/` to handle TOML configuration. `.env` is fragile for complex strings.
+
+2. **Destroy `lib/git.sh`:**
+   - Bash Git functions are prone to interactive failures.
+   - Create `pkg/git/` and use native commands (well-controlled `exec.Command` or `go-git` library).
+   - Integrate commit, push, branch flows into TUI cards.
+
+3. **Security and Processes (Critical Bug Resolution):**
+   - Apply `filepath.Clean()` on **ALL** paths **[ID-BUG-001]**.
+   - Replace all `exec.Command` with `exec.CommandContext` to prevent host zombie processes **[ID-BUG-015]**.
+   - Change `os.MkdirAll` permissions from `0755` to `0700` **[ID-BUG-005]**.
+
+---
+
+## 💡 Developer Notes
+* **Golden Rule:** If you touch business logic (pkg/bunker), **YOU CANNOT** print to screen (`fmt.Println`). Only emit events to the UI.
+* **Short Iteration:** Don't try to build the whole provisioning engine at once. First, make the `axiom build` command read the catalog and print to console: *"I would install this and this..."* before running real commands in the container.

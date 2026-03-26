@@ -16,7 +16,8 @@ import (
 type Step int
 
 const (
-	StepConfirm Step = iota
+	StepLanguage Step = iota
+	StepConfirm
 	StepGitUser
 	StepGitEmail
 	StepAuthMode
@@ -51,19 +52,19 @@ type Model struct {
 	reviewCursor int
 	reviewMode   bool
 	detectedGPU  gpu.GPUInfo
+	language     string
+	envExists    bool
 }
 
-func NewModel(axiomPath string, envExists bool) Model {
+func NewModel(axiomPath string, envExists bool, lang string) Model {
 	ti := textinput.New()
 	ti.Focus()
 	ti.Prompt = " ❯ "
 
 	hw := gpu.Detect()
 
-	start := StepGitUser
-	if envExists {
-		start = StepConfirm
-	}
+	// Siempre empezamos preguntando el idioma
+	start := StepLanguage
 
 	initialConfig := install.Config{
 		BaseDir:    fmt.Sprintf("%s/dev", os.Getenv("HOME")),
@@ -82,6 +83,8 @@ func NewModel(axiomPath string, envExists bool) Model {
 		axiomPath:   axiomPath,
 		detectedGPU: hw,
 		config:      initialConfig,
+		language:    lang,
+		envExists:   envExists,
 	}
 }
 
@@ -105,6 +108,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			val := m.input.Value()
 			switch m.step {
+			case StepLanguage:
+				if m.cursor == 0 {
+					m.language = "en"
+				} else {
+					m.language = "es"
+				}
+				m.cursor = 0
+				if m.envExists {
+					m.step = StepConfirm
+				} else {
+					m.step = StepGitUser
+				}
+
 			case StepConfirm:
 				if m.cursor == 1 {
 					return m, tea.Quit
@@ -251,7 +267,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case tea.KeyUp:
 			switch m.step {
-			case StepConfirm, StepAuthMode, StepRocmMode:
+			case StepLanguage, StepConfirm, StepAuthMode, StepRocmMode:
 				if m.cursor == 0 {
 					m.cursor = 1
 				} else {
@@ -267,7 +283,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case tea.KeyDown:
 			switch m.step {
-			case StepConfirm, StepAuthMode, StepRocmMode:
+			case StepLanguage, StepConfirm, StepAuthMode, StepRocmMode:
 				if m.cursor == 0 {
 					m.cursor = 1
 				} else {
@@ -282,7 +298,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case tea.KeyLeft, tea.KeyRight:
-			if m.step == StepConfirm || m.step == StepAuthMode || m.step == StepRocmMode {
+			if m.step == StepLanguage || m.step == StepConfirm || m.step == StepAuthMode || m.step == StepRocmMode {
 				if m.cursor == 0 {
 					m.cursor = 1
 				} else {
@@ -292,7 +308,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	if m.step != StepConfirm && m.step != StepAuthMode && m.step != StepRocmMode && m.step != StepReview {
+	if m.step != StepLanguage && m.step != StepConfirm && m.step != StepAuthMode && m.step != StepRocmMode && m.step != StepReview {
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
 		return m, cmd
@@ -305,41 +321,43 @@ func (m Model) View() string {
 	header := styles.GetLogo() + "\n\n"
 
 	if m.step == StepFinalizing {
-		body := styles.GreenStyle.Render("🛡️  AXIOM: ¡Búnker configurado correctamente!") + "\n\n" +
-			"🚀 Próximo paso: Ejecuta " + styles.GreenStyle.Render("axiom build") + "\n\n" +
-			styles.ExampleStyle.Render("(Presiona Enter para salir)")
+		body := styles.GreenStyle.Render("🛡️  AXIOM: Bunker configured successfully!") + "\n\n" +
+			"🚀 Next step: Run " + styles.GreenStyle.Render("axiom build") + "\n\n" +
+			styles.ExampleStyle.Render("(Press Enter to exit)")
 		return styles.WindowStyle.Render(header + body)
 	}
 
 	var body string
 	switch m.step {
+	case StepLanguage:
+		body = m.renderBox("LANGUAGE / IDIOMA", "Select your language / Selecciona tu idioma:", "English", "Español")
 	case StepConfirm:
-		body = m.renderBox("ADVERTENCIA", "¿Sobrescribir archivo .env existente?", "SÍ, CONTINUAR", "NO, SALIR")
+		body = m.renderBox("WARNING", "Overwrite existing .env file?", "YES, CONTINUE", "NO, EXIT")
 	case StepGitUser:
-		body = m.renderInput("USUARIO GITHUB", "Introduce tu usuario:", "ej: user")
+		body = m.renderInput("GITHUB USER", "Enter your username:", "e.g.: user")
 	case StepGitEmail:
-		body = m.renderInput("EMAIL GITHUB", "Introduce tu correo:", "ej: user@example.com")
+		body = m.renderInput("GITHUB EMAIL", "Enter your email:", "e.g.: user@example.com")
 	case StepAuthMode:
-		body = m.renderBox("AUTENTICACIÓN", "Selecciona conexión:", "SSH (Recomendado)", "HTTPS (Token)")
+		body = m.renderBox("AUTHENTICATION", "Select connection type:", "SSH (Recommended)", "HTTPS (Token)")
 	case StepGitToken:
-		body = m.renderInput("TOKEN GITHUB", "Pega tu Token PAT:", "Necesario para HTTPS")
+		body = m.renderInput("GITHUB TOKEN", "Paste your PAT Token:", "Required for HTTPS")
 	case StepBaseDir:
-		body = m.renderInput("DIRECTORIO BASE", "Ruta raíz:", "Enter para: "+m.config.BaseDir)
+		body = m.renderInput("BASE DIRECTORY", "Root path:", "Enter for: "+m.config.BaseDir)
 	case StepModelsDir:
-		body = m.renderInput("MODELOS OLLAMA", "¿Ubicación de modelos?", "Actual: "+m.config.ModelsDir)
+		body = m.renderInput("OLLAMA MODELS", "Models location?", "Current: "+m.config.ModelsDir)
 	case StepGfxVersion:
-		infoGPU := fmt.Sprintf("Detectado: %s", m.detectedGPU.Name)
-		sugerido := "Sugerido: " + m.detectedGPU.GfxVal
+		infoGPU := fmt.Sprintf("Detected: %s", m.detectedGPU.Name)
+		sugerido := "Suggested: " + m.detectedGPU.GfxVal
 		if m.detectedGPU.GfxVal == "" {
-			sugerido = "No se requiere GFX"
+			sugerido = "GFX not required"
 		}
-		body = m.renderInput("GPU HARDWARE", infoGPU, sugerido+" (Enter para confirmar)")
+		body = m.renderInput("GPU HARDWARE", infoGPU, sugerido+" (Enter to confirm)")
 	case StepRocmMode:
-		sug := "Host (Recomendado AMD/Intel)"
+		sug := "Host (Recommended AMD/Intel)"
 		if m.detectedGPU.Type == "nvidia" {
-			sug = "Image (Recomendado NVIDIA)"
+			sug = "Image (Recommended NVIDIA)"
 		}
-		body = m.renderBox("DRIVERS GPU", "Manejo de drivers ("+sug+"):", "Host (Ligero)", "Image (Aislado)")
+		body = m.renderBox("GPU DRIVERS", "Driver handling ("+sug+"):", "Host (Lightweight)", "Image (Isolated)")
 	case StepReview:
 		body = m.renderReview()
 	}
@@ -349,6 +367,9 @@ func (m Model) View() string {
 
 func (m Model) finalizeAction() tea.Cmd {
 	return func() tea.Msg {
+		// Guardamos el idioma seleccionado en el entorno actual para que otras fases lo lean
+		os.Setenv("AXIOM_LANG", m.language)
+		
 		_ = install.CheckDeps()
 		_ = install.PrepareFS(m.axiomPath, m.config.BaseDir)
 		_ = m.config.Save(m.axiomPath)
@@ -404,10 +425,10 @@ func (m Model) renderReview() string {
 	}
 
 	var lines []string
-	lines = append(lines, styles.HeaderStyle.Render("RESUMEN FINAL"))
+	lines = append(lines, styles.HeaderStyle.Render("FINAL SUMMARY"))
 	lines = append(lines, "")
-	lines = append(lines, "Revisa los datos. Pulsa Enter sobre un campo para editarlo.")
-	lines = append(lines, styles.ExampleStyle.Render("Usa Flecha Arriba/Abajo para moverte."))
+	lines = append(lines, "Review the data. Press Enter on a field to edit it.")
+	lines = append(lines, styles.ExampleStyle.Render("Use Up/Down Arrows to navigate."))
 	lines = append(lines, "")
 
 	for i, item := range items {
@@ -419,13 +440,13 @@ func (m Model) renderReview() string {
 	}
 
 	lines = append(lines, "")
-	guardar := styles.InactiveButton.Render("GUARDAR Y CREAR")
-	cancelar := styles.InactiveButton.Render("CANCELAR")
+	guardar := styles.InactiveButton.Render("SAVE AND CREATE")
+	cancelar := styles.InactiveButton.Render("CANCEL")
 	if m.reviewCursor == reviewSave {
-		guardar = styles.ActiveButton.Render("GUARDAR Y CREAR")
+		guardar = styles.ActiveButton.Render("SAVE AND CREATE")
 	}
 	if m.reviewCursor == reviewCancel {
-		cancelar = styles.ActiveButton.Render("CANCELAR")
+		cancelar = styles.ActiveButton.Render("CANCEL")
 	}
 	lines = append(lines, guardar+"  "+cancelar)
 
@@ -434,24 +455,24 @@ func (m Model) renderReview() string {
 
 func safeValue(v string) string {
 	if strings.TrimSpace(v) == "" {
-		return "(vacío)"
+		return "(empty)"
 	}
 	return v
 }
 
 func displayGFX(v string) string {
 	if strings.TrimSpace(v) == "" {
-		return "No se requiere"
+		return "Not required"
 	}
 	return v
 }
 
 func maskToken(token, authMode string) string {
 	if authMode != "https" {
-		return "No aplica"
+		return "N/A"
 	}
 	if token == "" {
-		return "(vacío)"
+		return "(empty)"
 	}
 	if len(token) <= 8 {
 		return strings.Repeat("*", len(token))

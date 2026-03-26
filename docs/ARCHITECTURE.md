@@ -1,4 +1,4 @@
-# 🏛️ Arquitectura de AXIOM
+ # 🏛️ Arquitectura de AXIOM
 
 AXIOM utiliza una **Arquitectura Limpia (Clean Architecture)** basada en el patrón de Puertos y Adaptadores. 
 El objetivo principal de esta estructura es **desacoplar completamente la lógica de negocio (Core) de la interfaz de usuario y del sistema subyacente (Podman, OS)**.

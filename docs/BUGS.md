@@ -1,57 +1,5 @@
 # 🐛 Bug Tracker & MVP Status
 
-[🇪🇸 Español](#-español) | [🇬🇧 English](#-english)
-
----
-
-## 🇪🇸 Español
-Este documento detalla los fallos conocidos y tareas pendientes durante la migración de Bash a **Go Nativo**.
-
-## 🔴 Críticos y 
-- [x] **Seguridad de Volúmenes**: Las funciones nativas de `build` y `create` necesitan auditoría en el manejo de permisos de contenedores rootless.Seguridad
-- [x] **Inyección de GPU**: Fallos esporádicos al detectar y montar drivers NVIDIA/AMD desde el binario de Go en `build`.
-- [x] **Persistencia**: El contenido de `~/.entorno/` a veces no se monta correctamente en el primer inicio.
-- [x] **[ID-BUG-001] Path Traversal**: Vulnerabilidad crítica en `Create`, `Delete` e `Info` al concatenar el nombre del búnker directamente en las rutas sin usar `filepath.Clean()`.
-- [x] **[ID-BUG-005] Permisos Laxos**: `os.MkdirAll` crea carpetas en `.entorno/` con `0755` en lugar del restrictivo `0700`, exponiendo configuraciones a otros usuarios del host.
-- [ ] **[ID-BUG-019]                   cuando haces axiom delete-image y estas dentro de un bunker clonado se borra el bunker clonado 
-- [ ] **[ID-BUG-020]                   cuando se entra el bunker no se ejecuta gentle-ai para que salte el instalador solo si esta instalado que se sabe con un archivo que se crea al instalarlo o algo con go nativo
-
-## 🟡 Pendientes de Migración (Bash ➔ Go)
-- [ ] Traducir herramientas de Git interactivo (`lib/git.sh`) a código nativo en `pkg/`.
-- [ ] Migrar lógica de limpieza profunda (`axiom purge`).
-- [ ] **[ID-BUG-002] Dependencia de utilidades del sistema**: Reemplazar comandos heredados de bash como `du -sh` (en `bunkerEnvSize`) usando `filepath.WalkDir` nativo.
-- [x] **[ID-BUG-003] Parseo frágil**: Dejar de separar texto con `strings.Split` en `distroboxExists` y usar `--format json` decodificando con `encoding/json`.
-- [
-## 🟠 Arquitectura y Separación de Responsabilidades
-- [x] **[ID-BUG-006] Acoplamiento Lógica-UI**: Las funciones del `Manager` (`Create`, `Delete`, `Info`) imprimen tarjetas y logs directamente a la consola, mezclando la lógica de negocio con la presentación.
-- [x] **[ID-BUG-008] Interacción con Usuario en el Core**: Funciones como `Delete` y `Prune` leen desde `stdin` para pedir confirmación, bloqueando su uso en scripts y violando la separación de capas.
-- [x] **[ID-BUG-009] Responsabilidades de UI en el Manager**: El `Manager` tiene un método `Help()` cuya única función es imprimir una tarjeta de ayuda, una tarea que corresponde a la capa de UI.
-- [ ] **[ID-BUG-007] Dependencia de Git en PATH**: La función `bunkerGitBranch` ejecuta el binario `git` en lugar de usar una librería nativa como `go-git`, creando una dependencia externa frágil.
-- [x] **[ID-BUG-010] Secuencias ANSI Hardcodeadas**: Limpiar la pantalla de la terminal con `fmt.Print("\033[H\033[2J")` dentro de las funciones Core destruye la portabilidad de las llamadas.
-- [x] **[ID-BUG-014] Split Brain Arquitectónico (main.go)**: Bypass del modelo BubbleTea (`tea.Program`) para inyectar lógica interactiva manual (`bufio`) en comandos directos, impidiendo escalar el UI.
-- [ ] **[ID-BUG-016] Violación DRY en Ruteo**: Duplicidad de lista de comandos (`Run` vs `KnownCommand`) en `bunkerController.go`. Debe migrarse a mapas de funciones o Cobra/CLI.
-
-## 🟡 Calidad de Código y Estándares Go
-- [ ] **[ID-BUG-011] Supresión de Errores (Silencing)**: Múltiples ejecuciones de `exec.Command` descartan silenciosamente el error o el `Stderr` asignándolo a `_`, ocultando fallos críticos (ej. en `prepareSSHAgent`).
-- [ ] **[ID-BUG-012] Errores Desnudos (Sin Wrapping)**: Devolver `return err` sin contexto (ej. tras `os.MkdirAll`) dificulta el rastro. Se debe usar `fmt.Errorf("... %w", err)`.
-- [ ] **[ID-BUG-013] Parseo Manual del `.env`**: El método en `LoadEnvFile` que utiliza `strings.Cut(line, "=")` truncará secretos o tokens que contengan un igual (`=`) en su valor.
-- [ ] **[ID-BUG-017] Resolución Mágica de Variables**: `prepareSSHAgent` confía en `os.Getenv("HOME")` en lugar de usar el robusto y seguro `os.UserHomeDir()`.
-
-## 🟢 Concurrencia y Control de Ejecución
-- [ ] **[ID-BUG-015] Procesos Zombis sin Contexto**: Llamadas a binarios con `exec.Command` (como `pacman`) no están limitadas. Usar `exec.CommandContext` para evitar cuelgues permanentes.
-- [x] **[ID-BUG-015] Procesos Zombis sin Contexto**: Llamadas a binarios con `exec.Command` (como `pacman`) no están limitadas. Usar `exec.CommandContext` para evitar cuelgues permanentes.
-- [x] **[ID-BUG-018] Cuelgues por Prompts Sudo**: `runCommandQuiet("sudo", "-v")` puede dejar la app colgada si pide contraseña sin tener TTY correctamente bindeado.
-
-## 🔵 Próximos Pasos
-- [ ] **Configuración**: Mover el sistema de variables de `.env` a un archivo `config.toml` profesional.
-- [ ] **Manejo de Errores**: Crear tipos de error personalizados (ej. `ErrBunkerNotFound`, `ErrImageMissing`) en lugar de usar strings genéricos con `fmt.Errorf`.
-- [ ] **Integración Podman API**: Investigar la conexión directa al socket REST de Podman en lugar de ejecutar subprocesos de shell.
-
-
-
----
-
-## 🇬🇧 English
 This document details the known issues and pending tasks during the migration from Bash to **Native Go**.
 
 ### 🔴 Critical & Security
@@ -60,6 +8,8 @@ This document details the known issues and pending tasks during the migration fr
 - [x] **Persistence**: `~/.entorno/` contents sometimes fail to mount correctly on the first startup.
 - [x] **[ID-BUG-001] Path Traversal**: Critical vulnerability in `Create`, `Delete`, and `Info` where bunker names are concatenated directly into paths without using `filepath.Clean()`.
 - [x] **[ID-BUG-005] Loose Permissions**: `os.MkdirAll` creates folders in `.entorno/` with `0755` instead of the restrictive `0700`, exposing configs to other host users.
+- [ ] **[ID-BUG-019] Deleting image inside cloned bunker**: Deleting an image while inside a cloned bunker deletes the cloned bunker.
+- [ ] **[ID-BUG-020] Gentle-ai execution**: When entering the bunker, `gentle-ai` does not execute to trigger the installer (should check installation status via a flag file or native go).
 
 ### 🟡 Pending Migration (Bash ➔ Go)
 - [ ] Translate interactive Git tools (`lib/git.sh`) to native code in `pkg/`.
