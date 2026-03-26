@@ -12,7 +12,7 @@ func CheckDeps() error {
 	deps := []string{"distrobox", "podman", "jq"}
 	for _, dep := range deps {
 		if _, err := exec.LookPath(dep); err != nil {
-			return fmt.Errorf("❌ Falta dependencia: %s", dep)
+			return fmt.Errorf("errors.system.dependency_missing: %s", dep)
 		}
 	}
 	return nil
@@ -21,7 +21,7 @@ func CheckDeps() error {
 // PrepareFS crea la estructura de carpetas necesaria para los búnkeres
 func PrepareFS(axiomPath, baseDir string) error {
 	// Equivalente a mkdir -p "$DIR/lib"
-	if err := os.MkdirAll(filepath.Join(axiomPath, "lib"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(axiomPath, "lib"), 0700); err != nil {
 		return err
 	}
 
@@ -39,7 +39,7 @@ func PrepareFS(axiomPath, baseDir string) error {
 func CreateWrapper(axiomPath string) error {
 	home, _ := os.UserHomeDir()
 	binPath := filepath.Join(home, ".local/bin")
-	os.MkdirAll(binPath, 0755)
+	os.MkdirAll(binPath, 0700)
 
 	target := filepath.Join(binPath, "axiom")
 	// Wrapper que exporta la ruta y lanza axiom.sh

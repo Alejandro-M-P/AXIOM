@@ -1,12 +1,15 @@
 package bunker
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -25,7 +28,7 @@ func (m *Manager) Create(name string) error {
 
 	cfg, err := m.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("no se pudo leer .env: %w", err)
+		return fmt.Errorf("errors.env.read: %w", err)
 	}
 
 	projectDir := filepath.Join(cfg.BaseDir, name)
@@ -39,17 +42,21 @@ func (m *Manager) Create(name string) error {
 	m.UI.ShowCommandCard(
 		"create",
 		[]Field{
-			{Label: "Nombre", Value: name},
-			{Label: "Imagen", Value: imageName},
-			{Label: "Proyecto", Value: projectDir},
-			{Label: "Entorno", Value: envDir},
-			{Label: "GPU", Value: hardware.Type},
-			{Label: "SSH", Value: yesNo(sshMounted)},
+			{Label: "fields.name", Value: name},
+			{Label: "fields.image", Value: imageName},
+			{Label: "fields.project", Value: projectDir},
+			{Label: "fields.environment", Value: envDir},
+			{Label: "fields.gpu", Value: hardware.Type},
+			{Label: "fields.ssh", Value: yesNo(sshMounted)},
 		},
 		nil,
 	)
 
-	if err := runCommandQuiet("sudo", "-v"); err != nil {
+	sudoCmd := exec.Command("sudo", "-v")
+	sudoCmd.Stdin = os.Stdin
+	sudoCmd.Stdout = os.Stdout
+	sudoCmd.Stderr = os.Stderr
+	if err := sudoCmd.Run(); err != nil {
 		return fmt.Errorf("access_denied")
 	}
 
@@ -58,11 +65,11 @@ func (m *Manager) Create(name string) error {
 	} else if exists {
 		prepareSSHAgent(cfg)
 		m.UI.ShowWarning(
-			"Búnker Existente",
-			"Ya existe un contenedor con ese nombre; se abrirá directamente.",
-			[]Field{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}},
+			"warnings.bunker_exists.title",
+			"warnings.bunker_exists.desc",
+			[]Field{{Label: "fields.name", Value: name}, {Label: "fields.environment", Value: envDir}},
 			nil,
-			"Reutilizando configuración previa.",
+			"warnings.bunker_exists.footer",
 		)
 		return enterBunker(name, rcPath)
 	}
@@ -70,16 +77,16 @@ func (m *Manager) Create(name string) error {
 	if !podmanImageExists(imageName) {
 		available, _ := listAxiomImages()
 		m.UI.ShowWarning(
-			"Imagen Base No Disponible",
-			"No se puede crear el búnker sin una imagen previa.",
-			[]Field{{Label: "Esperada", Value: imageName}},
+			"warnings.missing_image.title",
+			"warnings.missing_image.desc",
+			[]Field{{Label: "fields.expected", Value: imageName}},
 			available,
-			"Construye primero la base con: axiom build",
+			"warnings.missing_image.footer",
 		)
 		return fmt.Errorf("missing_image")
 	}
 
-	if err := os.MkdirAll(projectDir, 0755); err != nil {
+	if err := os.MkdirAll(projectDir, 0700); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(envDir, 0700); err != nil {
@@ -154,11 +161,11 @@ WaitLoop:
 
 	prepareSSHAgent(cfg)
 	m.UI.ShowWarning(
-		"Búnker Listo",
-		"El contenedor ya está preparado y se abrirá ahora.",
-		[]Field{{Label: "Nombre", Value: name}, {Label: "Imagen", Value: imageName}, {Label: "Entorno", Value: envDir}},
+		"warnings.bunker_ready.title",
+		"warnings.bunker_ready.desc",
+		[]Field{{Label: "fields.name", Value: name}, {Label: "fields.image", Value: imageName}, {Label: "fields.environment", Value: envDir}},
 		nil,
-		"Configuración aplicada: shell, starship y opencode.",
+		"warnings.bunker_ready.footer",
 	)
 	return enterBunker(name, rcPath)
 }
@@ -167,7 +174,7 @@ WaitLoop:
 func (m *Manager) Stop() error {
 	cfg, err := m.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("no se pudo leer .env: %w", err)
+		return fmt.Errorf("errors.env.read: %w", err)
 	}
 
 	names, err := listBunkerNames(cfg)
@@ -177,11 +184,11 @@ func (m *Manager) Stop() error {
 	if len(names) == 0 {
 		m.UI.ShowLogo()
 		m.UI.ShowWarning(
-			"Sin búnkeres",
-			"No hay búnkeres creados.",
+			"warnings.no_bunkers.title",
+			"warnings.no_bunkers.desc",
 			nil,
 			nil,
-			"Usa axiom create <nombre> para crear uno nuevo.",
+			"warnings.no_bunkers.footer",
 		)
 		return nil
 	}
@@ -196,16 +203,16 @@ func (m *Manager) Stop() error {
 	if len(activeNames) == 0 {
 		m.UI.ShowLogo()
 		m.UI.ShowWarning(
-			"Ninguno activo",
-			"No hay búnkeres activos ahora mismo.",
+			"warnings.none_active.title",
+			"warnings.none_active.desc",
 			nil,
 			nil,
-			"Todos los búnkeres detectados ya están parados.",
+			"warnings.none_active.footer",
 		)
 		return nil
 	}
 
-	selected, err := selectBunkerInteractive("Búnkeres Activos", "Pulsa Enter para detener este búnker", activeNames)
+	selected, err := selectBunkerInteractive("prompts.select_active.title", "prompts.select_active.desc", activeNames)
 	if err != nil {
 		return err
 	}
@@ -218,9 +225,9 @@ func (m *Manager) Stop() error {
 	m.UI.ShowCommandCard(
 		"stop",
 		[]Field{
-			{Label: "Nombre", Value: selected},
-			{Label: "Estado", Value: "stopped"},
-			{Label: "Entorno", Value: humanPath(bunkerEnvPath(cfg, selected))},
+			{Label: "fields.name", Value: selected},
+			{Label: "fields.status", Value: "stopped"},
+			{Label: "fields.environment", Value: humanPath(bunkerEnvPath(cfg, selected))},
 		},
 		nil,
 	)
@@ -233,7 +240,7 @@ func (m *Manager) Delete(name string) error {
 
 	cfg, err := m.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("no se pudo leer .env: %w", err)
+		return fmt.Errorf("errors.env.read: %w", err)
 	}
 
 	if name == "" {
@@ -241,7 +248,7 @@ func (m *Manager) Delete(name string) error {
 		if err != nil {
 			return err
 		}
-		selected, err := selectBunkerInteractive("Eliminar Búnker", "Pulsa Enter para eliminar este búnker", names)
+		selected, err := selectBunkerInteractive("prompts.delete_bunker.title", "prompts.delete_bunker.desc", names)
 		if err != nil {
 			return err
 		}
@@ -258,9 +265,9 @@ func (m *Manager) Delete(name string) error {
 	projectDir := filepath.Join(cfg.BaseDir, name)
 
 	confirm, reason, deleteCode, err := m.UI.AskDelete(name, []Field{
-		{Label: "Nombre", Value: name},
-		{Label: "Entorno", Value: envDir},
-		{Label: "Proyecto", Value: projectDir},
+		{Label: "fields.name", Value: name},
+		{Label: "fields.environment", Value: envDir},
+		{Label: "fields.project", Value: projectDir},
 	})
 	if err != nil {
 		return err
@@ -269,7 +276,7 @@ func (m *Manager) Delete(name string) error {
 		return nil
 	}
 
-	_ = appendTutorLog(cfg.TutorPath(), fmt.Sprintf("- Búnker '%s' eliminado (Razón: %s)", name, reason))
+	_ = appendTutorLog(cfg.TutorPath(), fmt.Sprintf("logs.tutor.bunker_deleted", name, reason))
 
 	m.UI.ShowLog("delete.cleaning")
 
@@ -288,9 +295,9 @@ func (m *Manager) Delete(name string) error {
 	}
 
 	m.UI.ShowWarning(
-		"Búnker Eliminado",
-		"La desinstalación terminó correctamente.",
-		[]Field{{Label: "Nombre", Value: name}, {Label: "Entorno", Value: envDir}, {Label: "Código borrado", Value: yesNo(deleteCode)}},
+		"warnings.bunker_deleted.title",
+		"warnings.bunker_deleted.desc",
+		[]Field{{Label: "fields.name", Value: name}, {Label: "fields.environment", Value: envDir}, {Label: "fields.code_deleted", Value: yesNo(deleteCode)}},
 		nil,
 		"",
 	)
@@ -301,7 +308,7 @@ func (m *Manager) Delete(name string) error {
 func (m *Manager) DeleteImage() error {
 	cfg, err := m.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("no se pudo leer .env: %w", err)
+		return fmt.Errorf("errors.env.read: %w", err)
 	}
 
 	hardware := resolveBuildGPU(cfg)
@@ -313,7 +320,7 @@ func (m *Manager) DeleteImage() error {
 
 	confirm, err := m.UI.AskConfirmInCard(
 		"delete-image",
-		[]Field{{Label: "Objetivo", Value: targetImage}, {Label: "GPU", Value: hardware.Type}},
+		[]Field{{Label: "fields.target", Value: targetImage}, {Label: "fields.gpu", Value: hardware.Type}},
 		images,
 		"delete-image.confirm",
 	)
@@ -323,18 +330,18 @@ func (m *Manager) DeleteImage() error {
 
 	if err := runCommandQuiet("podman", "rmi", targetImage, "--force"); err != nil {
 		if !podmanImageExists(targetImage) {
-			return fmt.Errorf("no se encontró la imagen %s", targetImage)
+			return fmt.Errorf("errors.bunker.image_not_found: %s", targetImage)
 		}
 		return err
 	}
 
 	remaining, _ := listAxiomImages()
 	m.UI.ShowWarning(
-		"Imagen Eliminada",
-		"La imagen base se eliminó correctamente.",
-		[]Field{{Label: "Eliminada", Value: targetImage}},
+		"warnings.image_deleted.title",
+		"warnings.image_deleted.desc",
+		[]Field{{Label: "fields.deleted", Value: targetImage}},
 		remaining,
-		"Estas son las imágenes de AXIOM que siguen disponibles.",
+		"warnings.image_deleted.footer",
 	)
 	return nil
 }
@@ -362,14 +369,24 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir 
 }
 
 func distroboxExists(name string) (bool, error) {
-	output, err := runCommandOutputQuiet("distrobox-list", "--no-color")
+	output, err := runCommandOutputQuiet("podman", "ps", "-a", "--format", "json")
 	if err != nil {
 		return false, err
 	}
-	for _, line := range strings.Split(output, "\n") {
-		if strings.Contains(line, "|") {
-			parts := strings.Split(line, "|")
-			if len(parts) > 1 && strings.TrimSpace(parts[1]) == name {
+	if strings.TrimSpace(output) == "" {
+		return false, nil
+	}
+
+	var containers []struct {
+		Names []string `json:"Names"`
+	}
+	if err := json.Unmarshal([]byte(output), &containers); err != nil {
+		return false, err
+	}
+
+	for _, c := range containers {
+		for _, cName := range c.Names {
+			if cName == name {
 				return true, nil
 			}
 		}
@@ -378,15 +395,27 @@ func distroboxExists(name string) (bool, error) {
 }
 
 func listAxiomImages() ([]string, error) {
-	output, err := runCommandOutputQuiet("podman", "images", "--format", "{{.Repository}}:{{.Tag}}")
+	output, err := runCommandOutputQuiet("podman", "images", "--format", "json")
 	if err != nil {
 		return nil, err
 	}
+	if strings.TrimSpace(output) == "" {
+		return nil, nil
+	}
+
+	var imagesData []struct {
+		Names []string `json:"Names"`
+	}
+	if err := json.Unmarshal([]byte(output), &imagesData); err != nil {
+		return nil, err
+	}
+
 	var images []string
-	for _, line := range strings.Split(output, "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "localhost/axiom-") {
-			images = append(images, line)
+	for _, img := range imagesData {
+		for _, n := range img.Names {
+			if strings.HasPrefix(n, "localhost/axiom-") {
+				images = append(images, n)
+			}
 		}
 	}
 	sort.Strings(images)
@@ -394,7 +423,9 @@ func listAxiomImages() ([]string, error) {
 }
 
 func podmanImageExists(image string) bool {
-	cmd := exec.Command("podman", "image", "exists", image)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "podman", "image", "exists", image)
 	return cmd.Run() == nil
 }
 
@@ -402,10 +433,14 @@ func prepareSSHAgent(cfg EnvConfig) {
 	if strings.ToLower(strings.TrimSpace(cfg.AuthMode)) != "ssh" {
 		return
 	}
-	if exec.Command("ssh-add", "-l").Run() == nil {
+	ctx1, cancel1 := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel1()
+	if exec.CommandContext(ctx1, "ssh-add", "-l").Run() == nil {
 		return
 	}
-	_ = exec.Command("ssh-add", filepath.Join(os.Getenv("HOME"), ".ssh", "id_ed25519")).Run()
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel2()
+	_ = exec.CommandContext(ctx2, "ssh-add", filepath.Join(os.Getenv("HOME"), ".ssh", "id_ed25519")).Run()
 }
 
 func sshVolumeFlag() string {
@@ -507,9 +542,9 @@ func defaultString(value, fallback string) string {
 
 func yesNo(value bool) string {
 	if value {
-		return "sí"
+		return "common.yes"
 	}
-	return "no"
+	return "common.no"
 }
 
 func isYes(value string) bool {
@@ -521,7 +556,7 @@ func isYes(value string) bool {
 func (m *Manager) List() error {
 	cfg, err := m.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("no se pudo leer .env: %w", err)
+		return fmt.Errorf("errors.env.read: %w", err)
 	}
 
 	names, err := listBunkerNames(cfg)
@@ -532,16 +567,16 @@ func (m *Manager) List() error {
 	if len(names) == 0 {
 		m.UI.ShowLogo()
 		m.UI.ShowWarning(
-			"Sin búnkeres",
-			"No se ha detectado ningún entorno.",
+			"warnings.no_bunkers_list.title",
+			"warnings.no_bunkers_list.desc",
 			nil,
 			nil,
-			"No hay búnkeres creados todavía. Usa: axiom create <nombre>",
+			"warnings.no_bunkers_list.footer",
 		)
 		return nil
 	}
 
-	selected, err := selectBunkerInteractive("Búnkeres Disponibles", "Pulsa Enter para ver la ficha técnica", names)
+	selected, err := selectBunkerInteractive("prompts.select_available.title", "prompts.select_available.desc", names)
 	if err != nil {
 		return err
 	}
@@ -550,13 +585,23 @@ func (m *Manager) List() error {
 }
 
 func bunkerStatus(name string) string {
-	output, err := runCommandOutputQuiet("podman", "ps", "--format", "{{.Names}}")
-	if err != nil {
+	output, err := runCommandOutputQuiet("podman", "ps", "--format", "json")
+	if err != nil || strings.TrimSpace(output) == "" {
 		return "stopped"
 	}
-	for _, line := range strings.Split(output, "\n") {
-		if strings.TrimSpace(line) == name {
-			return "running"
+
+	var containers []struct {
+		Names []string `json:"Names"`
+	}
+	if err := json.Unmarshal([]byte(output), &containers); err != nil {
+		return "stopped"
+	}
+
+	for _, c := range containers {
+		for _, cName := range c.Names {
+			if cName == name {
+				return "running"
+			}
 		}
 	}
 	return "stopped"
@@ -567,28 +612,53 @@ func bunkerEnvSize(cfg EnvConfig, name string) string {
 	if _, err := os.Stat(path); err != nil {
 		return "-"
 	}
-	cmd := exec.Command("du", "-sh", path)
-	output, err := cmd.Output()
-	if err != nil {
+	var size int64
+	err := filepath.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !d.IsDir() {
+			info, err := d.Info()
+			if err == nil {
+				size += info.Size()
+			}
+		}
+		return nil
+	})
+	if err != nil || size == 0 {
 		return "-"
 	}
-	fields := strings.Fields(strings.TrimSpace(string(output)))
-	if len(fields) == 0 {
-		return "-"
+	return formatBytes(size)
+}
+
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
 	}
-	return fields[0]
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
 func bunkerGitBranch(cfg EnvConfig, name string) string {
 	projectPath := filepath.Join(cfg.BaseDir, name)
-	if _, err := os.Stat(filepath.Join(projectPath, ".git")); err != nil {
+	headPath := filepath.Join(projectPath, ".git", "HEAD")
+	content, err := os.ReadFile(headPath)
+	if err != nil {
 		return "-"
 	}
-	output, err := runCommandOutputQuiet("git", "-C", projectPath, "branch", "--show-current")
-	if err != nil || strings.TrimSpace(output) == "" {
-		return "-"
+	head := strings.TrimSpace(string(content))
+	if strings.HasPrefix(head, "ref: refs/heads/") {
+		return strings.TrimPrefix(head, "ref: refs/heads/")
 	}
-	return strings.TrimSpace(output)
+	if len(head) >= 7 {
+		return head[:7] // fallback en caso de "detached HEAD" (ej. commit exacto)
+	}
+	return "-"
 }
 
 func bunkerLastEntry(cfg EnvConfig, name string) string {
@@ -636,19 +706,18 @@ func (m *Manager) Prune() error {
 	}
 
 	var activeNames []string
-	output, err := runCommandOutputQuiet("distrobox-list", "--no-color")
-	if err == nil {
-		for _, line := range strings.Split(output, "\n") {
-			if !strings.Contains(line, "|") {
-				continue
-			}
-			parts := strings.Split(line, "|")
-			if len(parts) < 2 {
-				continue
-			}
-			name := strings.TrimSpace(parts[1])
-			if name != "" {
-				activeNames = append(activeNames, name)
+	output, err := runCommandOutputQuiet("podman", "ps", "-a", "--format", "json")
+	if err == nil && strings.TrimSpace(output) != "" {
+		var containers []struct {
+			Names []string `json:"Names"`
+		}
+		if json.Unmarshal([]byte(output), &containers) == nil {
+			for _, c := range containers {
+				for _, n := range c.Names {
+					if n != "" {
+						activeNames = append(activeNames, n)
+					}
+				}
 			}
 		}
 	}
@@ -671,18 +740,18 @@ func (m *Manager) Prune() error {
 	m.UI.ShowLogo()
 	if len(orphans) == 0 {
 		m.UI.ShowWarning(
-			"Todo limpio",
-			"No hay entornos huérfanos.",
+			"warnings.prune_clean.title",
+			"warnings.prune_clean.desc",
 			nil,
 			nil,
-			"Todo está limpio.",
+			"warnings.prune_clean.footer",
 		)
 		return nil
 	}
 
 	confirm, err := m.UI.AskConfirmInCard(
 		"prune",
-		[]Field{{Label: "Huérfanos", Value: fmt.Sprintf("%d detectados", len(orphans))}},
+		[]Field{{Label: "fields.orphans", Value: fmt.Sprintf("%d", len(orphans))}},
 		orphans,
 		"prune.confirm",
 	)
@@ -692,12 +761,18 @@ func (m *Manager) Prune() error {
 
 	m.UI.ShowLog("prune.cleaning")
 
+	var wg sync.WaitGroup
 	for _, h := range orphans {
-		m.UI.ShowLog("prune.deleting_item", h)
-		_ = removePathWritable(filepath.Join(envBaseDir, h))
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
+			m.UI.ShowLog("prune.deleting_item", name)
+			_ = removePathWritable(filepath.Join(envBaseDir, name))
+		}(h)
 	}
+	wg.Wait()
 
-	m.UI.ShowWarning("Prune Completado", "Se liberó el espacio de los entornos huérfanos.", nil, nil, "")
+	m.UI.ShowWarning("warnings.prune_completed.title", "warnings.prune_completed.desc", nil, nil, "")
 	return nil
 }
 
@@ -724,15 +799,15 @@ func (m *Manager) Info(name string) error {
 	m.UI.ShowCommandCard(
 		"info",
 		[]Field{
-			{Label: "Nombre", Value: name},
-			{Label: "Estado", Value: bunkerStatus(name)},
-			{Label: "Imagen", Value: imageName},
-			{Label: "GPU", Value: hardware.Type},
-			{Label: "Entorno", Value: humanPath(bunkerEnvPath(cfg, name))},
-			{Label: "Proyecto", Value: humanPath(bunkerProjectPath(cfg, name))},
-			{Label: "Tamaño", Value: bunkerEnvSize(cfg, name)},
-			{Label: "Última actividad", Value: bunkerLastEntry(cfg, name)},
-			{Label: "Rama git", Value: defaultString(bunkerGitBranch(cfg, name), "-")},
+			{Label: "fields.name", Value: name},
+			{Label: "fields.status", Value: bunkerStatus(name)},
+			{Label: "fields.image", Value: imageName},
+			{Label: "fields.gpu", Value: hardware.Type},
+			{Label: "fields.environment", Value: humanPath(bunkerEnvPath(cfg, name))},
+			{Label: "fields.project", Value: humanPath(bunkerProjectPath(cfg, name))},
+			{Label: "fields.size", Value: bunkerEnvSize(cfg, name)},
+			{Label: "fields.last_activity", Value: bunkerLastEntry(cfg, name)},
+			{Label: "fields.git_branch", Value: defaultString(bunkerGitBranch(cfg, name), "-")},
 		},
 		nil,
 	)

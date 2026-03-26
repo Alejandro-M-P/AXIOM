@@ -1,6 +1,7 @@
 package bunker
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -90,25 +91,24 @@ func listBunkerNames(cfg EnvConfig) ([]string, error) {
 	seen := map[string]struct{}{}
 	var names []string
 
-	output, err := runCommandOutputQuiet("distrobox-list", "--no-color")
-	if err == nil {
-		for _, line := range strings.Split(output, "\n") {
-			if !strings.Contains(line, "|") {
-				continue
+	output, err := runCommandOutputQuiet("podman", "ps", "-a", "--format", "json")
+	if err == nil && strings.TrimSpace(output) != "" {
+		var containers []struct {
+			Names []string `json:"Names"`
+		}
+		if json.Unmarshal([]byte(output), &containers) == nil {
+			for _, c := range containers {
+				for _, name := range c.Names {
+					if name == "" || name == defaultBuildContainerName {
+						continue
+					}
+					if _, ok := seen[name]; ok {
+						continue
+					}
+					seen[name] = struct{}{}
+					names = append(names, name)
+				}
 			}
-			parts := strings.Split(line, "|")
-			if len(parts) < 2 {
-				continue
-			}
-			name := strings.TrimSpace(parts[1])
-			if name == "" || name == defaultBuildContainerName {
-				continue
-			}
-			if _, ok := seen[name]; ok {
-				continue
-			}
-			seen[name] = struct{}{}
-			names = append(names, name)
 		}
 	}
 

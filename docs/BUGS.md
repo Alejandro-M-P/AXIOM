@@ -20,9 +20,8 @@ Este documento detalla los fallos conocidos y tareas pendientes durante la migra
 - [ ] Traducir herramientas de Git interactivo (`lib/git.sh`) a código nativo en `pkg/`.
 - [ ] Migrar lógica de limpieza profunda (`axiom purge`).
 - [ ] **[ID-BUG-002] Dependencia de utilidades del sistema**: Reemplazar comandos heredados de bash como `du -sh` (en `bunkerEnvSize`) usando `filepath.WalkDir` nativo.
-- [ ] **[ID-BUG-003] Parseo frágil**: Dejar de separar texto con `strings.Split` en `distroboxExists` y usar `--format json` decodificando con `encoding/json`.
-- [ ] **[ID-BUG-004] Faltan Goroutines**: Tareas masivas como `Prune` borran los entornos secuencialmente. Deben refactorizarse con `sync.WaitGroup` para borrado en paralelo.
-
+- [x] **[ID-BUG-003] Parseo frágil**: Dejar de separar texto con `strings.Split` en `distroboxExists` y usar `--format json` decodificando con `encoding/json`.
+- [
 ## 🟠 Arquitectura y Separación de Responsabilidades
 - [x] **[ID-BUG-006] Acoplamiento Lógica-UI**: Las funciones del `Manager` (`Create`, `Delete`, `Info`) imprimen tarjetas y logs directamente a la consola, mezclando la lógica de negocio con la presentación.
 - [x] **[ID-BUG-008] Interacción con Usuario en el Core**: Funciones como `Delete` y `Prune` leen desde `stdin` para pedir confirmación, bloqueando su uso en scripts y violando la separación de capas.
@@ -40,7 +39,8 @@ Este documento detalla los fallos conocidos y tareas pendientes durante la migra
 
 ## 🟢 Concurrencia y Control de Ejecución
 - [ ] **[ID-BUG-015] Procesos Zombis sin Contexto**: Llamadas a binarios con `exec.Command` (como `pacman`) no están limitadas. Usar `exec.CommandContext` para evitar cuelgues permanentes.
-- [ ] **[ID-BUG-018] Cuelgues por Prompts Sudo**: `runCommandQuiet("sudo", "-v")` puede dejar la app colgada si pide contraseña sin tener TTY correctamente bindeado.
+- [x] **[ID-BUG-015] Procesos Zombis sin Contexto**: Llamadas a binarios con `exec.Command` (como `pacman`) no están limitadas. Usar `exec.CommandContext` para evitar cuelgues permanentes.
+- [x] **[ID-BUG-018] Cuelgues por Prompts Sudo**: `runCommandQuiet("sudo", "-v")` puede dejar la app colgada si pide contraseña sin tener TTY correctamente bindeado.
 
 ## 🔵 Próximos Pasos
 - [ ] **Configuración**: Mover el sistema de variables de `.env` a un archivo `config.toml` profesional.
@@ -65,9 +65,8 @@ This document details the known issues and pending tasks during the migration fr
 - [ ] Translate interactive Git tools (`lib/git.sh`) to native code in `pkg/`.
 - [ ] Migrate deep clean logic (`axiom purge`).
 - [ ] **[ID-BUG-002] System Utility Dependency**: Replace legacy bash commands like `du -sh` (in `bunkerEnvSize`) using native `filepath.WalkDir`.
-- [ ] **[ID-BUG-003] Fragile Parsing**: Stop splitting text with `strings.Split` in `distroboxExists` and use `--format json` decoded with `encoding/json`.
-- [ ] **[ID-BUG-004] Missing Goroutines**: Massive tasks like `Prune` delete environments sequentially. They must be refactored with `sync.WaitGroup` for parallel deletion.
-
+- [x] **[ID-BUG-003] Fragile Parsing**: Stop splitting text with `strings.Split` in `distroboxExists` and use `--format json` decoded with `encoding/json`.
+- [x] **[ID-BUG-004] Missing Goroutines**: Massive tasks like `Prune` delete environments sequentially. They must be refactored with `sync.WaitGroup` 
 ### 🟠 Architecture & Separation of Concerns
 - [x] **[ID-BUG-006] Logic-UI Coupling**: `Manager` functions (`Create`, `Delete`, `Info`) print cards and logs directly to the console, mixing business logic with presentation.
 - [x] **[ID-BUG-008] User Interaction in Core**: Functions like `Delete` and `Prune` read from `stdin` to ask for confirmation, blocking their use in scripts and violating layer separation.
@@ -85,7 +84,8 @@ This document details the known issues and pending tasks during the migration fr
 
 ### 🟢 Concurrency & Execution Control
 - [ ] **[ID-BUG-015] Zombie Processes without Context**: Calls to binaries with `exec.Command` (like `pacman`) are unbounded. Use `exec.CommandContext` to prevent permanent hangs.
-- [ ] **[ID-BUG-018] Hangs from Sudo Prompts**: `runCommandQuiet("sudo", "-v")` can leave the app hanging if it asks for a password without a correctly bound TTY.
+- [x] **[ID-BUG-015] Zombie Processes without Context**: Calls to binaries with `exec.Command` (like `pacman`) are unbounded. Use `exec.CommandContext` to prevent permanent hangs.
+- [x] **[ID-BUG-018] Hangs from Sudo Prompts**: `runCommandQuiet("sudo", "-v")` can leave the app hanging if it asks for a password without a correctly bound TTY.
 
 ### 🔵 Next Steps
 - [ ] **Configuration**: Move the variables system from `.env` to a professional `config.toml` file.

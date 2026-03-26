@@ -1,7 +1,7 @@
 package bunker
 
 import (
-	_ "embed"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"os"
