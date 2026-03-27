@@ -8,7 +8,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-//go:embed locales/es/errors.toml
+//go:embed i18n/locales/es/errors.toml
 var errorsTOML []byte
 
 type ErrorDef struct {
@@ -17,7 +17,38 @@ type ErrorDef struct {
 	Action      string `toml:"action"`
 }
 
-type ErrorCatalog map[string]map[string]ErrorDef
+// UnmarshalTOML permite decodificar dinámicamente tanto strings simples como tablas completas (objetos) del TOML
+func (e *ErrorDef) UnmarshalTOML(data any) error {
+	switch v := data.(type) {
+	case string:
+		e.Title = "Error"
+		e.Description = v
+		e.Action = "Revisa los logs o ejecuta con modo verbose para más detalles."
+	case map[string]any:
+		if title, ok := v["title"].(string); ok {
+			e.Title = title
+		}
+		if desc, ok := v["description"].(string); ok {
+			e.Description = desc
+		}
+		if action, ok := v["action"].(string); ok {
+			e.Action = action
+		}
+	default:
+		return fmt.Errorf("formato no soportado para ErrorDef: %T", data)
+		}
+	return nil
+	}
+// UnmarshalText es la interfaz estándar que go-toml/v2 detecta mágicamente
+// cuando se encuentra con un string plano en el TOML en lugar de una tabla.
+func (e *ErrorDef) UnmarshalText(text []byte) error {
+	e.Title = "Error"
+	e.Description = string(text)
+	e.Action = "Revisa los logs o ejecuta con modo verbose para más detalles."
+	return nil
+}
+
+type ErrorCatalog map[string]map[string]*ErrorDef
 
 var catalog ErrorCatalog
 
