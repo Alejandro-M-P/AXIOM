@@ -328,7 +328,7 @@ func (m *Manager) DeleteImage() error {
 	}
 
 	if err := m.Runtime.RunCommand("", "podman", "rmi", targetImage, "--force"); err != nil {
-		if !podmanImageExists(targetImage) {
+		if !m.Runtime.ImageExists(targetImage) {
 			return fmt.Errorf("errors.bunker.image_not_found: %s", targetImage)
 		}
 		return err
@@ -419,13 +419,6 @@ func (m *Manager) listAxiomImages() ([]string, error) {
 	}
 	sort.Strings(images)
 	return images, nil
-}
-
-func podmanImageExists(image string) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "podman", "image", "exists", image)
-	return cmd.Run() == nil
 }
 
 func prepareSSHAgent(cfg EnvConfig) {

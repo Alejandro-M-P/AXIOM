@@ -82,14 +82,20 @@ Esta sección documenta el progreso de la migración a Clean Architecture.
 | 2026-03-27 | Phase 2 | Reorganizado `pkg/adapters/system/` (gpu en subdir) |
 | 2026-03-27 | Phase 3.1 | Creado `pkg/core/services/manager.go` con inyección |
 | 2026-03-27 | Phase 3.2 | Migrado `runCommandQuiet` → `m.Runtime.RunCommand()` |
+| 2026-03-27 | Phase 3.2 | Migrado `runCommandWithInput` → `m.Runtime.RunCommandWithInput()` |
+| 2026-03-27 | Phase 3.2 | Migrado `runCommandOutput` → `m.Runtime.RunCommandOutput()` |
+| 2026-03-27 | Phase 3.2 | Migrado `distroboxExists` → `m.Runtime.ContainerExists()` |
+| 2026-03-27 | Phase 3.2 | Migrado `podmanImageExists` → `m.Runtime.ImageExists()` |
+| 2026-03-27 | Phase 3.2 | Migrado `bunkerStatus`, `listBunkerNames`, `listAxiomImages` |
 
 ### 🔄 En Progreso
 
-- Phase 3: Migración de funciones legacy a adapters
+- Phase 3: Migración Grupo 2 (funciones FS: removePathWritable, ensureTutorFile, etc.)
 
 ### 📋 Pendiente
 
-- Phase 3: Migrar `runCommandWithInput`, `runCommandOutput`, `distroboxExists`, etc.
+- Phase 3: Migrar funciones FS (removePathWritable, ensureTutorFile, appendTutorLog, etc.)
+- Phase 3: Migrar funciones System (hostGPUVolumeFlags, sshVolumeFlag, prepareSSHAgent, resolveBuildGPU)
 - Phase 4: Integration (main.go)
 - Phase 5: Verification (testear comandos)
 - Phase 6: Cleanup
