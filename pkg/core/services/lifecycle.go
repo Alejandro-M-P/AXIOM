@@ -533,34 +533,6 @@ func removePathWritable(fs ports.IFileSystem, path string) error {
 	return fs.RemoveAll(path)
 }
 
-func runCommandQuiet(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%s %s: %w\n%s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
-	}
-	return nil
-}
-
-func runCommandWithInput(name, input string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Stdin = strings.NewReader(input)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%s %s: %w\n%s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
-	}
-	return nil
-}
-
-func runCommandOutputQuiet(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("%s %s: %w\n%s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
-	}
-	return strings.TrimSpace(string(output)), nil
-}
-
 func (m *Manager) Rebuild() error {
 	cfg, err := m.LoadConfig()
 	if err != nil {

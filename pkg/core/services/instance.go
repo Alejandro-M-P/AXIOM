@@ -370,29 +370,7 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir 
 }
 
 func (m *Manager) distroboxExists(name string) (bool, error) {
-	output, err := m.Runtime.RunCommandOutput("", "podman", "ps", "-a", "--format", "json")
-	if err != nil {
-		return false, err
-	}
-	if strings.TrimSpace(output) == "" {
-		return false, nil
-	}
-
-	var containers []struct {
-		Names []string `json:"Names"`
-	}
-	if err := json.Unmarshal([]byte(output), &containers); err != nil {
-		return false, err
-	}
-
-	for _, c := range containers {
-		for _, cName := range c.Names {
-			if cName == name {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
+	return m.Runtime.ContainerExists(name)
 }
 
 func (m *Manager) listAxiomImages() ([]string, error) {
@@ -579,23 +557,14 @@ func (m *Manager) List() error {
 }
 
 func (m *Manager) bunkerStatus(name string) string {
-	output, err := m.Runtime.RunCommandOutput("", "podman", "ps", "--format", "json")
-	if err != nil || strings.TrimSpace(output) == "" {
-		return "stopped"
-	}
-
-	var containers []struct {
-		Names []string `json:"Names"`
-	}
-	if err := json.Unmarshal([]byte(output), &containers); err != nil {
+	containers, err := m.Runtime.ListContainers()
+	if err != nil {
 		return "stopped"
 	}
 
 	for _, c := range containers {
-		for _, cName := range c.Names {
-			if cName == name {
-				return "running"
-			}
+		if c.Name == name {
+			return c.Status
 		}
 	}
 	return "stopped"
@@ -700,18 +669,11 @@ func (m *Manager) Prune() error {
 	}
 
 	var activeNames []string
-	output, err := m.Runtime.RunCommandOutput("", "podman", "ps", "-a", "--format", "json")
-	if err == nil && strings.TrimSpace(output) != "" {
-		var containers []struct {
-			Names []string `json:"Names"`
-		}
-		if json.Unmarshal([]byte(output), &containers) == nil {
-			for _, c := range containers {
-				for _, n := range c.Names {
-					if n != "" {
-						activeNames = append(activeNames, n)
-					}
-				}
+	containers, err := m.Runtime.ListContainers()
+	if err == nil {
+		for _, c := range containers {
+			if c.Name != "" {
+				activeNames = append(activeNames, c.Name)
 			}
 		}
 	}

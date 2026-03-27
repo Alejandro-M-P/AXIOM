@@ -88,18 +88,18 @@ Esta sección documenta el progreso de la migración a Clean Architecture.
 | 2026-03-27 | Phase 3.2 | Migrado `podmanImageExists` → `m.Runtime.ImageExists()` |
 | 2026-03-27 | Phase 3.2 | Migrado `bunkerStatus`, `listBunkerNames`, `listAxiomImages` |
 | 2026-03-27 | Phase 3.2 | Migrado lifecycle.go (10 llamadas → m.Runtime) |
+| 2026-03-27 | Phase 3.2 | Migrado removePathWritable, ensureTutorFile, appendTutorLog, writeShellBootstrap, writeStarshipConfig → m.FS |
+| 2026-03-27 | Phase 3.2 | Migrado distroboxExists → m.Runtime.ContainerExists() |
+| 2026-03-27 | Phase 3.2 | Migrado bunkerStatus → m.Runtime.ListContainers() |
+| 2026-03-27 | Phase 3.2 | Borradas funciones legacy sin uso de lifecycle.go |
 
-### 🔄 En Progreso
-
-- Phase 3: Migración Grupo 2 (funciones FS: removePathWritable, ensureTutorFile, appendTutorLog, writeShellBootstrap, writeStarshipConfig)
+### ✅ Phase 3 COMPLETO
 
 ### 📋 Pendiente
 
-- Phase 3: Migrar funciones FS faltantes (copyTutorToAgents, writeOpencodeConfig, etc.)
-- Phase 3: Migrar funciones System (hostGPUVolumeFlags, sshVolumeFlag, prepareSSHAgent, resolveBuildGPU)
-- Phase 4: Integration (main.go)
+- Phase 4: Integration (main.go usar nuevos adapters)
 - Phase 5: Verification (testear comandos)
-- Phase 6: Cleanup (borrar funciones legacy sin uso)
+- Phase 6: Cleanup
 
 ### 📁 Estructura Actual
 
@@ -120,7 +120,6 @@ pkg/
 │       └── gpu/gpu.go          ✅ DetectGPU
 └── services/
     ├── manager.go               ✅ Manager con inyección
-    ├── instance.go              🔄 Migrando (comandos Podman ✅)
-    ├── lifecycle.go            🔄 Migrando (comandos Podman ✅)
-    └── ...                     🔄 Más archivos legacy
+    ├── instance.go              ✅ Migrado (usa m.Runtime, m.FS)
+    └── lifecycle.go            ✅ Migrado (usa m.Runtime)
 ```
