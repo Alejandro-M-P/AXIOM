@@ -1,13 +1,14 @@
 package bunker
 
 import (
-	"embed"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"axiom/pkg/core/domain"
 	"axiom/pkg/core/ports"
 )
 
@@ -52,12 +53,12 @@ type opencodeProvider struct {
 
 // writeShellBootstrap genera el único archivo de arranque interactivo que necesita el búnker.
 // No depende de core.sh ni git.sh: la preparación queda autocontenida en Go.
-func writeShellBootstrap(fs ports.IFileSystem, cfg EnvConfig, name, envDir, gfxOverride string) error {
+func writeShellBootstrap(fs ports.IFileSystem, cfg domain.EnvConfig, name, envDir, gfxOverride string) error {
 	path := filepath.Join(envDir, ".bashrc")
 	return fs.WriteFile(path, []byte(renderShellBootstrap(cfg, name, gfxOverride)), 0600)
 }
 
-func renderShellBootstrap(cfg EnvConfig, name, gfxOverride string) string {
+func renderShellBootstrap(cfg domain.EnvConfig, name, gfxOverride string) string {
 	var lines []string
 	lines = append(lines,
 		"eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"",

@@ -25,7 +25,7 @@ type Manager struct {
 	Runtime ports.IContainerRuntime
 	FS      ports.IFileSystem
 	System  ports.ISystem
-	UI      ports.IPresenter
+	UI      UI
 }
 
 // NewManager crea una nueva instancia del Manager con sus dependencias.

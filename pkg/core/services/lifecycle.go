@@ -3,7 +3,6 @@ package bunker
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -409,7 +408,7 @@ func (m *Manager) runInContainer(args ...string) error {
 
 func (m *Manager) runInteractiveInContainer(input string, args ...string) error {
 	containerArgs := append([]string{"-n", m.buildContainerName, "--"}, args...)
-	return m.Runtime.RunCommandWithInput("", input, "distrobox-enter", containerArgs...)
+	return m.Runtime.RunCommandWithInput(m.buildContainerName, input, containerArgs...)
 }
 
 func (m *Manager) runInContainerOutput(args ...string) (string, error) {
@@ -545,7 +544,7 @@ func (m *Manager) Rebuild() error {
 
 	confirm, _ := m.UI.AskConfirmInCard(
 		"rebuild",
-		[]Field{
+		[]ports.Field{
 			{Label: "Imagen", Value: targetImage},
 			{Label: "GPU", Value: hardware.Type},
 		},
@@ -585,7 +584,7 @@ func (m *Manager) Reset() error {
 		names = []string{}
 	}
 
-	confirm, reason, err := m.UI.AskReset([]Field{
+	confirm, reason, err := m.UI.AskReset([]ports.Field{
 		{Label: "Búnkeres", Value: fmt.Sprintf("%d detectados", len(names))},
 		{Label: "Imagen", Value: targetImage},
 	}, names)

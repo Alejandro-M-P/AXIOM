@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"axiom/pkg/adapters/ui/styles"
-	"axiom/pkg/core/services"
+	"axiom/pkg/core/ports"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -22,7 +22,7 @@ func (c *ConsoleUI) ShowLogo() {
 	fmt.Println(styles.GetLogo())
 }
 
-func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []bunker.Field, items []string) {
+func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []ports.Field, items []string) {
 	cmdData, ok := Commands[commandKey]
 	if !ok {
 		cmdData = map[string]string{"title": commandKey, "subtitle": "", "footer": ""}
@@ -42,7 +42,7 @@ func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []bunker.Field, it
 	))
 }
 
-func (c *ConsoleUI) AskConfirmInCard(commandKey string, fields []bunker.Field, items []string, promptKey string) (bool, error) {
+func (c *ConsoleUI) AskConfirmInCard(commandKey string, fields []ports.Field, items []string, promptKey string) (bool, error) {
 	question := getPromptText(promptKey)
 	model := newConfirmModel(commandKey, fields, items, question)
 
@@ -59,7 +59,7 @@ func (c *ConsoleUI) AskConfirmInCard(commandKey string, fields []bunker.Field, i
 	return resultModel.result, nil
 }
 
-func (c *ConsoleUI) AskDelete(name string, fields []bunker.Field) (bool, string, bool, error) {
+func (c *ConsoleUI) AskDelete(name string, fields []ports.Field) (bool, string, bool, error) {
 	model := newDeleteFormModel(fields)
 	p := tea.NewProgram(model)
 	finalModel, err := p.Run()
@@ -73,7 +73,7 @@ func (c *ConsoleUI) AskDelete(name string, fields []bunker.Field) (bool, string,
 	return res.confirm, res.reason, res.deleteCode, nil
 }
 
-func (c *ConsoleUI) AskReset(fields []bunker.Field, items []string) (bool, string, error) {
+func (c *ConsoleUI) AskReset(fields []ports.Field, items []string) (bool, string, error) {
 	model := newResetFormModel(fields, items)
 	p := tea.NewProgram(model)
 	finalModel, err := p.Run()
@@ -105,15 +105,15 @@ func (c *ConsoleUI) ClearScreen() {
 	fmt.Print("\033[H\033[2J")
 }
 
-func (c *ConsoleUI) RenderLifecycle(title, subtitle string, steps []bunker.LifecycleStep, taskTitle string, taskSteps []bunker.LifecycleStep) {
+func (c *ConsoleUI) RenderLifecycle(title, subtitle string, steps []ports.LifecycleStep, taskTitle string, taskSteps []ports.LifecycleStep) {
 	fmt.Println(styles.RenderLifecycleWithTasks(title, subtitle, mapSteps(steps), taskTitle, mapSteps(taskSteps)))
 }
 
-func (c *ConsoleUI) RenderLifecycleError(title string, steps []bunker.LifecycleStep, taskTitle string, taskSteps []bunker.LifecycleStep, err error, where string) {
+func (c *ConsoleUI) RenderLifecycleError(title string, steps []ports.LifecycleStep, taskTitle string, taskSteps []ports.LifecycleStep, err error, where string) {
 	fmt.Println(styles.RenderLifecycleError(title, mapSteps(steps), taskTitle, mapSteps(taskSteps), err, where))
 }
 
-func mapSteps(steps []bunker.LifecycleStep) []styles.LifecycleStep {
+func mapSteps(steps []ports.LifecycleStep) []styles.LifecycleStep {
 	var res []styles.LifecycleStep
 	for _, s := range steps {
 		res = append(res, styles.LifecycleStep{Title: s.Title, Detail: s.Detail, Status: s.Status})
@@ -121,7 +121,7 @@ func mapSteps(steps []bunker.LifecycleStep) []styles.LifecycleStep {
 	return res
 }
 
-func (c *ConsoleUI) ShowWarning(title, subtitle string, fields []bunker.Field, items []string, footer string) {
+func (c *ConsoleUI) ShowWarning(title, subtitle string, fields []ports.Field, items []string, footer string) {
 	var details []styles.BunkerDetail
 	for _, f := range fields {
 		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})

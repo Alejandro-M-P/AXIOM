@@ -44,7 +44,7 @@ func (m *Manager) Create(name string) error {
 	m.UI.ShowLogo()
 	m.UI.ShowCommandCard(
 		"create",
-		[]Field{
+		[]ports.Field{
 			{Label: "fields.name", Value: name},
 			{Label: "fields.image", Value: imageName},
 			{Label: "fields.project", Value: projectDir},
@@ -70,7 +70,7 @@ func (m *Manager) Create(name string) error {
 		m.UI.ShowWarning(
 			"warnings.bunker_exists.title",
 			"warnings.bunker_exists.desc",
-			[]Field{{Label: "fields.name", Value: name}, {Label: "fields.environment", Value: envDir}},
+			[]ports.Field{{Label: "fields.name", Value: name}, {Label: "fields.environment", Value: envDir}},
 			nil,
 			"warnings.bunker_exists.footer",
 		)
@@ -82,7 +82,7 @@ func (m *Manager) Create(name string) error {
 		m.UI.ShowWarning(
 			"warnings.missing_image.title",
 			"warnings.missing_image.desc",
-			[]Field{{Label: "fields.expected", Value: imageName}},
+			[]ports.Field{{Label: "fields.expected", Value: imageName}},
 			available,
 			"warnings.missing_image.footer",
 		)
@@ -165,7 +165,7 @@ WaitLoop:
 	m.UI.ShowWarning(
 		"warnings.bunker_ready.title",
 		"warnings.bunker_ready.desc",
-		[]Field{{Label: "fields.name", Value: name}, {Label: "fields.image", Value: imageName}, {Label: "fields.environment", Value: envDir}},
+		[]ports.Field{{Label: "fields.name", Value: name}, {Label: "fields.image", Value: imageName}, {Label: "fields.environment", Value: envDir}},
 		nil,
 		"warnings.bunker_ready.footer",
 	)
@@ -226,7 +226,7 @@ func (m *Manager) Stop() error {
 	m.UI.ShowLogo()
 	m.UI.ShowCommandCard(
 		"stop",
-		[]Field{
+		[]ports.Field{
 			{Label: "fields.name", Value: selected},
 			{Label: "fields.status", Value: "stopped"},
 			{Label: "fields.environment", Value: humanPath(bunkerEnvPath(cfg, selected))},
@@ -266,7 +266,7 @@ func (m *Manager) Delete(name string) error {
 	envDir := cfg.BuildWorkspaceDir(name)
 	projectDir := filepath.Join(cfg.BaseDir, name)
 
-	confirm, reason, deleteCode, err := m.UI.AskDelete(name, []Field{
+	confirm, reason, deleteCode, err := m.UI.AskDelete(name, []ports.Field{
 		{Label: "fields.name", Value: name},
 		{Label: "fields.environment", Value: envDir},
 		{Label: "fields.project", Value: projectDir},
@@ -299,7 +299,7 @@ func (m *Manager) Delete(name string) error {
 	m.UI.ShowWarning(
 		"warnings.bunker_deleted.title",
 		"warnings.bunker_deleted.desc",
-		[]Field{{Label: "fields.name", Value: name}, {Label: "fields.environment", Value: envDir}, {Label: "fields.code_deleted", Value: yesNo(deleteCode)}},
+		[]ports.Field{{Label: "fields.name", Value: name}, {Label: "fields.environment", Value: envDir}, {Label: "fields.code_deleted", Value: yesNo(deleteCode)}},
 		nil,
 		"",
 	)
@@ -322,7 +322,7 @@ func (m *Manager) DeleteImage() error {
 
 	confirm, err := m.UI.AskConfirmInCard(
 		"delete-image",
-		[]Field{{Label: "fields.target", Value: targetImage}, {Label: "fields.gpu", Value: hardware.Type}},
+		[]ports.Field{{Label: "fields.target", Value: targetImage}, {Label: "fields.gpu", Value: hardware.Type}},
 		images,
 		"delete-image.confirm",
 	)
@@ -341,7 +341,7 @@ func (m *Manager) DeleteImage() error {
 	m.UI.ShowWarning(
 		"warnings.image_deleted.title",
 		"warnings.image_deleted.desc",
-		[]Field{{Label: "fields.deleted", Value: targetImage}},
+		[]ports.Field{{Label: "fields.deleted", Value: targetImage}},
 		remaining,
 		"warnings.image_deleted.footer",
 	)
@@ -571,7 +571,7 @@ func (m *Manager) bunkerStatus(name string) string {
 	return "stopped"
 }
 
-func bunkerEnvSize(cfg EnvConfig, name string) string {
+func bunkerEnvSize(cfg domain.EnvConfig, name string) string {
 	path := cfg.BuildWorkspaceDir(name)
 	if _, err := os.Stat(path); err != nil {
 		return "-"
@@ -608,7 +608,7 @@ func formatBytes(bytes int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-func bunkerGitBranch(cfg EnvConfig, name string) string {
+func bunkerGitBranch(cfg domain.EnvConfig, name string) string {
 	projectPath := filepath.Join(cfg.BaseDir, name)
 	headPath := filepath.Join(projectPath, ".git", "HEAD")
 	content, err := os.ReadFile(headPath)
@@ -625,7 +625,7 @@ func bunkerGitBranch(cfg EnvConfig, name string) string {
 	return "-"
 }
 
-func bunkerLastEntry(cfg EnvConfig, name string) string {
+func bunkerLastEntry(cfg domain.EnvConfig, name string) string {
 	path := cfg.BuildWorkspaceDir(name)
 	info, err := os.Stat(path)
 	if err != nil {
@@ -634,11 +634,11 @@ func bunkerLastEntry(cfg EnvConfig, name string) string {
 	return info.ModTime().Format("2006-01-02")
 }
 
-func bunkerProjectPath(cfg EnvConfig, name string) string {
+func bunkerProjectPath(cfg domain.EnvConfig, name string) string {
 	return filepath.Join(cfg.BaseDir, name)
 }
 
-func bunkerEnvPath(cfg EnvConfig, name string) string {
+func bunkerEnvPath(cfg domain.EnvConfig, name string) string {
 	return cfg.BuildWorkspaceDir(name)
 }
 
@@ -708,7 +708,7 @@ func (m *Manager) Prune() error {
 
 	confirm, err := m.UI.AskConfirmInCard(
 		"prune",
-		[]Field{{Label: "fields.orphans", Value: fmt.Sprintf("%d", len(orphans))}},
+		[]ports.Field{{Label: "fields.orphans", Value: fmt.Sprintf("%d", len(orphans))}},
 		orphans,
 		"prune.confirm",
 	)
@@ -755,7 +755,7 @@ func (m *Manager) Info(name string) error {
 	m.UI.ShowLogo()
 	m.UI.ShowCommandCard(
 		"info",
-		[]Field{
+		[]ports.Field{
 			{Label: "fields.name", Value: name},
 			{Label: "fields.status", Value: m.bunkerStatus(name)},
 			{Label: "fields.image", Value: imageName},

@@ -4,14 +4,14 @@ import (
 	"strings"
 
 	"axiom/pkg/adapters/ui/styles"
-	"axiom/pkg/core/services"
+	"axiom/pkg/core/ports"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type confirmModel struct {
 	commandKey string
-	fields     []bunker.Field
+	fields     []ports.Field
 	items      []string
 	question   string
 	cursor     int // 0 = Yes, 1 = No
@@ -19,7 +19,7 @@ type confirmModel struct {
 	canceled   bool
 }
 
-func newConfirmModel(commandKey string, fields []bunker.Field, items []string, question string) confirmModel {
+func newConfirmModel(commandKey string, fields []ports.Field, items []string, question string) confirmModel {
 	return confirmModel{
 		commandKey: commandKey,
 		fields:     fields,
@@ -102,7 +102,7 @@ func renderFormButtons(cursor int) string {
 // --- FLUJO MULTIPASO PARA DELETE ---
 
 type deleteFormModel struct {
-	fields     []bunker.Field
+	fields     []ports.Field
 	step       int
 	cursor     int
 	textInput  textinput.Model
@@ -112,7 +112,7 @@ type deleteFormModel struct {
 	canceled   bool
 }
 
-func newDeleteFormModel(fields []bunker.Field) deleteFormModel {
+func newDeleteFormModel(fields []ports.Field) deleteFormModel {
 	ti := textinput.New()
 	ti.Prompt = " ❯ "
 	ti.Placeholder = "Escribe aquí tu justificación..."
@@ -191,7 +191,7 @@ func (m deleteFormModel) View() string {
 // --- FLUJO MULTIPASO PARA RESET ---
 
 type resetFormModel struct {
-	fields    []bunker.Field
+	fields    []ports.Field
 	items     []string
 	step      int
 	cursor    int
@@ -201,7 +201,7 @@ type resetFormModel struct {
 	canceled  bool
 }
 
-func newResetFormModel(fields []bunker.Field, items []string) resetFormModel {
+func newResetFormModel(fields []ports.Field, items []string) resetFormModel {
 	ti := textinput.New()
 	ti.Prompt = " ❯ "
 	ti.Placeholder = "Escribe aquí tu justificación..."
