@@ -95,10 +95,16 @@ Esta sección documenta el progreso de la migración a Clean Architecture.
 
 ### ✅ Phase 3 COMPLETO
 
+### ✅ Phase 4 COMPLETO
+
+- main.go: Integrar adapters inyectados en Manager ✅
+
+### 🔄 Phase 5: Verification (EN PROGRESO)
+
+- Testear que todos los comandos funcionan
+
 ### 📋 Pendiente
 
-- Phase 4: Integration (main.go usar nuevos adapters)
-- Phase 5: Verification (testear comandos)
 - Phase 6: Cleanup
 
 ### 📁 Estructura Actual

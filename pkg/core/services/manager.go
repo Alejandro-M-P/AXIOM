@@ -106,6 +106,8 @@ func LoadEnvFile(fs ports.IFileSystem, path string) (domain.EnvConfig, error) {
 			cfg.GFXVal = value
 		case "AXIOM_ROCM_MODE":
 			cfg.ROCMMode = value
+		case "AXIOM_LANGUAGE":
+			cfg.Language = value
 		}
 	}
 	if err := scanner.Err(); err != nil {

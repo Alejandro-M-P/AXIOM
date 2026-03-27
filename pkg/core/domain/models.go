@@ -18,6 +18,7 @@ type EnvConfig struct {
 	GPUType    string
 	GFXVal     string
 	ROCMMode   string
+	Language   string
 }
 
 // BuildWorkspaceDir retorna la ruta al directorio de trabajo del búnker.
