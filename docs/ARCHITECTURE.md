@@ -64,3 +64,54 @@ Sigue este flujo de trabajo para añadir un nuevo comando (Ej: `axiom snapshot`)
 4. **Adapters:** Implementa la llamada real a Podman en `pkg/adapters/podman/` y diseña cómo se verá en pantalla en `pkg/adapters/ui/views/`.
 5. **Controller:** Agrega la ruta en el Orquestador (`pkg/controller/`) para que cuando el usuario escriba `axiom snapshot`, este conecte el Servicio con el Adaptador.
 6. **Main:** Asegúrate de que las dependencias estén correctamente inyectadas en `cmd/axiom/main.go`.
+
+---
+
+## 🔄 Estado de Refactorización (Clean Architecture)
+
+Esta sección documenta el progreso de la migración a Clean Architecture.
+
+### ✅ Completado
+
+| Fecha | Cambio | Descripción |
+|-------|--------|-------------|
+| 2026-03-27 | Phase 1 | Creado `pkg/core/domain/` con modelos puros |
+| 2026-03-27 | Phase 1 | Creado `pkg/core/ports/` con interfaces |
+| 2026-03-27 | Phase 2 | Creado `pkg/adapters/podman/adapter.go` |
+| 2026-03-27 | Phase 2 | Creado `pkg/adapters/fs/adapter.go` |
+| 2026-03-27 | Phase 2 | Reorganizado `pkg/adapters/system/` (gpu en subdir) |
+| 2026-03-27 | Phase 3.1 | Creado `pkg/core/services/manager.go` con inyección |
+| 2026-03-27 | Phase 3.2 | Migrado `runCommandQuiet` → `m.Runtime.RunCommand()` |
+
+### 🔄 En Progreso
+
+- Phase 3: Migración de funciones legacy a adapters
+
+### 📋 Pendiente
+
+- Phase 3: Migrar `runCommandWithInput`, `runCommandOutput`, `distroboxExists`, etc.
+- Phase 4: Integration (main.go)
+- Phase 5: Verification (testear comandos)
+- Phase 6: Cleanup
+
+### 📁 Estructura Actual
+
+```
+pkg/
+├── core/
+│   ├── domain/models.go          ✅ Modelos puros
+│   └── ports/                    ✅ Interfaces
+│       ├── podman.go            ✅ IContainerRuntime
+│       ├── filesystem.go        ✅ IFileSystem
+│       ├── system.go            ✅ ISystem
+│       └── presenter.go          ✅ IPresenter
+├── adapters/
+│   ├── podman/adapter.go        ✅ PodmanAdapter
+│   ├── fs/adapter.go           ✅ FSAdapter
+│   └── system/
+│       ├── system.go            ✅ SystemAdapter
+│       └── gpu/gpu.go          ✅ DetectGPU (movido)
+└── services/
+    ├── manager.go               ✅ Manager con inyección
+    └── instance.go              🔄 Migrando...
+```

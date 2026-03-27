@@ -100,8 +100,7 @@ func (m *Manager) Create(name string) error {
 	}
 
 	flags := m.createContainerFlags(cfg, hardware.Type, name, projectDir)
-	if err := runCommandQuiet(
-		"distrobox-create",
+	if err := m.Runtime.RunCommand("", "distrobox-create",
 		"--name", name,
 		"--image", imageName,
 		"--home", envDir,
@@ -112,7 +111,7 @@ func (m *Manager) Create(name string) error {
 	}
 
 	// Forzamos el arranque para que el entrypoint de distrobox inicie la configuración
-	_ = runCommandQuiet("podman", "start", name)
+	_ = m.Runtime.RunCommand("", "podman", "start", name)
 
 	// Espera activa: comprobamos que el búnker esté 'running'
 	timeout := time.After(30 * time.Second)
@@ -138,7 +137,7 @@ WaitLoop:
 	// Pequeña gracia de tiempo para asegurar que el entrypoint termine de poblar ~/.entorno/
 	time.Sleep(2 * time.Second)
 
-	if err := runCommandQuiet("distrobox-enter", "-n", name, "--", "sudo", "pacman", "-Syu", "--noconfirm", "--needed"); err != nil {
+	if err := m.Runtime.RunCommand("", "distrobox-enter", "-n", name, "--", "sudo", "pacman", "-Syu", "--noconfirm", "--needed"); err != nil {
 		return err
 	}
 
@@ -217,7 +216,7 @@ func (m *Manager) Stop() error {
 		return err
 	}
 
-	if err := runCommandQuiet("distrobox-stop", selected, "--yes"); err != nil {
+	if err := m.Runtime.RunCommand("", "distrobox-stop", selected, "--yes"); err != nil {
 		return err
 	}
 
@@ -280,7 +279,7 @@ func (m *Manager) Delete(name string) error {
 
 	m.UI.ShowLog("delete.cleaning")
 
-	if err := runCommandQuiet("distrobox-rm", name, "--force", "--yes"); err != nil {
+	if err := m.Runtime.RunCommand("", "distrobox-rm", name, "--force", "--yes"); err != nil {
 		return err
 	}
 
@@ -328,7 +327,7 @@ func (m *Manager) DeleteImage() error {
 		return nil
 	}
 
-	if err := runCommandQuiet("podman", "rmi", targetImage, "--force"); err != nil {
+	if err := m.Runtime.RunCommand("", "podman", "rmi", targetImage, "--force"); err != nil {
 		if !podmanImageExists(targetImage) {
 			return fmt.Errorf("errors.bunker.image_not_found: %s", targetImage)
 		}
