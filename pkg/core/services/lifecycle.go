@@ -409,8 +409,7 @@ func (m *Manager) runInContainer(args ...string) error {
 }
 
 func (m *Manager) runInteractiveInContainer(input string, args ...string) error {
-	containerArgs := append([]string{"-n", m.buildContainerName, "--"}, args...)
-	return runCommandWithInput("distrobox-enter", input, containerArgs...)
+	return m.Runtime.RunCommandWithInput(m.buildContainerName, input, args...)
 }
 
 func (m *Manager) runInContainerOutput(args ...string) (string, error) {
