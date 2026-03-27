@@ -87,11 +87,11 @@ func selectBunkerInteractive(title, action string, names []string) (string, erro
 	return finalModel.selected, nil
 }
 
-func listBunkerNames(cfg EnvConfig) ([]string, error) {
+func (m *Manager) listBunkerNames(cfg EnvConfig) ([]string, error) {
 	seen := map[string]struct{}{}
 	var names []string
 
-	output, err := runCommandOutputQuiet("podman", "ps", "-a", "--format", "json")
+	output, err := m.Runtime.RunCommandOutput("", "podman", "ps", "-a", "--format", "json")
 	if err == nil && strings.TrimSpace(output) != "" {
 		var containers []struct {
 			Names []string `json:"Names"`

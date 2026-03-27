@@ -60,7 +60,7 @@ func (m *Manager) Create(name string) error {
 		return fmt.Errorf("access_denied")
 	}
 
-	if exists, err := distroboxExists(name); err != nil {
+	if exists, err := m.distroboxExists(name); err != nil {
 		return err
 	} else if exists {
 		prepareSSHAgent(cfg)
@@ -74,8 +74,8 @@ func (m *Manager) Create(name string) error {
 		return enterBunker(name, rcPath)
 	}
 
-	if !podmanImageExists(imageName) {
-		available, _ := listAxiomImages()
+	if !m.Runtime.ImageExists(imageName) {
+		available, _ := m.listAxiomImages()
 		m.UI.ShowWarning(
 			"warnings.missing_image.title",
 			"warnings.missing_image.desc",
@@ -125,7 +125,7 @@ WaitLoop:
 		case <-timeout:
 			return fmt.Errorf("timeout")
 		case <-ticker.C:
-			if bunkerStatus(name) == "running" {
+			if m.bunkerStatus(name) == "running" {
 				isReady = true
 				break WaitLoop
 			}
@@ -176,7 +176,7 @@ func (m *Manager) Stop() error {
 		return fmt.Errorf("errors.env.read: %w", err)
 	}
 
-	names, err := listBunkerNames(cfg)
+	names, err := m.listBunkerNames(cfg)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (m *Manager) Stop() error {
 
 	var activeNames []string
 	for _, name := range names {
-		if bunkerStatus(name) == "running" {
+		if m.bunkerStatus(name) == "running" {
 			activeNames = append(activeNames, name)
 		}
 	}
@@ -243,7 +243,7 @@ func (m *Manager) Delete(name string) error {
 	}
 
 	if name == "" {
-		names, err := listBunkerNames(cfg)
+		names, err := m.listBunkerNames(cfg)
 		if err != nil {
 			return err
 		}
@@ -312,7 +312,7 @@ func (m *Manager) DeleteImage() error {
 
 	hardware := resolveBuildGPU(cfg)
 	targetImage := baseImageName(hardware.Type)
-	images, err := listAxiomImages()
+	images, err := m.listAxiomImages()
 	if err != nil {
 		return err
 	}
@@ -334,7 +334,7 @@ func (m *Manager) DeleteImage() error {
 		return err
 	}
 
-	remaining, _ := listAxiomImages()
+	remaining, _ := m.listAxiomImages()
 	m.UI.ShowWarning(
 		"warnings.image_deleted.title",
 		"warnings.image_deleted.desc",
@@ -367,8 +367,8 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir 
 	return strings.Join(parts, " ")
 }
 
-func distroboxExists(name string) (bool, error) {
-	output, err := runCommandOutputQuiet("podman", "ps", "-a", "--format", "json")
+func (m *Manager) distroboxExists(name string) (bool, error) {
+	output, err := m.Runtime.RunCommandOutput("", "podman", "ps", "-a", "--format", "json")
 	if err != nil {
 		return false, err
 	}
@@ -393,8 +393,8 @@ func distroboxExists(name string) (bool, error) {
 	return false, nil
 }
 
-func listAxiomImages() ([]string, error) {
-	output, err := runCommandOutputQuiet("podman", "images", "--format", "json")
+func (m *Manager) listAxiomImages() ([]string, error) {
+	output, err := m.Runtime.RunCommandOutput("", "podman", "images", "--format", "json")
 	if err != nil {
 		return nil, err
 	}
@@ -558,7 +558,7 @@ func (m *Manager) List() error {
 		return fmt.Errorf("errors.env.read: %w", err)
 	}
 
-	names, err := listBunkerNames(cfg)
+	names, err := m.listBunkerNames(cfg)
 	if err != nil {
 		return err
 	}
@@ -583,8 +583,8 @@ func (m *Manager) List() error {
 	return m.Info(selected)
 }
 
-func bunkerStatus(name string) string {
-	output, err := runCommandOutputQuiet("podman", "ps", "--format", "json")
+func (m *Manager) bunkerStatus(name string) string {
+	output, err := m.Runtime.RunCommandOutput("", "podman", "ps", "--format", "json")
 	if err != nil || strings.TrimSpace(output) == "" {
 		return "stopped"
 	}
@@ -705,7 +705,7 @@ func (m *Manager) Prune() error {
 	}
 
 	var activeNames []string
-	output, err := runCommandOutputQuiet("podman", "ps", "-a", "--format", "json")
+	output, err := m.Runtime.RunCommandOutput("", "podman", "ps", "-a", "--format", "json")
 	if err == nil && strings.TrimSpace(output) != "" {
 		var containers []struct {
 			Names []string `json:"Names"`
@@ -799,7 +799,7 @@ func (m *Manager) Info(name string) error {
 		"info",
 		[]Field{
 			{Label: "fields.name", Value: name},
-			{Label: "fields.status", Value: bunkerStatus(name)},
+			{Label: "fields.status", Value: m.bunkerStatus(name)},
 			{Label: "fields.image", Value: imageName},
 			{Label: "fields.gpu", Value: hardware.Type},
 			{Label: "fields.environment", Value: humanPath(bunkerEnvPath(cfg, name))},

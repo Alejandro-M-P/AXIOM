@@ -409,12 +409,12 @@ func (m *Manager) runInContainer(args ...string) error {
 }
 
 func (m *Manager) runInteractiveInContainer(input string, args ...string) error {
-	return m.Runtime.RunCommandWithInput(m.buildContainerName, input, args...)
+	containerArgs := append([]string{"-n", m.buildContainerName, "--"}, args...)
+	return m.Runtime.RunCommandWithInput("", input, "distrobox-enter", containerArgs...)
 }
 
 func (m *Manager) runInContainerOutput(args ...string) (string, error) {
-	containerArgs := append([]string{"-n", m.buildContainerName, "--"}, args...)
-	return runCommandOutputQuiet("distrobox-enter", containerArgs...)
+	return m.Runtime.RunCommandOutput(m.buildContainerName, args...)
 }
 
 func resolveBuildGPU(cfg EnvConfig) gpu.GPUInfo {
@@ -605,7 +605,7 @@ func (m *Manager) Reset() error {
 
 	hardware := resolveBuildGPU(cfg)
 	targetImage := baseImageName(hardware.Type)
-	names, err := listBunkerNames(cfg)
+	names, err := m.listBunkerNames(cfg)
 	if err != nil {
 		names = []string{}
 	}
