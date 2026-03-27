@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"axiom/pkg/core/ports"
 )
 
 //go:embed assets/starship.toml
@@ -50,9 +52,9 @@ type opencodeProvider struct {
 
 // writeShellBootstrap genera el único archivo de arranque interactivo que necesita el búnker.
 // No depende de core.sh ni git.sh: la preparación queda autocontenida en Go.
-func writeShellBootstrap(cfg EnvConfig, name, envDir, gfxOverride string) error {
+func writeShellBootstrap(fs ports.IFileSystem, cfg EnvConfig, name, envDir, gfxOverride string) error {
 	path := filepath.Join(envDir, ".bashrc")
-	return os.WriteFile(path, []byte(renderShellBootstrap(cfg, name, gfxOverride)), 0600)
+	return fs.WriteFile(path, []byte(renderShellBootstrap(cfg, name, gfxOverride)), 0600)
 }
 
 func renderShellBootstrap(cfg EnvConfig, name, gfxOverride string) string {
@@ -85,12 +87,12 @@ func renderShellBootstrap(cfg EnvConfig, name, gfxOverride string) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-func writeStarshipConfig(envDir string) error {
+func writeStarshipConfig(fs ports.IFileSystem, envDir string) error {
 	configDir := filepath.Join(envDir, ".config")
-	if err := os.MkdirAll(configDir, 0700); err != nil {
+	if err := fs.MkdirAll(configDir, 0700); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(configDir, "starship.toml"), []byte(starshipTemplate), 0600)
+	return fs.WriteFile(filepath.Join(configDir, "starship.toml"), []byte(starshipTemplate), 0600)
 }
 
 func copyTutorToAgents(tutorPath, envDir string) error {

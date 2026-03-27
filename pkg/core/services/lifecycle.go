@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"axiom/pkg/adapters/system/gpu"
+	"axiom/pkg/core/ports"
 )
 
 type buildContext struct {
@@ -58,8 +59,8 @@ func (m *Manager) Build() error {
 		if cleanupDone {
 			return
 		}
-		_ = runCommandQuiet("distrobox-rm", m.buildContainerName, "--force", "--yes")
-		_ = removePathWritable(ctx.buildWorkspaceDir)
+		_ = m.Runtime.RemoveContainer(m.buildContainerName, true)
+		_ = removePathWritable(m.FS, ctx.buildWorkspaceDir)
 	}()
 
 	if err := progress.runStep(2, func() error {
@@ -210,35 +211,33 @@ func (p *buildProgress) renderError(err error, where string) {
 }
 
 func (m *Manager) prepareSharedDirectories(ctx buildContext) error {
-	if err := os.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "models"), 0700); err != nil {
+	if err := m.FS.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "models"), 0700); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "teams"), 0700); err != nil {
+	if err := m.FS.MkdirAll(filepath.Join(ctx.config.AIConfigDir(), "teams"), 0700); err != nil {
 		return err
 	}
-	if err := ensureTutorFile(ctx.config.TutorPath()); err != nil {
+	if err := ensureTutorFile(m.FS, ctx.config.TutorPath()); err != nil {
 		return err
 	}
-	return runCommandQuiet("sudo", "chown", "-R", currentUserGroup(), ctx.config.AIConfigDir())
+	return m.Runtime.RunCommand("", "sudo", "chown", "-R", currentUserGroup(), ctx.config.AIConfigDir())
 }
 
 func (m *Manager) recreateBuildContainer(ctx buildContext) error {
-	_ = runCommandQuiet("distrobox-rm", m.buildContainerName, "--force", "--yes")
-	if err := removePathWritable(ctx.buildWorkspaceDir); err != nil {
+	_ = m.Runtime.RemoveContainer(m.buildContainerName, true)
+	if err := removePathWritable(m.FS, ctx.buildWorkspaceDir); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(ctx.buildWorkspaceDir, 0700); err != nil {
+	if err := m.FS.MkdirAll(ctx.buildWorkspaceDir, 0700); err != nil {
 		return err
 	}
 
 	flags := m.buildContainerFlags(ctx)
-	return runCommandQuiet(
-		"distrobox-create",
-		"--name", m.buildContainerName,
-		"--image", "archlinux:latest",
-		"--home", ctx.buildWorkspaceDir,
-		"--additional-flags", flags,
-		"--yes",
+	return m.Runtime.CreateContainer(
+		m.buildContainerName,
+		"archlinux:latest",
+		ctx.buildWorkspaceDir,
+		flags,
 	)
 }
 
@@ -393,19 +392,18 @@ func (m *Manager) cleanBuildCaches() error {
 }
 
 func (m *Manager) exportBuildImage(ctx buildContext) error {
-	return runCommandQuiet("podman", "commit", m.buildContainerName, ctx.imageName)
+	return m.Runtime.CommitContainer(m.buildContainerName, ctx.imageName)
 }
 
 func (m *Manager) destroyBuildContainer(ctx buildContext) error {
-	if err := runCommandQuiet("distrobox-rm", m.buildContainerName, "--force", "--yes"); err != nil {
+	if err := m.Runtime.RemoveContainer(m.buildContainerName, true); err != nil {
 		return err
 	}
-	return removePathWritable(ctx.buildWorkspaceDir)
+	return removePathWritable(m.FS, ctx.buildWorkspaceDir)
 }
 
 func (m *Manager) runInContainer(args ...string) error {
-	containerArgs := append([]string{"-n", m.buildContainerName, "--"}, args...)
-	return runCommandQuiet("distrobox-enter", containerArgs...)
+	return m.Runtime.RunCommand(m.buildContainerName, args...)
 }
 
 func (m *Manager) runInteractiveInContainer(input string, args ...string) error {
@@ -490,16 +488,16 @@ func baseImageName(gpuType string) string {
 	return fmt.Sprintf("localhost/axiom-%s:latest", gpuType)
 }
 
-func ensureTutorFile(path string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+func ensureTutorFile(fs ports.IFileSystem, path string) error {
+	if err := fs.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
-	if _, err := os.Stat(path); err == nil {
+	if _, err := fs.Stat(path); err == nil {
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	file, err := os.OpenFile(path, os.O_CREATE, 0600)
+	file, err := fs.OpenFile(path, os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
@@ -514,21 +512,25 @@ func currentUserGroup() string {
 	return user + ":" + user
 }
 
-func removePathWritable(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+func removePathWritable(fs ports.IFileSystem, path string) error {
+	if _, err := fs.Stat(path); os.IsNotExist(err) {
 		return nil
 	}
-	_ = filepath.Walk(path, func(currentPath string, info os.FileInfo, walkErr error) error {
+	_ = fs.WalkDir(path, func(currentPath string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
 			return nil
 		}
 		mode := info.Mode()
 		if mode&0200 == 0 {
-			_ = os.Chmod(currentPath, mode|0200)
+			_ = fs.Chmod(currentPath, mode|0200)
 		}
 		return nil
 	})
-	return os.RemoveAll(path)
+	return fs.RemoveAll(path)
 }
 
 func runCommandQuiet(name string, args ...string) error {
@@ -588,7 +590,7 @@ func (m *Manager) Rebuild() error {
 	m.UI.ShowLogo()
 	m.UI.RenderLifecycle(m.UI.GetText("rebuild.title"), m.UI.GetText("rebuild.subtitle"), steps, "", nil)
 
-	_ = runCommandQuiet("podman", "rmi", targetImage, "--force")
+	_ = m.Runtime.RunCommand("", "podman", "rmi", targetImage, "--force")
 	steps[0].Status = LifecycleDone
 	m.UI.ClearScreen()
 	m.UI.ShowLogo()
@@ -621,7 +623,7 @@ func (m *Manager) Reset() error {
 		return nil
 	}
 
-	_ = appendTutorLog(cfg.TutorPath(), m.UI.GetText("reset.log_reason", strings.TrimSpace(reason)))
+	_ = appendTutorLog(m.FS, cfg.TutorPath(), m.UI.GetText("reset.log_reason", strings.TrimSpace(reason)))
 
 	steps := make([]LifecycleStep, 0, len(names)+1)
 	for _, name := range names {
@@ -640,8 +642,8 @@ func (m *Manager) Reset() error {
 	for i, name := range names {
 		steps[i].Status = LifecycleRunning
 		renderReset(steps)
-		_ = runCommandQuiet("distrobox-rm", name, "--force", "--yes")
-		_ = removePathWritable(cfg.BuildWorkspaceDir(name))
+		_ = m.Runtime.RemoveContainer(name, true)
+		_ = removePathWritable(m.FS, cfg.BuildWorkspaceDir(name))
 		steps[i].Status = LifecycleDone
 		renderReset(steps)
 	}
@@ -649,7 +651,7 @@ func (m *Manager) Reset() error {
 	lastIdx := len(steps) - 1
 	steps[lastIdx].Status = LifecycleRunning
 	renderReset(steps)
-	_ = runCommandQuiet("podman", "rmi", targetImage, "--force")
+	_ = m.Runtime.RunCommand("", "podman", "rmi", targetImage, "--force")
 	steps[lastIdx].Status = LifecycleDone
 	renderReset(steps)
 

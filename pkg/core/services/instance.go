@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"axiom/pkg/core/ports"
 )
 
 // Create crea o reusa un búnker y entra directamente dentro de él.
@@ -89,13 +91,13 @@ func (m *Manager) Create(name string) error {
 	if err := os.MkdirAll(projectDir, 0700); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(envDir, 0700); err != nil {
+	if err := m.FS.MkdirAll(envDir, 0700); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(cfg.AIConfigDir(), "models"), 0700); err != nil {
+	if err := m.FS.MkdirAll(filepath.Join(cfg.AIConfigDir(), "models"), 0700); err != nil {
 		return err
 	}
-	if err := ensureTutorFile(cfg.TutorPath()); err != nil {
+	if err := ensureTutorFile(m.FS, cfg.TutorPath()); err != nil {
 		return err
 	}
 
@@ -145,10 +147,10 @@ WaitLoop:
 	if gfxOverride == "" {
 		gfxOverride = strings.TrimSpace(hardware.GfxVal)
 	}
-	if err := writeShellBootstrap(cfg, name, envDir, gfxOverride); err != nil {
+	if err := writeShellBootstrap(m.FS, cfg, name, envDir, gfxOverride); err != nil {
 		return err
 	}
-	if err := writeStarshipConfig(envDir); err != nil {
+	if err := writeStarshipConfig(m.FS, envDir); err != nil {
 		return err
 	}
 	if err := copyTutorToAgents(cfg.TutorPath(), envDir); err != nil {
@@ -275,7 +277,7 @@ func (m *Manager) Delete(name string) error {
 		return nil
 	}
 
-	_ = appendTutorLog(cfg.TutorPath(), fmt.Sprintf("logs.tutor.bunker_deleted", name, reason))
+	_ = appendTutorLog(m.FS, cfg.TutorPath(), fmt.Sprintf("logs.tutor.bunker_deleted", name, reason))
 
 	m.UI.ShowLog("delete.cleaning")
 
@@ -283,12 +285,12 @@ func (m *Manager) Delete(name string) error {
 		return err
 	}
 
-	if err := removePathWritable(envDir); err != nil {
+	if err := removePathWritable(m.FS, envDir); err != nil {
 		return err
 	}
 
 	if deleteCode {
-		if err := removeProjectPath(projectDir); err != nil {
+		if err := removeProjectPath(m.FS, projectDir); err != nil {
 			return err
 		}
 	}
@@ -498,11 +500,11 @@ func enterBunker(name, rcPath string) error {
 	return cmd.Run()
 }
 
-func appendTutorLog(path, line string) error {
-	if err := ensureTutorFile(path); err != nil {
+func appendTutorLog(fs ports.IFileSystem, path, line string) error {
+	if err := ensureTutorFile(fs, path); err != nil {
 		return err
 	}
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
+	file, err := fs.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -511,8 +513,8 @@ func appendTutorLog(path, line string) error {
 	return err
 }
 
-func removeProjectPath(path string) error {
-	info, err := os.Stat(path)
+func removeProjectPath(fs ports.IFileSystem, path string) error {
+	info, err := fs.Stat(path)
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -522,7 +524,7 @@ func removeProjectPath(path string) error {
 	if !info.IsDir() {
 		return fmt.Errorf("not_dir")
 	}
-	return removePathWritable(path)
+	return removePathWritable(fs, path)
 }
 
 func defaultString(value, fallback string) string {
@@ -759,7 +761,7 @@ func (m *Manager) Prune() error {
 		go func(name string) {
 			defer wg.Done()
 			m.UI.ShowLog("prune.deleting_item", name)
-			_ = removePathWritable(filepath.Join(envBaseDir, name))
+			_ = removePathWritable(m.FS, filepath.Join(envBaseDir, name))
 		}(h)
 	}
 	wg.Wait()
