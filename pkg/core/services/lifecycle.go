@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"axiom/pkg/gpu"
+	"axiom/pkg/adapters/system/gpu"
 )
 
 type buildContext struct {

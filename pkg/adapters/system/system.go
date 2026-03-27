@@ -5,7 +5,43 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"axiom/pkg/adapters/system/gpu"
+	"axiom/pkg/core/domain"
+	"axiom/pkg/core/ports"
 )
+
+// SystemAdapter implementa ports.ISystem
+type SystemAdapter struct{}
+
+func NewSystemAdapter() *SystemAdapter {
+	return &SystemAdapter{}
+}
+
+func (s *SystemAdapter) DetectGPU() domain.GPUInfo {
+	info := gpu.Detect()
+	return domain.GPUInfo{
+		Type:       info.Type,
+		GfxVal:     info.GfxVal,
+		Name:       info.Name,
+		RawGfx:     info.RawGfx,
+		PCIAddress: info.PCIAddress,
+		VendorID:   info.VendorID,
+		DeviceID:   info.DeviceID,
+	}
+}
+
+func (s *SystemAdapter) CheckDeps() error {
+	deps := []string{"distrobox", "podman", "jq"}
+	for _, dep := range deps {
+		if _, err := exec.LookPath(dep); err != nil {
+			return fmt.Errorf("errors.system.dependency_missing: %s", dep)
+		}
+	}
+	return nil
+}
+
+var _ ports.ISystem = (*SystemAdapter)(nil)
 
 // CheckDeps verifica las dependencias críticas del sistema
 func CheckDeps() error {
@@ -44,7 +80,7 @@ func CreateWrapper(axiomPath string) error {
 	target := filepath.Join(binPath, "axiom")
 	// Wrapper que exporta la ruta y lanza axiom.sh
 	content := fmt.Sprintf("#!/bin/bash\nexport AXIOM_PATH=\"%s\"\nbash \"$AXIOM_PATH/axiom.sh\" \"$@\"\n", axiomPath)
-	
+
 	return os.WriteFile(target, []byte(content), 0755)
 }
 

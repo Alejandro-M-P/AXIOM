@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"axiom/pkg/gpu"
-	"axiom/pkg/install"
+	"axiom/pkg/adapters/system"
+	"axiom/pkg/adapters/system/gpu"
 	"axiom/pkg/ui/styles"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -369,7 +369,7 @@ func (m Model) finalizeAction() tea.Cmd {
 	return func() tea.Msg {
 		// Guardamos el idioma seleccionado en el entorno actual para que otras fases lo lean
 		os.Setenv("AXIOM_LANG", m.language)
-		
+
 		_ = install.CheckDeps()
 		_ = install.PrepareFS(m.axiomPath, m.config.BaseDir)
 		_ = m.config.Save(m.axiomPath)
