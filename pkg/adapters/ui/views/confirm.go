@@ -3,8 +3,8 @@ package ui
 import (
 	"strings"
 
-	"axiom/pkg/bunker"
-	"axiom/pkg/ui/styles"
+	"axiom/pkg/adapters/ui/styles"
+	"axiom/pkg/core/services"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )

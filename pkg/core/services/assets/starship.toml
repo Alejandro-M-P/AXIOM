@@ -1,0 +1,46 @@
+add_newline = true
+
+format = """
+[](fg:#88c0d0)$os[](fg:#88c0d0 bg:#81a1c1)$username[](fg:#81a1c1 bg:#4c566a)$directory[](fg:#4c566a bg:#a3be8c)$git_branch$git_status[](fg:#a3be8c bg:#5e81ac)$time[ ](fg:#5e81ac)
+$character"""
+
+[os]
+disabled = false
+style = "bg:#88c0d0 fg:#2e3440"
+
+[os.symbols]
+Arch = "󰣇 "
+
+[username]
+show_always = true
+style_user = "bg:#81a1c1 fg:#eceff4"
+format = "[ $user ]($style)"
+
+[directory]
+style = "bg:#4c566a fg:#eceff4"
+format = "[ $path ]($style)"
+home_symbol = "~"
+truncation_length = 3
+fish_style_pwd_dir_length = 1
+
+[directory.substitutions]
+"/var/home/alejandro" = "~"
+
+[git_branch]
+symbol = " "
+style = "bg:#a3be8c fg:#2e3440"
+format = "[[ $symbol$branch ]($style)]($style)"
+
+[git_status]
+style = "bg:#a3be8c fg:#2e3440"
+format = "[[($all_status$ahead_behind )]($style)]($style)"
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:#5e81ac fg:#eceff4"
+format = "[  $time ]($style)"
+
+[character]
+success_symbol = "[╰─>](bold #a3be8c) "
+error_symbol = "[╰─>](bold #bf616a) "

@@ -98,14 +98,24 @@ Esta sección documenta el progreso de la migración a Clean Architecture.
 ### ✅ Phase 4 COMPLETO
 
 - main.go: Integrar adapters inyectados en Manager ✅
+- Agregar tests unitarios con mocks ✅
 
-### 🔄 Phase 5: Verification (EN PROGRESO)
+### ⚠️ Phase 5: Verification (PARCIAL)
 
-- Testear que todos los comandos funcionan
+- Código compila parcialmente
+- Quedan errores de tipos por resolver
 
-### 📋 Pendiente
+### 📋 Pendiente (Issues conocidos)
 
-- Phase 6: Cleanup
+- Field y LifecycleStep duplicados en services/ y ports/ → unificar
+- UI interface tiene métodos duplicados → refactorizar
+- Controller tiene código legacy → migrar
+
+### 📁 Estructura Tests
+
+```
+pkg/adapters/podman/adapter_test.go  ← Tests con mocks
+```
 
 ### 📁 Estructura Actual
 

@@ -10,11 +10,12 @@ import (
 	"strings"
 
 	"axiom/pkg/adapters/system/gpu"
+	"axiom/pkg/core/domain"
 	"axiom/pkg/core/ports"
 )
 
 type buildContext struct {
-	config            EnvConfig
+	config            domain.EnvConfig
 	gpuInfo           gpu.GPUInfo
 	imageName         string
 	buildWorkspaceDir string
@@ -415,7 +416,7 @@ func (m *Manager) runInContainerOutput(args ...string) (string, error) {
 	return m.Runtime.RunCommandOutput(m.buildContainerName, args...)
 }
 
-func resolveBuildGPU(cfg EnvConfig) gpu.GPUInfo {
+func resolveBuildGPU(cfg domain.EnvConfig) gpu.GPUInfo {
 	if cfg.GPUType != "" {
 		return gpu.GPUInfo{
 			Type:   normalizeGPUType(cfg.GPUType, cfg.GFXVal),

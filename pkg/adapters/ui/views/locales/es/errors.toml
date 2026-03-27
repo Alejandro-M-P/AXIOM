@@ -1,0 +1,6 @@
+[system]
+dependency_missing = "❌ Falta dependencia: %s"
+[bunker]
+image_not_found = "No se encontró la imagen %s"
+[env]
+read = "No se pudo leer .env: %w"

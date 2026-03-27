@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"axiom/pkg/bunker"
-	"axiom/pkg/ui/styles"
+	"axiom/pkg/adapters/ui/styles"
+	"axiom/pkg/core/services"
 	tea "github.com/charmbracelet/bubbletea"
 )
 

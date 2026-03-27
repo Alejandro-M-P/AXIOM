@@ -1,0 +1,81 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "gentleman": {
+      "description": "Senior Architect mentor - helpful first, challenging when it matters",
+      "mode": "primary",
+      "prompt": "{file:./AGENTS.md}",
+      "tools": {
+        "edit": true,
+        "write": true
+      }
+    },
+    "sdd-orchestrator": {
+      "description": "Gentleman personality + SDD delegate-only orchestrator",
+      "mode": "all",
+      "prompt": "{file:./AGENTS.md}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "sdd-apply": {
+      "description": "SDD delegate-only apply sub-agent",
+      "mode": "all",
+      "prompt": "{file:./AGENTS.md}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    }
+  },
+  "mcp": {
+    "context7": {
+      "enabled": true,
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "engram": {
+      "enabled": true,
+      "type": "local",
+      "command": ["engram", "mcp"]
+    }
+  },
+  "permission": {
+    "bash": {
+      "*": "allow",
+      "git commit *": "ask",
+      "git push": "ask",
+      "git push *": "ask",
+      "git push --force *": "ask",
+      "git rebase *": "ask",
+      "git reset --hard *": "ask"
+    },
+    "read": {
+      "*": "allow",
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      "**/credentials.json": "deny",
+      "**/secrets/**": "deny",
+      "*.env": "deny",
+      "*.env.*": "deny"
+    }
+  },
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "TU_MODELO:latest": {
+          "reasoning": true
+        }
+      }
+    }
+  }
+}

@@ -8,7 +8,7 @@ import (
 
 	"axiom/pkg/adapters/system"
 	"axiom/pkg/adapters/system/gpu"
-	"axiom/pkg/ui/styles"
+	"axiom/pkg/adapters/ui/styles"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )

@@ -8,7 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"axiom/pkg/ui/styles"
+	"axiom/pkg/adapters/ui/styles"
+	"axiom/pkg/core/domain"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -87,7 +88,7 @@ func selectBunkerInteractive(title, action string, names []string) (string, erro
 	return finalModel.selected, nil
 }
 
-func (m *Manager) listBunkerNames(cfg EnvConfig) ([]string, error) {
+func (m *Manager) listBunkerNames(cfg domain.EnvConfig) ([]string, error) {
 	seen := map[string]struct{}{}
 	var names []string
 

@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 
-	"axiom/pkg/ui/styles"
+	"axiom/pkg/adapters/ui/styles"
 	"github.com/pelletier/go-toml/v2"
 )
 

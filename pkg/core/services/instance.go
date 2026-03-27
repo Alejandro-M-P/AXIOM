@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"axiom/pkg/core/domain"
 	"axiom/pkg/core/ports"
 )
 
@@ -347,7 +348,7 @@ func (m *Manager) DeleteImage() error {
 	return nil
 }
 
-func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir string) string {
+func (m *Manager) createContainerFlags(cfg domain.EnvConfig, gpuType, name, projectDir string) string {
 	parts := []string{
 		fmt.Sprintf("--volume %s:/%s:z", projectDir, name),
 		fmt.Sprintf("--volume %s:/ai_config:z", cfg.AIConfigDir()),
@@ -401,7 +402,7 @@ func (m *Manager) listAxiomImages() ([]string, error) {
 	return images, nil
 }
 
-func prepareSSHAgent(cfg EnvConfig) {
+func prepareSSHAgent(cfg domain.EnvConfig) {
 	if strings.ToLower(strings.TrimSpace(cfg.AuthMode)) != "ssh" {
 		return
 	}
