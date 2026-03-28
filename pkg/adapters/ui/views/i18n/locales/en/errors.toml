@@ -1,6 +1,0 @@
-[system]
-dependency_missing = "❌ Missing dependency: %s"
-[bunker]
-image_not_found = "Image %s not found"
-[env]
-read = "Could not read .env: %w"

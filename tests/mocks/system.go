@@ -1,0 +1,96 @@
+package mocks
+
+import (
+	"sync"
+
+	"axiom/internal/domain"
+	"axiom/internal/ports"
+)
+
+// Compile-time checks
+var _ ports.ISystem = (*MockSystem)(nil)
+var _ ports.IDependencyChecker = (*MockDependencyChecker)(nil)
+
+// MockSystem implements ports.ISystem for testing.
+type MockSystem struct {
+	mu sync.Mutex
+
+	// Track calls
+	DetectGPUCalls int
+	CheckDepsCalls int
+
+	// Return values
+	GPUInfo      domain.GPUInfo
+	CheckDepsErr error
+}
+
+// NewMockSystem creates a new MockSystem with default values.
+func NewMockSystem() *MockSystem {
+	return &MockSystem{
+		GPUInfo: domain.GPUInfo{
+			Type:       "rdna4",
+			GfxVal:     "gfx1100",
+			Name:       "AMD Radeon RX 7700 XT",
+			RawGfx:     "gfx1100",
+			PCIAddress: "0000:03:00.0",
+			VendorID:   "1002",
+			DeviceID:   "747e",
+		},
+	}
+}
+
+func (m *MockSystem) DetectGPU() domain.GPUInfo {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.DetectGPUCalls++
+	return m.GPUInfo
+}
+
+func (m *MockSystem) CheckDeps() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.CheckDepsCalls++
+	return m.CheckDepsErr
+}
+
+// MockDependencyChecker implements ports.IDependencyChecker for testing.
+type MockDependencyChecker struct {
+	mu sync.Mutex
+
+	// Storage
+	Commands map[string]string // command name -> path
+
+	// Track calls
+	HasCommandCalls     []string
+	GetCommandPathCalls []string
+
+	// Configuration
+	HasCommandResult bool
+	GetCommandErr    error
+}
+
+// NewMockDependencyChecker creates a new MockDependencyChecker with default values.
+func NewMockDependencyChecker() *MockDependencyChecker {
+	return &MockDependencyChecker{
+		Commands:            make(map[string]string),
+		HasCommandCalls:     []string{},
+		GetCommandPathCalls: []string{},
+	}
+}
+
+func (m *MockDependencyChecker) HasCommand(name string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.HasCommandCalls = append(m.HasCommandCalls, name)
+	return m.HasCommandResult
+}
+
+func (m *MockDependencyChecker) GetCommandPath(name string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.GetCommandPathCalls = append(m.GetCommandPathCalls, name)
+	if path, ok := m.Commands[name]; ok {
+		return path, nil
+	}
+	return "", m.GetCommandErr
+}

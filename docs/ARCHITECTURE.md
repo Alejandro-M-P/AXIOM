@@ -1,6 +1,6 @@
- # 🏛️ Arquitectura de AXIOM
+# 🏛️ Arquitectura de AXIOM 2.0
 
-AXIOM utiliza una **Arquitectura Limpia (Clean Architecture)** basada en el patrón de Puertos y Adaptadores. 
+AXIOM utiliza una **Arquitectura Limpia (Clean Architecture)** basada en el patrón de Puertos y Adaptadores.
 El objetivo principal de esta estructura es **desacoplar completamente la lógica de negocio (Core) de la interfaz de usuario y del sistema subyacente (Podman, OS)**.
 
 Esto permite que AXIOM sea altamente testeable, escalable y que pueda ser operado tanto por humanos (vía Terminal interactiva) como por Inteligencias Artificiales (vía Agent API JSON).
@@ -9,25 +9,70 @@ Esto permite que AXIOM sea altamente testeable, escalable y que pueda ser operad
 
 ## 📂 Estructura de Directorios
 
-Todo el código fuente público y reutilizable se encuentra en `pkg/`. El punto de entrada está en `cmd/`.
+Todo el código de negocio está en `internal/`. El punto de entrada está en `cmd/`.
 
 ```text
 .
-├── cmd/axiom/                  # Punto de entrada. Inicializa e inyecta dependencias.
-├── pkg/
-│   ├── core/                   # 🧠 CAPA 1: Lógica de Negocio Pura
-│   │   ├── domain/             # Entidades (Structs puros: Bunker, Config).
-│   │   ├── ports/              # Interfaces que dictan cómo interactuar con el exterior.
-│   │   └── services/           # Reglas de negocio (Crear, Validar, Borrar).
-│   ├── controller/             # 🕹️ CAPA 2: El Orquestador
-│   │   └── orchestrator.go     # Recibe comandos del main, consulta y delega al Core.
-│   └── adapters/               # 🔌 CAPA 3: Adaptadores (Mundo Exterior)
-│       ├── system/             # Interacciones con OS, GPUs e instalaciones.
-│       ├── podman/             # Ejecución de comandos de contenedores.
-│       ├── ui/                 # Interfaz humana (Terminal gráfica, colores, i18n).
-│       └── api/                # Interfaz de máquina (Salida JSON para agentes IA).
-├── configs/assets/             # Archivos estáticos de configuración (opencode, starship).
-└── scripts/legacy_bash/        # Scripts heredados en proceso de migración.
+├── cmd/axiom/                    # Punto de entrada
+│   ├── main.go                  # Bootstrap + DI
+│   └── router_commands.go       # Routing de comandos → handlers
+│
+├── internal/                     # 🔒 Código privado de AXIOM
+│   ├── domain/                  # 🧠 ENTIDADES (puro, sin deps)
+│   │   ├── bunker.go            # Bunker, BunkerConfig
+│   │   ├── image.go             # Image, BuildConfig
+│   │   └── system.go            # GPUInfo, EnvConfig
+│   │
+│   ├── ports/                   # 🔌 CONTRATOS (interfaces)
+│   │   ├── runtime.go           # IBunkerRuntime
+│   │   ├── filesystem.go        # IFileSystem
+│   │   ├── system.go            # ISystem
+│   │   └── presenter.go         # IPresenter
+│   │
+│   ├── bunker/                  # 🎯 DOMINIO: Bunker lifecycle
+│   │   ├── manager.go           # BunkerManager (coordinador)
+│   │   ├── create.go            # CreateBunker
+│   │   ├── delete.go            # DeleteBunker + DeleteImage
+│   │   ├── list.go              # ListBunkers + Info
+│   │   ├── stop.go              # StopBunker
+│   │   ├── prune.go             # PruneBunkers (mutex-protected)
+│   │   └── helpers.go           # sanitize, formatBytes, etc.
+│   │
+│   ├── build/                   # 🎯 DOMINIO: Image build
+│   │   ├── manager.go           # BuildManager (coordinador)
+│   │   ├── image.go             # BuildImage + RebuildImage
+│   │   ├── steps.go             # installSystemBase, installDevTools...
+│   │   ├── progress.go          # Progress rendering
+│   │   └── gpu.go               # resolveBuildGPU, normalizeGPUType
+│   │
+│   └── adapters/                 # 🔧 INFRAESTRUCTURA
+│       ├── runtime/             # Container runtime
+│       │   ├── commands.go      # ⚠️ SOLO AQUÍ: "podman", "distrobox"
+│       │   └── podman.go        # Adapter implements IBunkerRuntime
+│       ├── filesystem/
+│       │   └── local.go         # Adapter implements IFileSystem
+│       ├── system/
+│       │   ├── system.go        # Adapter implements ISystem
+│       │   ├── config.go        # Config TOML
+│       │   └── gpu.go           # GPU detection
+│       └── ui/
+│           ├── presenter.go      # Console presenter
+│           ├── form.go          # Bubbletea forms
+│           ├── styles/           # UI styling
+│           └── i18n/            # Translations (es/, en/)
+│
+├── tests/                       # 🧪 Tests centralizados
+│   ├── bunker/                 # Tests bunker
+│   ├── build/                  # Tests build
+│   ├── adapters/               # Tests adapters
+│   ├── cmd/                    # Tests router
+│   └── mocks/                  # Mocks compartidos
+│
+├── configs/                     # 📄 Templates y assets
+│   ├── templates.go            # .bashrc, starship.toml
+│   └── assets/                  # opencode.json
+│
+└── docs/                       # 📚 Documentación
 ```
 
 ---
@@ -37,100 +82,128 @@ Todo el código fuente público y reutilizable se encuentra en `pkg/`. El punto 
 Si vas a modificar o agregar código a AXIOM, **debes respetar estrictamente estas reglas**:
 
 ### 1. La Dependencia fluye hacia adentro ⬇️
+```
+cmd/ → internal/ → domain → ports → bunker/build → adapters
+```
 - `cmd/` puede importar cualquier cosa.
-- `pkg/adapters/` puede importar de `pkg/core/` y `pkg/controller/`.
-- `pkg/controller/` puede importar de `pkg/core/`.
-- **`pkg/core/` NO PUEDE importar NADA de `adapters`, `controller` ni `cmd`.** El Core es ciego y no sabe qué tipo de interfaz lo está usando.
+- `internal/` puede importar de `domain/` y `ports/`.
+- **`internal/` NO PUEDE importar NADA de `adapters`**. El Core es ciego y no sabe qué tipo de interfaz lo está usando.
 
 ### 2. Prohibido usar `fmt.Print` en el Core 🚫🖨️
-La capa `pkg/core/` o `pkg/controller/` **jamás** debe imprimir en pantalla directamente (nada de `fmt.Println` ni `log.Fatal`). 
-- **¿Cómo muestro un error o mensaje?** Debes usar la interfaz `ports.IPresenter` (ej. `presenter.ShowError(err)`). Así, si estamos en modo consola, se dibujará en rojo; pero si estamos en modo Agente IA, saldrá en un JSON limpio.
+La capa `internal/` **jamás** debe imprimir en pantalla directamente.
+- **¿Cómo muestro un error o mensaje?** Usa la interfaz `ports.IPresenter` (ej. `presenter.ShowError(err)`).
 
 ### 3. Todo se comunica mediante Modelos de Dominio 📦
-Si creas un servicio que lista ranuras (Slots), no devuelvas un bloque de texto o strings formateados. Devuelve un `[]domain.Slot`. Será trabajo de la capa `adapters/ui/` convertir ese array en una tabla colorida.
+Devuelve structs de dominio (`[]domain.Bunker`), no strings formateados.
+El trabajo de formatear para el usuario es de `adapters/ui/`.
 
 ### 4. Evitar rutas *Hardcodeadas* 🗺️
-Archivos como `opencode.json` o scripts deben leerse desde el directorio del sistema que corresponda o desde los directorios configurados (ej. `configs/assets/`), nunca inyectados rígidamente en la lógica del Core.
+Archivos como `opencode.json` o scripts deben estar en `configs/`, nunca inyectados rígidamente.
 
 ---
 
-## 🛠️ ¿Cómo agregar una nueva funcionalidad?
+## 🎯 Cambiar de Podman a Docker
 
-Sigue este flujo de trabajo para añadir un nuevo comando (Ej: `axiom snapshot`):
+El objetivo es que cambiar de Podman a Docker sea modificar **1 archivo + 1 variable**.
 
-1. **Core (Domain):** ¿Necesitamos un nuevo modelo de datos? (Ej. `type Snapshot struct`). Añádelo a `pkg/core/domain/`.
-2. **Core (Ports):** ¿Necesitamos que Podman haga algo nuevo? Añade la función a la interfaz `IPodman` en `pkg/core/ports/`.
-3. **Core (Services):** Crea la lógica pura en `pkg/core/services/snapshot.go` que reciba los puertos e implemente las validaciones.
-4. **Adapters:** Implementa la llamada real a Podman en `pkg/adapters/podman/` y diseña cómo se verá en pantalla en `pkg/adapters/ui/views/`.
-5. **Controller:** Agrega la ruta en el Orquestador (`pkg/controller/`) para que cuando el usuario escriba `axiom snapshot`, este conecte el Servicio con el Adaptador.
-6. **Main:** Asegúrate de que las dependencias estén correctamente inyectadas en `cmd/axiom/main.go`.
+### 1. `internal/adapters/runtime/commands.go`
+```go
+// ESTE ES EL ÚNICO ARCHIVO con strings "podman", "distrobox"
+var Podman = CommandSet{
+    CreateBunker: func(name, image, home, flags string) []string {
+        return []string{"distrobox-create", "--name", name, ...}
+    },
+    // ...
+}
+```
+
+### 2. `cmd/axiom/main.go`
+```go
+// Cambiar esta línea para usar Docker:
+runtime = podman.NewPodmanAdapter(commands.Podman)
+// runtime = docker.NewDockerAdapter(commands.Docker)
+```
 
 ---
 
-## 🔄 Estado de Refactorización (Clean Architecture)
+## 📁 Commands Runtime: El corazón del cambio
 
-Esta sección documenta el progreso de la migración a Clean Architecture.
+```
+commands.go ──────→ podman.go ──────→ ports/runtime.go
+   │                    │                    │
+   │                    │                    │
+strings         implementation        IBunkerRuntime
+"podman",              │              (interface)
+"distrobox"           ↓
+              exec.CommandContext()
+```
 
-### ✅ Completado
+**Regla: Los strings "podman" y "distrobox" SOLO viven en `commands.go`**
+
+---
+
+## 🔄 Estado de Refactorización
+
+### ✅ AXIOM 2.0 COMPLETO (2026-03-28)
 
 | Fecha | Cambio | Descripción |
 |-------|--------|-------------|
-| 2026-03-27 | Phase 1 | Creado `pkg/core/domain/` con modelos puros |
-| 2026-03-27 | Phase 1 | Creado `pkg/core/ports/` con interfaces |
-| 2026-03-27 | Phase 2 | Creado `pkg/adapters/podman/adapter.go` |
-| 2026-03-27 | Phase 2 | Creado `pkg/adapters/fs/adapter.go` |
-| 2026-03-27 | Phase 2 | Reorganizado `pkg/adapters/system/` (gpu en subdir) |
-| 2026-03-27 | Phase 3.1 | Creado `pkg/core/services/manager.go` con inyección |
-| 2026-03-27 | Phase 3.2 | Migrado `runCommandQuiet` → `m.Runtime.RunCommand()` |
-| 2026-03-27 | Phase 3.2 | Migrado `runCommandWithInput` → `m.Runtime.RunCommandWithInput()` |
-| 2026-03-27 | Phase 3.2 | Migrado `runCommandOutput` → `m.Runtime.RunCommandOutput()` |
-| 2026-03-27 | Phase 3.2 | Migrado `distroboxExists` → `m.Runtime.ContainerExists()` |
-| 2026-03-27 | Phase 3.2 | Migrado `podmanImageExists` → `m.Runtime.ImageExists()` |
-| 2026-03-27 | Phase 3.2 | Migrado `bunkerStatus`, `listBunkerNames`, `listAxiomImages` |
-| 2026-03-27 | Phase 3.2 | Migrado lifecycle.go (10 llamadas → m.Runtime) |
-| 2026-03-27 | Phase 3.2 | Migrado removePathWritable, ensureTutorFile, appendTutorLog, writeShellBootstrap, writeStarshipConfig → m.FS |
-| 2026-03-27 | Phase 3.2 | Migrado distroboxExists → m.Runtime.ContainerExists() |
-| 2026-03-27 | Phase 3.2 | Migrado bunkerStatus → m.Runtime.ListContainers() |
-| 2026-03-27 | Phase 3.2 | Borradas funciones legacy sin uso de lifecycle.go |
+| 2026-03-28 | Estructura | Creada estructura `internal/` con domain/ports/bunker/build/adapters |
+| 2026-03-28 | Runtime Abstraction | `IBunkerRuntime` con métodos semánticos |
+| 2026-03-28 | Commands | `commands.go` único archivo con podman/distrobox |
+| 2026-03-28 | Bunker Domain | Dividido en create, delete, list, stop, prune, helpers |
+| 2026-03-28 | Build Domain | Dividido en image, steps, progress, gpu |
+| 2026-03-28 | Router | `router_commands.go` con 12 comandos |
+| 2026-03-28 | Tests | ~200+ tests con mocks, coverage 77-89% |
+| 2026-03-28 | Cleanup | Eliminado `pkg/` legacy, `unit_tests/` |
 
-### ✅ Phase 3 COMPLETO
+---
 
-### ✅ Phase 4 COMPLETO
+## 🧪 Tests
 
-- main.go: Integrar adapters inyectados en Manager ✅
-- Agregar tests unitarios con mocks ✅
-
-### ✅ Phase 5 COMPLETO
-
-- Código compila ✅
-- Tests pasan ✅
-
-### 📁 Tests
-
-```
-unit_tests/
-├── podman/adapter_test.go  ← Tests con mocks
+```bash
+make test              # Todos los tests con race detector
+make test-unit         # Tests sin race (más rápido)
+make test-coverage     # Con coverage report
 ```
 
-### 📁 Estructura Actual
+### Coverage
+| Paquete | Coverage |
+|---------|----------|
+| `adapters/filesystem` | 89.3% |
+| `adapters/runtime` | 77.6% |
 
-```
-pkg/
-├── core/
-│   ├── domain/models.go          ✅ Modelos puros
-│   └── ports/                    ✅ Interfaces
-│       ├── podman.go            ✅ IContainerRuntime
-│       ├── filesystem.go        ✅ IFileSystem
-│       ├── system.go            ✅ ISystem
-│       └── presenter.go          ✅ IPresenter
-├── adapters/
-│   ├── podman/adapter.go        ✅ PodmanAdapter (IContainerRuntime)
-│   ├── fs/adapter.go           ✅ FSAdapter (IFileSystem)
-│   └── system/
-│       ├── system.go            ✅ SystemAdapter (ISystem)
-│       └── gpu/gpu.go          ✅ DetectGPU
-└── services/
-    ├── manager.go               ✅ Manager con inyección
-    ├── instance.go              ✅ Migrado (usa m.Runtime, m.FS)
-    └── lifecycle.go            ✅ Migrado (usa m.Runtime)
-```
+---
+
+## 🚀 Comandos Disponibles
+
+| Comando | Alias | Descripción |
+|---------|-------|-------------|
+| `create` | - | Crear un bunker |
+| `delete` | `rm` | Eliminar bunker |
+| `list` | `ls` | Listar bunkers |
+| `stop` | - | Detener bunker |
+| `prune` | - | Limpiar bunkers huérfanos |
+| `build` | - | Construir imagen |
+| `rebuild` | - | Reconstruir imagen |
+| `info` | - | Info de bunker |
+| `enter` | - | Entrar a bunker |
+| `init` | - | Inicializar AXIOM |
+| `help` | `-h`, `--help` | Mostrar ayuda |
+
+---
+
+## 🛡️ Slots System (AXIOM 2.0+)
+
+| Slot | Propósito | Características |
+|------|-----------|-----------------|
+| **DEV** | Oficina de Programación | IA, lenguajes, agentes |
+| **DATA** | Laboratorio de Persistencia | MySQL, Postgres, Mongo |
+| **BOX** | Zona de Pruebas | Aislamiento, carpetas mapeadas |
+
+---
+
+## 📚 Documentación
+
+- `docs/ARCHITECTURE.md` — Esta arquitectura
+- `docs/GO_REFACTOR_GUIDE.md` — Guía para contribuyen
