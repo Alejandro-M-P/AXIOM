@@ -65,19 +65,45 @@ func RenderCommandError(command string, err error) string {
 	}
 
 	errCode := err.Error()
+	
+	// Seguridad: Si el catálogo no cargó, mostramos el error bruto
+	if catalog == nil {
+		return fmt.Sprintf("Error Crítico: %v", err)
+	}
+
 	cmdErrors, hasCmd := catalog[command]
 	if !hasCmd {
 		cmdErrors = catalog["global"]
 	}
 
+	// Si ni siquiera existe la sección global, evitamos el panic
+	if cmdErrors == nil {
+		return fmt.Sprintf("Error en %s: %v", command, err)
+	}
+
 	def, hasErr := cmdErrors[errCode]
 	if !hasErr {
-		def = catalog["global"]["unknown"]
-		techDetail := "[Detalle técnico: %v]"
-		if t, ok := Logs["cli"]["technical_detail"]; ok {
-			techDetail = t
+		// Buscamos el error 'unknown' de forma segura
+		global, ok := catalog["global"]
+		if ok {
+			def = global["unknown"]
 		}
-		def.Description = fmt.Sprintf("%s\n\n%s", def.Description, fmt.Sprintf(techDetail, err))
+
+		if def == nil {
+			return styles.RenderErrorCard(command, "Error Desconocido", errCode, "Revisa los logs del sistema.")
+		}
+		
+		techDetail := "[Detalle técnico: %v]"
+		// Acceso seguro a Logs para evitar el panic de la línea 80
+		if cliLogs, ok := Logs["cli"]; ok {
+			if t, ok := cliLogs["technical_detail"]; ok {
+				techDetail = t
+			}
+		}
+		
+		// IMPORTANTE: No modifiques el def original o corromperás el catálogo en memoria
+		finalDesc := fmt.Sprintf("%s\n\n%s", def.Description, fmt.Sprintf(techDetail, err))
+		return styles.RenderErrorCard(command, def.Title, finalDesc, def.Action)
 	}
 
 	return styles.RenderErrorCard(command, def.Title, def.Description, def.Action)

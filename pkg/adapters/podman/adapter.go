@@ -133,24 +133,37 @@ func (p *PodmanAdapter) CommitContainer(containerName, imageName string) error {
 	return runCommand("podman", "commit", containerName, imageName)
 }
 
-// RunCommand ejecuta un comando dentro de un contenedor usando distrobox-enter.
+// RunCommand ejecuta un comando dentro de un contenedor, o en el host si el nombre está vacío.
 func (p *PodmanAdapter) RunCommand(containerName string, args ...string) error {
-	cmdArgs := []string{"-n", containerName, "--"}
-	cmdArgs = append(cmdArgs, args...)
+	if containerName == "" {
+		if len(args) == 0 {
+			return nil
+		}
+		return runCommand(args[0], args[1:]...)
+	}
+	cmdArgs := append([]string{"-n", containerName, "--"}, args...)
 	return runCommand("distrobox-enter", cmdArgs...)
 }
 
-// RunCommandWithInput ejecuta un comando con entrada stdin.
 func (p *PodmanAdapter) RunCommandWithInput(containerName, input string, args ...string) error {
-	cmdArgs := []string{"-n", containerName, "--"}
-	cmdArgs = append(cmdArgs, args...)
+	if containerName == "" {
+		if len(args) == 0 {
+			return nil
+		}
+		return runCommandWithInput(args[0], input, args[1:]...)
+	}
+	cmdArgs := append([]string{"-n", containerName, "--"}, args...)
 	return runCommandWithInput("distrobox-enter", input, cmdArgs...)
 }
 
-// RunCommandOutput ejecuta un comando y retorna la salida.
 func (p *PodmanAdapter) RunCommandOutput(containerName string, args ...string) (string, error) {
-	cmdArgs := []string{"-n", containerName, "--"}
-	cmdArgs = append(cmdArgs, args...)
+	if containerName == "" {
+		if len(args) == 0 {
+			return "", nil
+		}
+		return runCommandOutput(args[0], args[1:]...)
+	}
+	cmdArgs := append([]string{"-n", containerName, "--"}, args...)
 	return runCommandOutput("distrobox-enter", cmdArgs...)
 }
 
