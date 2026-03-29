@@ -1,0 +1,85 @@
+[init]
+title = "AXIOM Initialization"
+subtitle = "Configure your development environment"
+
+[init.language]
+title = "LANGUAGE / IDIOMA"
+description = "Select your language / Selecciona tu idioma:"
+option_en = "English"
+option_es = "Español"
+
+[init.confirm]
+title = "WARNING"
+description = "Overwrite existing .env file?"
+option_yes = "YES, CONTINUE"
+option_no = "NO, EXIT"
+
+[init.github_user]
+title = "GITHUB USER"
+description = "Enter your username:"
+placeholder = "ex: user"
+
+[init.github_email]
+title = "GITHUB EMAIL"
+description = "Enter your email:"
+placeholder = "ex: user@example.com"
+
+[init.auth_mode]
+title = "AUTHENTICATION"
+description = "Select connection type:"
+option_ssh = "SSH (Recommended)"
+option_https = "HTTPS (Token)"
+
+[init.github_token]
+title = "GITHUB TOKEN"
+description = "Paste your PAT token:"
+placeholder = "Required for HTTPS"
+
+[init.base_dir]
+title = "BASE DIRECTORY"
+description = "Root path:"
+placeholder = "Enter for: "
+
+[init.models_dir]
+title = "OLLAMA MODELS"
+description = "Models location?"
+
+[init.gpu]
+title = "GPU HARDWARE"
+detected = "Detected: "
+suggested = "Suggested: "
+not_required = "GFX not required"
+placeholder = "(Enter to confirm)"
+
+[init.rocm_mode]
+title = "GPU DRIVERS"
+description = "Driver management:"
+option_host = "Host (Lightweight)"
+option_image = "Image (Isolated)"
+recommended_amd = "Host (Recommended AMD/Intel)"
+recommended_nvidia = "Image (Recommended NVIDIA)"
+
+[init.review]
+title = "FINAL REVIEW"
+description = "Review the data. Press Enter on a field to edit it."
+help = "Use Up/Down arrows to navigate."
+github_user = "GitHub User:"
+github_email = "GitHub Email:"
+auth_mode = "Auth Mode:"
+git_token = "Git Token:"
+base_dir = "Base Dir:"
+models_dir = "Models Dir:"
+gpu_info = "GPU:"
+gpu_drivers = "GPU Drivers:"
+empty = "(empty)"
+not_required = "Not required"
+na = "N/A"
+
+[init.buttons]
+save = "SAVE AND CREATE"
+cancel = "CANCEL"
+
+[init.success]
+message = "🛡️ AXIOM: Bunker configured successfully!"
+next_step = "🚀 Next step: Run"
+press_enter = "(Press Enter to exit)"

@@ -25,6 +25,9 @@ var esLifecycleTOML []byte
 //go:embed i18n/locales/es/errors.toml
 var esErrorsTOML []byte
 
+//go:embed i18n/locales/es/init.toml
+var esInitTOML []byte
+
 // English locale files
 //
 //go:embed i18n/locales/en/commands.toml
@@ -42,12 +45,16 @@ var enLifecycleTOML []byte
 //go:embed i18n/locales/en/errors.toml
 var enErrorsTOML []byte
 
+//go:embed i18n/locales/en/init.toml
+var enInitTOML []byte
+
 // Data maps for the loaded locale
 var Commands map[string]map[string]string
 var Prompts map[string]map[string]string
 var Logs map[string]map[string]string
 var Lifecycle map[string]map[string]string
 var Errors map[string]map[string]string
+var Init map[string]map[string]string
 
 // currentLocale stores the detected locale
 var currentLocale string
@@ -79,7 +86,7 @@ func GetLocale() string {
 
 // loadLocale loads the TOML files for the specified locale
 func loadLocale(locale string) {
-	var commandsData, promptsData, logsData, lifecycleData, errorsData []byte
+	var commandsData, promptsData, logsData, lifecycleData, errorsData, initData []byte
 
 	if locale == "en" {
 		commandsData = enCommandsTOML
@@ -87,6 +94,7 @@ func loadLocale(locale string) {
 		logsData = enLogsTOML
 		lifecycleData = enLifecycleTOML
 		errorsData = enErrorsTOML
+		initData = enInitTOML
 	} else {
 		// Default to Spanish
 		commandsData = esCommandsTOML
@@ -94,6 +102,7 @@ func loadLocale(locale string) {
 		logsData = esLogsTOML
 		lifecycleData = esLifecycleTOML
 		errorsData = esErrorsTOML
+		initData = esInitTOML
 	}
 
 	if err := toml.Unmarshal(commandsData, &Commands); err != nil {
@@ -115,6 +124,11 @@ func loadLocale(locale string) {
 	if len(errorsData) > 0 {
 		if err := toml.Unmarshal(errorsData, &Errors); err != nil {
 			panic("Error en errors.toml: " + err.Error())
+		}
+	}
+	if len(initData) > 0 {
+		if err := toml.Unmarshal(initData, &Init); err != nil {
+			panic("Error en init.toml: " + err.Error())
 		}
 	}
 }

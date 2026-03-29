@@ -92,7 +92,10 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 			nil,
 		)
 
-		usePrevious, err := m.ui.AskConfirm("slot_wizard.use_previous")
+		usePrevious, err := m.ui.AskConfirmInCard("build", []ports.Field{
+			{Label: m.ui.GetText("slot_wizard.previous_selection_title"), Value: m.ui.GetText("slot_wizard.previous_selection_desc")},
+			{Label: m.ui.GetText("slot_wizard.items_selected", totalItems), Value: fmt.Sprintf("%d", totalItems)},
+		}, nil, "slot_wizard.use_previous")
 		if err != nil {
 			return fmt.Errorf("failed to ask confirmation: %w", err)
 		}

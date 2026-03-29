@@ -1,0 +1,85 @@
+[init]
+title = "Inicialización de AXIOM"
+subtitle = "Configura tu entorno de desarrollo"
+
+[init_language]
+title = "IDIOMA / LANGUAGE"
+description = "Selecciona tu idioma / Select your language:"
+option_en = "English"
+option_es = "Español"
+
+[init_confirm]
+title = "ADVERTENCIA"
+description = "¿Sobreescribir archivo .env existente?"
+option_yes = "SÍ, CONTINUAR"
+option_no = "NO, SALIR"
+
+[init_github_user]
+title = "USUARIO GITHUB"
+description = "Ingresa tu nombre de usuario:"
+placeholder = "ej: usuario"
+
+[init_github_email]
+title = "EMAIL GITHUB"
+description = "Ingresa tu email:"
+placeholder = "ej: usuario@ejemplo.com"
+
+[init_auth_mode]
+title = "AUTENTICACIÓN"
+description = "Selecciona tipo de conexión:"
+option_ssh = "SSH (Recomendado)"
+option_https = "HTTPS (Token)"
+
+[init_github_token]
+title = "TOKEN GITHUB"
+description = "Pega tu token PAT:"
+placeholder = "Requerido para HTTPS"
+
+[init_base_dir]
+title = "DIRECTORIO BASE"
+description = "Ruta raíz:"
+placeholder = "Enter para: "
+
+[init_models_dir]
+title = "MODELOS OLLAMA"
+description = "¿Ubicación de modelos?"
+
+[init_gpu]
+title = "HARDWARE GPU"
+detected = "Detectado: "
+suggested = "Sugerido: "
+not_required = "GFX no requerido"
+placeholder = "(Enter para confirmar)"
+
+[init_rocm_mode]
+title = "DRIVERS GPU"
+description = "Manejo de drivers:"
+option_host = "Host (Ligero)"
+option_image = "Imagen (Aislado)"
+recommended_amd = "Host (Recomendado AMD/Intel)"
+recommended_nvidia = "Imagen (Recomendado NVIDIA)"
+
+[init_review]
+title = "RESUMEN FINAL"
+description = "Revisa los datos. Presiona Enter en un campo para editarlo."
+help = "Usa flechas Arriba/Abajo para navegar."
+github_user = "Usuario GitHub:"
+github_email = "Email GitHub:"
+auth_mode = "Modo Auth:"
+git_token = "Token Git:"
+base_dir = "Dir Base:"
+models_dir = "Dir Modelos:"
+gpu_info = "GPU:"
+gpu_drivers = "Drivers GPU:"
+empty = "(vacío)"
+not_required = "No requerido"
+na = "N/A"
+
+[init_buttons]
+save = "GUARDAR Y CREAR"
+cancel = "CANCELAR"
+
+[init_success]
+message = "🛡️ AXIOM: ¡Bunker configurado exitosamente!"
+next_step = "🚀 Siguiente paso: Ejecuta"
+press_enter = "(Presiona Enter para salir)"
