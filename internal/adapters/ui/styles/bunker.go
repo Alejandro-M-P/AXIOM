@@ -14,37 +14,36 @@ type BunkerDetail struct {
 
 var (
 	BunkerCardStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(Cyan).
-		Padding(1, 2).
-		Margin(1, 2).
-		Width(96)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(Cyan).
+			Padding(1, 2).
+			Margin(1, 2)
 
 	BunkerDangerCardStyle = BunkerCardStyle.Copy().
-		Border(lipgloss.DoubleBorder()).
-		BorderForeground(Red)
+				Border(lipgloss.DoubleBorder()).
+				BorderForeground(Red)
 
 	BunkerTitleStyle = lipgloss.NewStyle().
-		Foreground(Cyan).
-		Bold(true)
+				Foreground(Cyan).
+				Bold(true)
 
 	BunkerSubtitleStyle = lipgloss.NewStyle().
-		Foreground(Gray).
-		Italic(true)
+				Foreground(Gray).
+				Italic(true)
 
 	BunkerLabelStyle = lipgloss.NewStyle().
-		Foreground(White).
-		Bold(true)
+				Foreground(White).
+				Bold(true)
 
 	BunkerValueStyle = lipgloss.NewStyle().
-		Foreground(Cyan)
+				Foreground(Cyan)
 
 	BunkerListStyle = lipgloss.NewStyle().
-		Foreground(Green)
+			Foreground(Green)
 
 	BunkerWarningStyle = lipgloss.NewStyle().
-		Foreground(Red).
-		Bold(true)
+				Foreground(Red).
+				Bold(true)
 )
 
 func RenderBunkerCard(title, subtitle string, details []BunkerDetail, items []string, footer string) string {

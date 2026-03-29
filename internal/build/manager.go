@@ -86,8 +86,8 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 		m.ui.ShowCommandCard(
 			"build",
 			[]ports.Field{
-				{Label: "slot_wizard.previous_selection_title", Value: m.ui.GetText("slot_wizard.previous_selection_desc")},
-				{Label: "slot_wizard.items_selected", Value: fmt.Sprintf("%d", totalItems)},
+				{Label: m.ui.GetText("slot_wizard.previous_selection_title"), Value: m.ui.GetText("slot_wizard.previous_selection_desc")},
+				{Label: m.ui.GetText("slot_wizard.items_selected", totalItems), Value: fmt.Sprintf("%d", totalItems)},
 			},
 			nil,
 		)

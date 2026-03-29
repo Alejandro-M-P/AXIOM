@@ -184,7 +184,13 @@ func (c *ConsoleUI) AskConfirm(promptKey string, args ...any) (bool, error) {
 func getPromptText(key string) string {
 	parts := strings.Split(key, ".")
 	if len(parts) == 2 {
-		if text, ok := Prompts[parts[0]][parts[1]]; ok {
+		cat, sub := parts[0], parts[1]
+		// Check Prompts first
+		if text, ok := Prompts[cat][sub]; ok {
+			return text
+		}
+		// Fallback to Commands
+		if text, ok := Commands[cat][sub]; ok {
 			return text
 		}
 	}
