@@ -386,7 +386,7 @@ func (m Model) View() string {
 	case StepModelsDir:
 		body = m.renderInput("OLLAMA MODELS", "Models location?", "Current: "+m.config.ModelsDir)
 	case StepGfxVersion:
-		infoGPU := fmt.Sprintf("Detected: %s", m.detectedGPU.Name)
+		infoGPU := fmt.Sprintf("Detected: %s", GetTextLocalized(m.detectedGPU.Name))
 		sugerido := "Suggested: " + m.detectedGPU.GfxVal
 		if m.detectedGPU.GfxVal == "" {
 			sugerido = "GFX not required"
@@ -481,7 +481,7 @@ func (m Model) renderReview() string {
 		fmt.Sprintf("Git Token: %s", maskToken(m.config.GitToken, m.config.AuthMode)),
 		fmt.Sprintf("Base Dir: %s", safeValue(m.config.BaseDir)),
 		fmt.Sprintf("Models Dir: %s", safeValue(m.config.ModelsDir)),
-		fmt.Sprintf("GPU: %s | Tipo: %s | GFX: %s", safeValue(m.detectedGPU.Name), safeValue(m.config.GpuType), displayGFX(m.config.GfxVersion)),
+		fmt.Sprintf("GPU: %s | Tipo: %s | GFX: %s", safeValue(GetTextLocalized(m.detectedGPU.Name)), safeValue(m.config.GpuType), displayGFX(m.config.GfxVersion)),
 		fmt.Sprintf("Drivers GPU: %s", safeValue(m.config.RocmMode)),
 	}
 

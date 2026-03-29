@@ -9,13 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	slotui "axiom/internal/adapters/ui/slots"
-	ui "axiom/internal/adapters/ui/views"
 	"axiom/internal/domain"
 	"axiom/internal/ports"
 	"axiom/internal/slots"
-
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 // Command constants.
@@ -75,16 +71,18 @@ type Router struct {
 	bm        BunkerManagerInterface
 	bld       BuildManagerInterface
 	slm       SlotManagerInterface
+	slotUI    ports.ISlotUI
 	axiomPath string
 	fs        ports.IFileSystem
 }
 
 // NewRouter creates a new Router with all managers.
-func NewRouter(bm BunkerManagerInterface, bld BuildManagerInterface, slm SlotManagerInterface, axiomPath string, fs ports.IFileSystem) *Router {
+func NewRouter(bm BunkerManagerInterface, bld BuildManagerInterface, slm SlotManagerInterface, slotUI ports.ISlotUI, axiomPath string, fs ports.IFileSystem) *Router {
 	return &Router{
 		bm:        bm,
 		bld:       bld,
 		slm:       slm,
+		slotUI:    slotUI,
 		axiomPath: axiomPath,
 		fs:        fs,
 	}
@@ -151,20 +149,20 @@ func (r *Router) Handle(args []string) error {
 		// Load configuration
 		cfg, err := r.bm.LoadConfig()
 		if err != nil {
-			return fmt.Errorf("failed to load configuration: %w", err)
+			return fmt.Errorf("errors.router.failed_load_config: %w", err)
 		}
 
 		// Get ALL available items from ALL slots (we need all to let user choose slot first)
 		allItems, err := r.slm.GetAllAvailableItems()
 		if err != nil {
-			return fmt.Errorf("failed to get slot items: %w", err)
+			return fmt.Errorf("errors.router.failed_get_slot_items: %w", err)
 		}
 
 		// Run wizard selector - this lets user choose slot (dev/data/sandbox) AND items
 		// The wizard returns both the selected slot AND the selected item IDs
-		selectedIDs, selectedSlot, confirmed, err := slotui.RunWizardWithSlot(allItems, r.bm.GetUI())
+		selectedIDs, selectedSlot, confirmed, err := r.slotUI.RunWizardWithSlot(allItems)
 		if err != nil {
-			return fmt.Errorf("slot selector failed: %w", err)
+			return fmt.Errorf("errors.router.slot_selector_failed: %w", err)
 		}
 		if !confirmed {
 			return nil // User cancelled
@@ -184,7 +182,7 @@ func (r *Router) Handle(args []string) error {
 		// Save selection for the build process
 		selections := []slots.SlotSelection{{Slot: slotCategory, Selected: selectedIDs}}
 		if err := r.slm.SaveSelection(selections); err != nil {
-			return fmt.Errorf("failed to save slot selection: %w", err)
+			return fmt.Errorf("errors.router.failed_save_slot_selection: %w", err)
 		}
 
 		// Execute build with slot integration
@@ -203,9 +201,9 @@ func (r *Router) Handle(args []string) error {
 		return nil
 	case CmdEnter:
 		if firstArg == "" {
-			return errors.New("usage: axiom enter <bunker-name>")
+			return errors.New("errors.router.usage_enter")
 		}
-		return errors.New("enter not yet implemented")
+		return fmt.Errorf("errors.router.enter_not_implemented")
 	default:
 		return &unknownCommandError{cmd: cmd}
 	}
@@ -244,7 +242,7 @@ func (r *Router) handleCreate() error {
 	// Use TUI form for interactive creation
 	bunkerName, imageName, confirmed, err := ui.AskCreateBunker(images)
 	if err != nil {
-		return fmt.Errorf("create.form_error: %w", err)
+		return fmt.Errorf("errors.router.create_form_error: %w", err)
 	}
 	if !confirmed {
 		return nil // User cancelled
@@ -304,21 +302,13 @@ func (r *Router) handleInit() error {
 		}
 	}
 
-	// Ejecutar el wizard TUI
-	model := ui.NewModel(r.axiomPath, envExists, lang)
-	p := tea.NewProgram(model, tea.WithAltScreen())
-	finalModel, err := p.Run()
+	// Ejecutar el wizard TUI a través del presenter
+	completed, err := r.bm.GetUI().RunInitWizardWithParams(context.Background(), r.axiomPath, envExists, lang)
 	if err != nil {
-		return fmt.Errorf("init wizard failed: %w", err)
+		return fmt.Errorf("errors.router.init_wizard_failed: %w", err)
 	}
-
-	// Verificar si el wizard completó exitosamente
-	// Si el step es StepFinalizing, el usuario guardó la configuración
-	// Si es cualquier otro step, el usuario canceló
-	resultModel := finalModel.(ui.Model)
-	if resultModel.Step() != ui.StepFinalizing {
-		return errors.New("init cancelled by user")
+	if !completed {
+		return fmt.Errorf("errors.router.init_cancelled")
 	}
-
 	return nil
 }

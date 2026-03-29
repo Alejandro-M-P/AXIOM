@@ -83,4 +83,10 @@ type IPresenter interface {
 
 	// RunInitWizard ejecuta el wizard de inicialización.
 	RunInitWizard(ctx context.Context) error
+
+	// RunInitWizardResult ejecuta el wizard de inicialización y devuelve si completó exitosamente.
+	RunInitWizardResult(ctx context.Context) (bool, error)
+
+	// RunInitWizardWithParams ejecuta el wizard de inicialización con parámetros específicos.
+	RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string) (bool, error)
 }

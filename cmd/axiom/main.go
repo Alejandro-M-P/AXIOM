@@ -9,6 +9,8 @@ import (
 
 	"axiom/internal/adapters/filesystem"
 	"axiom/internal/adapters/runtime"
+	"axiom/internal/adapters/system/install"
+	slotui "axiom/internal/adapters/ui/slots"
 	ui "axiom/internal/adapters/ui/views"
 	"axiom/internal/build"
 	"axiom/internal/bunker"
@@ -40,6 +42,7 @@ func main() {
 	runtimeAdapter := runtime.NewPodmanAdapter()
 	fsAdapter := filesystem.NewFSAdapter()
 	uiAdapter := ui.NewConsoleUI()
+	systemAdapter := install.NewSystemAdapter()
 
 	// Create managers via DI
 	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter)
@@ -64,10 +67,13 @@ func main() {
 	buildSlotAdapter := newBuildSlotAdapter(slotManager, uiAdapter)
 
 	// Create build manager with the slot adapter
-	buildManager := build.NewManager(runtimeAdapter, fsAdapter, uiAdapter, "axiom-build", buildSlotAdapter)
+	buildManager := build.NewManager(runtimeAdapter, fsAdapter, uiAdapter, systemAdapter, "axiom-build", buildSlotAdapter)
+
+	// Create slot UI adapter for router
+	slotUI := slotui.NewSlotSelectorUI(slotManager, uiAdapter)
 
 	// Create router with all managers and dispatch
-	router := NewRouter(bunkerManager, buildManager, slotManager, rootDir, fsAdapter)
+	router := NewRouter(bunkerManager, buildManager, slotManager, slotUI, rootDir, fsAdapter)
 	if err := router.Handle(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

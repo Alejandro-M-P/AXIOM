@@ -3,6 +3,7 @@ package ui
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -17,7 +18,7 @@ import (
 const missingTextPlaceholder = "[Texto no disponible]"
 
 // GetTextLocalized returns a localized string from i18n or returns the key if not found.
-// Handles keys like "fields.name", "labels.status", etc.
+// Handles keys like "fields.name", "labels.status", "logs.gpu.forced_by_env", etc.
 func GetTextLocalized(key string) string {
 	parts := strings.SplitN(key, ".", 2)
 
@@ -48,6 +49,20 @@ func GetTextLocalized(key string) string {
 				if val, ok := text[subkey]; ok {
 					return val
 				}
+			}
+		}
+
+		// Check Logs
+		if text, ok := Logs[section]; ok {
+			if val, ok2 := text[subkey]; ok2 {
+				return val
+			}
+		}
+
+		// Check Errors
+		if text, ok := Errors[section]; ok {
+			if val, ok2 := text[subkey]; ok2 {
+				return val
 			}
 		}
 	}
@@ -322,6 +337,31 @@ func (c *ConsoleUI) RunInitWizard(ctx context.Context) error {
 	// Placeholder - actual implementation would run the TUI wizard
 	fmt.Println("Init wizard not yet implemented")
 	return nil
+}
+
+// RunInitWizardResult executes the initialization wizard and returns whether it completed successfully.
+func (c *ConsoleUI) RunInitWizardResult(ctx context.Context) (bool, error) {
+	// Placeholder - actual implementation would run the TUI wizard and return result
+	fmt.Println("Init wizard not yet implemented")
+	return false, nil
+}
+
+// RunInitWizardWithParams executes the initialization wizard with specific parameters.
+func (c *ConsoleUI) RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string) (bool, error) {
+	model := NewModel(axiomPath, envExists, lang)
+	p := tea.NewProgram(model, tea.WithAltScreen())
+	finalModel, err := p.Run()
+	if err != nil {
+		return false, fmt.Errorf("init wizard failed: %w", err)
+	}
+	// Check if the wizard completed successfully
+	// If the step is StepFinalizing, the user saved the configuration
+	// If it's any other step, the user cancelled
+	resultModel := finalModel.(Model)
+	if resultModel.Step() != StepFinalizing {
+		return false, errors.New("init cancelled by user")
+	}
+	return true, nil
 }
 
 // RunFullscreen runs a Bubbletea model in fullscreen mode using the alternate screen.

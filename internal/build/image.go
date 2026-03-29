@@ -24,8 +24,8 @@ type BuildContext struct {
 
 // PrepareBuildContext creates a BuildContext from the environment configuration.
 // It generates container and workspace names based on the slot type.
-func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerName, slotName string) (*BuildContext, error) {
-	gpuInfo, err := ResolveBuildGPU(ctx, cfg)
+func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerName, slotName string, system ports.ISystem) (*BuildContext, error) {
+	gpuInfo, err := ResolveBuildGPU(ctx, cfg, system)
 	if err != nil {
 		return nil, fmt.Errorf("gpu_resolution: %w", err)
 	}

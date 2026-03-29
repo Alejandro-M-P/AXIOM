@@ -85,6 +85,24 @@ func (m *mockUI) RunHelpTUI() error {
 	return nil
 }
 
+func (m *mockUI) RunInitWizardResult(ctx context.Context) (bool, error) {
+	return false, nil
+}
+
+func (m *mockUI) RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string) (bool, error) {
+	return false, nil
+}
+
+// mockSlotUI implements ports.ISlotUI for testing
+type mockSlotUI struct{}
+
+func (m *mockSlotUI) RunWizardWithSlot(items any) ([]string, string, bool, error) {
+	return []string{"item1"}, "dev", true, nil
+}
+
+// Ensure mockSlotUI implements ports.ISlotUI
+var _ ports.ISlotUI = (*mockSlotUI)(nil)
+
 // Ensure mockUI implements ports.IPresenter
 var _ ports.IPresenter = (*mockUI)(nil)
 
@@ -251,7 +269,7 @@ func newTestRouter() (*router.Router, *mockBunkerManager, *mockBuildManager, *mo
 	// Use empty string and mocks filesystem for tests
 	mockFS := mocks.NewMockFileSystem()
 	mockFS.Dirs["/home/test/axiom"] = true
-	return router.NewRouter(bm, bld, slm, "/home/test/axiom", mockFS), bm, bld, slm
+	return router.NewRouter(bm, bld, slm, &mockSlotUI{}, "/home/test/axiom", mockFS), bm, bld, slm
 }
 
 // ============================================================================

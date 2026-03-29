@@ -202,6 +202,16 @@ func (m *MockPresenter) RunInitWizard(ctx context.Context) error {
 	return nil
 }
 
+// RunInitWizardResult implements ports.IPresenter.
+func (m *MockPresenter) RunInitWizardResult(ctx context.Context) (bool, error) {
+	return false, nil
+}
+
+// RunInitWizardWithParams implements ports.IPresenter.
+func (m *MockPresenter) RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string) (bool, error) {
+	return false, nil
+}
+
 // AskCreateBunker implements ports.IPresenter.
 func (m *MockPresenter) AskCreateBunker(images []string) (name string, image string, confirmed bool, err error) {
 	return "test-bunker", "axiom-dev", true, nil

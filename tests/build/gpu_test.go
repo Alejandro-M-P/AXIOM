@@ -6,6 +6,7 @@ import (
 
 	"axiom/internal/build"
 	"axiom/internal/domain"
+	"axiom/tests/mocks"
 )
 
 func TestNormalizeGPUType_NVIDIA(t *testing.T) {
@@ -87,7 +88,8 @@ func TestResolveBuildGPU_Found(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	gpuInfo, err := build.ResolveBuildGPU(ctx, cfg)
+	mockSystem := mocks.NewMockSystem()
+	gpuInfo, err := build.ResolveBuildGPU(ctx, cfg, mockSystem)
 
 	if err != nil {
 		t.Fatalf("ResolveBuildGPU failed: %v", err)
@@ -113,7 +115,8 @@ func TestResolveBuildGPU_NotFound(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	gpuInfo, err := build.ResolveBuildGPU(ctx, cfg)
+	mockSystem := mocks.NewMockSystem()
+	gpuInfo, err := build.ResolveBuildGPU(ctx, cfg, mockSystem)
 
 	// When GPUType is not configured, it falls back to hardware detection
 	// The result depends on the actual GPU on the system

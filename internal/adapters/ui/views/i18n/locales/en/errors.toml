@@ -8,3 +8,15 @@ read = "Could not read .env: %w"
 [ui]
 no_tty = "No TTY available: run with --yes flag or set AXIOM_AUTO_CONFIRM=true"
 auto_confirm_enabled = "Auto-confirm mode enabled (no terminal)"
+
+[router]
+failed_load_config = "Failed to load configuration: %s"
+failed_get_slot_items = "Failed to get slot items: %s"
+slot_selector_failed = "Slot selector failed: %s"
+failed_save_slot_selection = "Failed to save slot selection: %s"
+usage_enter = "Usage: axiom enter <bunker-name>"
+unknown_command = "Unknown command: %s"
+create_form_error = "Create form error: %s"
+init_wizard_failed = "Init wizard failed: %s"
+enter_not_implemented = "Enter command not yet implemented"
+init_cancelled = "Init cancelled by user"

@@ -1,2 +1,6 @@
 [tutor]
 bunker_deleted = "- Búnker '%s' eliminado (Razón: %s)"
+
+[gpu]
+forced_by_env = "Forzada por .env"
+unknown = "Desconocida"

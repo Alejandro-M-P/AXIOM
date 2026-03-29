@@ -2,6 +2,8 @@
 package slots
 
 import (
+	"fmt"
+
 	"axiom/internal/ports"
 	"axiom/internal/slots"
 )
@@ -72,11 +74,21 @@ func (u *SlotSelectorUI) RunWizard(items []slots.SlotItem) ([]string, bool, erro
 	return RunWizard(items, u.presenter)
 }
 
-// RunWizardWithSlot presents the wizard-style slot selector and returns both
+// RunWizardWithSlotItems presents the wizard-style slot selector and returns both
 // selected item IDs and the selected slot (e.g., "dev", "data", "sandbox").
 // This is useful for build operations where the slot determines the image name.
-func (u *SlotSelectorUI) RunWizardWithSlot(items []slots.SlotItem) ([]string, string, bool, error) {
+func (u *SlotSelectorUI) RunWizardWithSlotItems(items []slots.SlotItem) ([]string, string, bool, error) {
 	return RunWizardWithSlot(items, u.presenter)
+}
+
+// RunWizardWithSlot implements ports.ISlotUI.
+// It accepts any type and expects []slots.SlotItem.
+func (u *SlotSelectorUI) RunWizardWithSlot(items any) ([]string, string, bool, error) {
+	slotItems, ok := items.([]slots.SlotItem)
+	if !ok {
+		return nil, "", false, fmt.Errorf("invalid items type, expected []slots.SlotItem")
+	}
+	return u.RunWizardWithSlotItems(slotItems)
 }
 
 // buildItemGroups converts []slots.SlotItem to []ItemGroup for the UI.
@@ -114,3 +126,5 @@ func buildItemGroups(items []slots.SlotItem) []ItemGroup {
 
 	return result
 }
+
+var _ ports.ISlotUI = (*SlotSelectorUI)(nil)

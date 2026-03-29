@@ -7,23 +7,23 @@ import (
 	"strconv"
 	"strings"
 
-	"axiom/internal/adapters/system/gpu"
 	"axiom/internal/domain"
+	"axiom/internal/ports"
 )
 
 // ResolveBuildGPU determines the GPU configuration for a build.
 // If GPUType is explicitly set in config, it uses that; otherwise detects from hardware.
-func ResolveBuildGPU(ctx context.Context, cfg domain.EnvConfig) (*domain.GPUInfo, error) {
+func ResolveBuildGPU(ctx context.Context, cfg domain.EnvConfig, system ports.ISystem) (*domain.GPUInfo, error) {
 	result := &domain.GPUInfo{}
 
 	if cfg.GPUType != "" {
 		result.Type = NormalizeGPUType(cfg.GPUType, cfg.GFXVal)
 		result.GfxVal = cfg.GFXVal
-		result.Name = "Forzada por .env"
+		result.Name = "gpu.forced_by_env"
 		return result, nil
 	}
 
-	hw := gpu.Detect()
+	hw := system.DetectGPU()
 	result.Type = NormalizeGPUType(hw.Type, hw.GfxVal)
 	result.GfxVal = hw.GfxVal
 	result.Name = hw.Name
@@ -33,7 +33,7 @@ func ResolveBuildGPU(ctx context.Context, cfg domain.EnvConfig) (*domain.GPUInfo
 	result.DeviceID = hw.DeviceID
 
 	if result.Name == "" {
-		result.Name = "Desconocida"
+		result.Name = "gpu.unknown"
 	}
 
 	return result, nil

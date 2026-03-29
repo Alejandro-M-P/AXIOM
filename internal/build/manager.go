@@ -16,6 +16,7 @@ type Manager struct {
 	runtime        ports.IBunkerRuntime
 	fs             ports.IFileSystem
 	ui             ports.IPresenter
+	system         ports.ISystem
 	buildContainer string
 	slotManager    SlotManagerInterface
 }
@@ -55,11 +56,12 @@ type SlotSelection struct {
 }
 
 // NewManager creates a new build manager.
-func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, buildContainer string, slotManager SlotManagerInterface) *Manager {
+func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, buildContainer string, slotManager SlotManagerInterface) *Manager {
 	return &Manager{
 		runtime:        runtime,
 		fs:             fs,
 		ui:             ui,
+		system:         system,
 		buildContainer: buildContainer,
 		slotManager:    slotManager,
 	}
@@ -86,7 +88,7 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 	// Prepare build context - use slot name for image
 	// Pass empty containerName to auto-generate based on slot (axiom-dev, axiom-data, axiom-sandbox)
 	var imageName string
-	buildCtx, err := PrepareBuildContext(ctx, cfg, "", slotName)
+	buildCtx, err := PrepareBuildContext(ctx, cfg, "", slotName, m.system)
 	if err != nil {
 		return err
 	}
@@ -307,7 +309,7 @@ func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, 
 // Rebuild rebuilds an existing image after asking for confirmation.
 func (m *Manager) Rebuild(ctx context.Context, cfg domain.EnvConfig) error {
 	// Use empty containerName to auto-generate based on slot (axiom-dev, axiom-data, axiom-sandbox)
-	buildCtx, err := PrepareBuildContext(ctx, cfg, "", "dev")
+	buildCtx, err := PrepareBuildContext(ctx, cfg, "", "dev", m.system)
 	if err != nil {
 		return err
 	}
