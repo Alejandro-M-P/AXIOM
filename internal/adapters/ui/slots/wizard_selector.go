@@ -27,16 +27,12 @@ type ItemWizardPhase int
 
 const (
 	ItemPhaseNone ItemWizardPhase = iota
-	// For DEV slot
+	// For DEV (paso a paso)
 	ItemPhaseAI
 	ItemPhaseLanguages
 	ItemPhaseTools
-	// For DATA slot
-	ItemPhasePostgres
-	ItemPhaseMySQL
-	ItemPhaseMongoDB
-	ItemPhaseRedis
-	ItemPhaseSQLite
+	// For DATA (todas juntas)
+	ItemPhaseDataAll // Muestra todas las DB en una pantalla
 )
 
 // WizardModel is the Bubbletea model for wizard-style slot selection.
@@ -244,12 +240,9 @@ func (m *WizardModel) setupItemWizard() {
 			ItemPhaseTools,
 		}
 	case "data":
+		// Solo una fase con todas las DB
 		m.itemPhaseOrder = []ItemWizardPhase{
-			ItemPhasePostgres,
-			ItemPhaseMySQL,
-			ItemPhaseMongoDB,
-			ItemPhaseRedis,
-			ItemPhaseSQLite,
+			ItemPhaseDataAll,
 		}
 	case "sandbox":
 		m.itemPhaseOrder = []ItemWizardPhase{}
@@ -287,16 +280,9 @@ func (m *WizardModel) matchesCurrentPhase(item slots.SlotItem) bool {
 		return item.SubCategory == "languages"
 	case ItemPhaseTools:
 		return item.SubCategory == "tools"
-	case ItemPhasePostgres:
-		return item.ID == "postgres"
-	case ItemPhaseMySQL:
-		return item.ID == "mysql"
-	case ItemPhaseMongoDB:
-		return item.ID == "mongodb"
-	case ItemPhaseRedis:
-		return item.ID == "redis"
-	case ItemPhaseSQLite:
-		return item.ID == "sqlite"
+	case ItemPhaseDataAll:
+		// Mostrar TODOS los items de DATA (postgres, mysql, mongodb, redis, sqlite)
+		return item.Category == "data"
 	}
 
 	return false
@@ -528,16 +514,8 @@ func (m *WizardModel) getPhaseTitle() string {
 		return m.presenter.GetText("slot_wizard.step_languages")
 	case ItemPhaseTools:
 		return m.presenter.GetText("slot_wizard.step_tools")
-	case ItemPhasePostgres:
-		return "PostgreSQL"
-	case ItemPhaseMySQL:
-		return "MySQL"
-	case ItemPhaseMongoDB:
-		return "MongoDB"
-	case ItemPhaseRedis:
-		return "Redis"
-	case ItemPhaseSQLite:
-		return "SQLite"
+	case ItemPhaseDataAll:
+		return m.presenter.GetText("slot_wizard.data_all_title")
 	}
 	return ""
 }

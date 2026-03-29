@@ -1,6 +1,4 @@
 id = "postgres"
-name = "PostgreSQL"
-description = "Sistema de base de datos relacional"
 category = "data"
 subcategory = "databases"
 dependencies = []

@@ -93,6 +93,20 @@ func (c *ConsoleUI) AskReset(fields []ports.Field, items []string) (bool, string
 
 func (c *ConsoleUI) GetText(key string, args ...any) string {
 	parts := strings.Split(key, ".")
+
+	// Handle 3-level keys like "errors.ui.no_tty"
+	if len(parts) == 3 {
+		section, cat, sub := parts[0], parts[1], parts[2]
+		if section == "errors" {
+			if text, ok := Errors[cat][sub]; ok {
+				if len(args) > 0 {
+					return fmt.Sprintf(text, args...)
+				}
+				return text
+			}
+		}
+	}
+
 	if len(parts) == 2 {
 		cat, sub := parts[0], parts[1]
 		// Check Lifecycle first

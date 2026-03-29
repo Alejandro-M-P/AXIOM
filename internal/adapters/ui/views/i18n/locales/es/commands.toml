@@ -6,6 +6,10 @@
 title = "Construir Imagen Base"
 subtitle = "Generando un nuevo entorno inmutable"
 footer = "Los búnkeres existentes NO se verán afectados."
+image_exists_title = "Imagen Existente"
+image_exists_desc = "Ya existe una imagen '%s'. Se eliminará y se creará una nueva."
+image_exists_warning = "¿Eliminar imagen existente y continuar?"
+image_exists_confirm = "Confirmar eliminación y reconstrucción"
 
 [create]
 title = "Crear Búnker"
@@ -44,6 +48,8 @@ reselect = "Seleccionar de nuevo"
 previous_selection_title = "Selección Anterior Encontrada"
 previous_selection_desc = "Tienes una selección guardada. ¿Usarla o crear una nueva?"
 items_selected = "%d items seleccionados"
+data_all_title = "Selecciona Base de Datos"
+data_all_desc = "Elige una base de datos para tu entorno"
 
 [stop]
 title = "Detener Búnker"

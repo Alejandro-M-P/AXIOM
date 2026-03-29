@@ -67,60 +67,40 @@ func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPr
 // Build executes the complete build flow for creating a base image.
 // It integrates with the slot system to allow users to select which items to install.
 func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
-	// Check if slot selection exists
-	selections, err := m.slotManager.LoadSelection()
+	// Verificar si la imagen ya existe
+	exists, err := m.runtime.ImageExists(ctx, m.buildContainer)
 	if err != nil {
-		m.ui.ShowLog("warn", "Failed to load slot selection:", err.Error())
-		selections = []SlotSelection{}
+		m.ui.ShowLog("warn", "Failed to check image existence:", err.Error())
 	}
-
-	// If selections exist, ask user whether to use them or reselect
-	if len(selections) > 0 && m.hasValidSelection(selections) {
-		// Count total selected items
-		totalItems := 0
-		for _, sel := range selections {
-			totalItems += len(sel.Selected)
-		}
-
-		m.ui.ShowLogo()
-		m.ui.ShowCommandCard(
+	if exists {
+		confirm, err := m.ui.AskConfirmInCard(
 			"build",
 			[]ports.Field{
-				{Label: m.ui.GetText("slot_wizard.previous_selection_title"), Value: m.ui.GetText("slot_wizard.previous_selection_desc")},
-				{Label: m.ui.GetText("slot_wizard.items_selected", totalItems), Value: fmt.Sprintf("%d", totalItems)},
+				{Label: m.ui.GetText("build.image_exists_title"), Value: m.buildContainer},
+				{Label: m.ui.GetText("build.image_exists_warning"), Value: m.ui.GetText("build.image_exists_desc")},
 			},
 			nil,
+			"build.image_exists_confirm",
 		)
-
-		usePrevious, err := m.ui.AskConfirmInCard("build", []ports.Field{
-			{Label: m.ui.GetText("slot_wizard.previous_selection_title"), Value: m.ui.GetText("slot_wizard.previous_selection_desc")},
-			{Label: m.ui.GetText("slot_wizard.items_selected", totalItems), Value: fmt.Sprintf("%d", totalItems)},
-		}, nil, "slot_wizard.use_previous")
 		if err != nil {
 			return fmt.Errorf("failed to ask confirmation: %w", err)
 		}
+		if !confirm {
+			return fmt.Errorf("build cancelled: image exists")
+		}
+		// Eliminar imagen anterior
+		if err := m.runtime.RemoveImage(ctx, m.buildContainer, true); err != nil {
+			return fmt.Errorf("failed to remove existing image: %w", err)
+		}
+	}
 
-		if !usePrevious {
-			// User wants to reselect
-			m.ui.ShowLog("info", "Running slot selector...")
-			selections, err = m.runSlotSelectionUI()
-			if err != nil {
-				return fmt.Errorf("slot selection failed: %w", err)
-			}
-			if len(selections) == 0 {
-				return fmt.Errorf("build cancelled: no slot selection made")
-			}
-		}
-	} else {
-		// No selections exist, run the slot selector
-		m.ui.ShowLog("info", "No slot selection found. Running slot selector...")
-		selections, err = m.runSlotSelectionUI()
-		if err != nil {
-			return fmt.Errorf("slot selection failed: %w", err)
-		}
-		if len(selections) == 0 {
-			return fmt.Errorf("build cancelled: no slot selection made")
-		}
+	// Run the slot selector (no persistent selection storage)
+	selections, err := m.runSlotSelectionUI()
+	if err != nil {
+		return fmt.Errorf("slot selection failed: %w", err)
+	}
+	if len(selections) == 0 {
+		return fmt.Errorf("build cancelled: no slot selection made")
 	}
 
 	// Prepare build context
@@ -204,16 +184,6 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 	return nil
 }
 
-// hasValidSelection checks if there is at least one slot with selected items.
-func (m *Manager) hasValidSelection(selections []SlotSelection) bool {
-	for _, sel := range selections {
-		if len(sel.Selected) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
 // runSlotSelectionUI presents the slot selection UI to the user.
 func (m *Manager) runSlotSelectionUI() ([]SlotSelection, error) {
 	// For now, run DEV slot selection first
@@ -223,18 +193,8 @@ func (m *Manager) runSlotSelectionUI() ([]SlotSelection, error) {
 		return nil, fmt.Errorf("failed to get DEV slot items: %w", err)
 	}
 
-	// Get preselected items from config
-	var preselected []string
-	selections, _ := m.slotManager.LoadSelection()
-	for _, sel := range selections {
-		if sel.Slot == "dev" {
-			preselected = sel.Selected
-			break
-		}
-	}
-
-	// Run the slot selector
-	selectedIDs, confirmed, err := m.slotManager.RunSlotSelector("dev", items, preselected)
+	// Run the slot selector (no preselection from previous runs)
+	selectedIDs, confirmed, err := m.slotManager.RunSlotSelector("dev", items, nil)
 	if err != nil {
 		return nil, fmt.Errorf("slot selector failed: %w", err)
 	}

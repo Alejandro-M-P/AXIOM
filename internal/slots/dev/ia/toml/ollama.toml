@@ -1,6 +1,4 @@
 id = "ollama"
-name = "Ollama"
-description = "Ejecuta modelos LLM localmente (Llama, Mistral, etc.)"
 category = "dev"
 subcategory = "ia"
 dependencies = []

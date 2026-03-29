@@ -1,6 +1,4 @@
 id = "engram"
-name = "Engram"
-description = "Sistema de memoria persistente para agentes de IA"
 category = "dev"
 subcategory = "ia"
 dependencies = []

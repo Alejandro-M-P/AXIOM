@@ -6,6 +6,10 @@
 title = "Build Base Image"
 subtitle = "Generating a new immutable environment"
 footer = "Existing bunkers will NOT be affected."
+image_exists_title = "Existing Image"
+image_exists_desc = "An image '%s' already exists. It will be deleted and a new one created."
+image_exists_warning = "Delete existing image and continue?"
+image_exists_confirm = "Confirm deletion and rebuild"
 
 [create]
 title = "Create Bunker"
@@ -44,6 +48,8 @@ reselect = "Reselect items"
 previous_selection_title = "Previous Selection Found"
 previous_selection_desc = "You have a saved selection. Use it or create a new one?"
 items_selected = "%d items selected"
+data_all_title = "Select Database"
+data_all_desc = "Choose a database for your environment"
 
 [stop]
 title = "Stop Bunker"

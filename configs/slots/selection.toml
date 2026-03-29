@@ -1,3 +1,0 @@
-[[selection]]
-  slot = "dev"
-  selected = ["go", "starship", "engram", "gentle", "opencode"]

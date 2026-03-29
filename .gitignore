@@ -5,3 +5,5 @@ axiom
 .zencoder
 .zenflow
 sdd
+.local/
+.atl

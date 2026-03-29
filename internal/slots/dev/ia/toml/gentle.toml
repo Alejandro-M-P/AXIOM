@@ -1,6 +1,4 @@
 id = "gentle"
-name = "gentle-ai"
-description = "Framework de agentes AI con memoria persistente"
 category = "dev"
 subcategory = "ia"
 dependencies = []

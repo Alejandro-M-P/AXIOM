@@ -4,3 +4,7 @@ dependency_missing = "❌ Missing dependency: %s"
 image_not_found = "Image %s not found"
 [env]
 read = "Could not read .env: %w"
+
+[ui]
+no_tty = "No TTY available: run with --yes flag or set AXIOM_AUTO_CONFIRM=true"
+auto_confirm_enabled = "Auto-confirm mode enabled (no terminal)"
