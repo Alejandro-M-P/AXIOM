@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"axiom/internal/adapters/ui/styles"
+	"axiom/internal/adapters/ui/theme"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -123,6 +124,7 @@ func (m *SlotSelectorModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // View renders the slot selector.
 func (m *SlotSelectorModel) View() string {
 	var builder strings.Builder
+	t := theme.DefaultTheme()
 
 	// Header
 	builder.WriteString(styles.GetLogo())
@@ -130,7 +132,7 @@ func (m *SlotSelectorModel) View() string {
 
 	// Title
 	titleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#88c0d0")).
+		Foreground(t.Primary).
 		Bold(true).
 		Padding(0, 2)
 
@@ -143,7 +145,7 @@ func (m *SlotSelectorModel) View() string {
 	for _, group := range m.groups {
 		// Group header
 		groupHeaderStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#a3be8c")).
+			Foreground(t.Success).
 			Bold(true).
 			Padding(1, 0, 0, 0)
 		builder.WriteString(groupHeaderStyle.Render("━━━ " + group.title + " ━━━\n"))
@@ -151,20 +153,20 @@ func (m *SlotSelectorModel) View() string {
 		// Items in group
 		for _, item := range group.items {
 			checked := "[ ]"
-			checkboxStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4c566a"))
+			checkboxStyle := lipgloss.NewStyle().Foreground(t.Muted)
 
 			if m.selected[item.ID] {
 				checked = "[x]"
-				checkboxStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#88c0d0"))
+				checkboxStyle = lipgloss.NewStyle().Foreground(t.Primary)
 			}
 
 			cursorPrefix := "  "
 			cursorStyle := lipgloss.NewStyle()
 			if cursor == m.cursor {
 				cursorPrefix = "❯ "
-				cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#eceff4"))
+				cursorStyle = lipgloss.NewStyle().Foreground(t.Text)
 			} else {
-				cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4c566a"))
+				cursorStyle = lipgloss.NewStyle().Foreground(t.Muted)
 			}
 
 			// Item name with cursor
@@ -172,7 +174,7 @@ func (m *SlotSelectorModel) View() string {
 
 			// Description (dimmed, on same line)
 			descStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#4c566a")).
+				Foreground(t.Muted).
 				Italic(true)
 			builder.WriteString(itemName + " - " + descStyle.Render(item.Description) + "\n")
 
@@ -183,7 +185,7 @@ func (m *SlotSelectorModel) View() string {
 
 	// Footer
 	footerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#4c566a")).
+		Foreground(t.Muted).
 		Padding(1, 0, 0, 0)
 
 	builder.WriteString(footerStyle.Render("────────────────────────────────────────────────────\n"))
@@ -191,7 +193,7 @@ func (m *SlotSelectorModel) View() string {
 	// Selection summary
 	selectedCount := countSelected(m.selected, m.groups)
 	totalCount := countAllItems(m.groups)
-	summaryStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#a3be8c"))
+	summaryStyle := lipgloss.NewStyle().Foreground(t.Success)
 	builder.WriteString(summaryStyle.Render(fmt.Sprintf("Selected: %d/%d", selectedCount, totalCount)) + "    ")
 
 	builder.WriteString(footerStyle.Render("Space: toggle  │  Enter: confirm  │  Esc: cancel\n"))
@@ -262,7 +264,7 @@ func (m *SlotSelectorModel) IsCanceled() bool {
 // Returns the selected item IDs, whether the user confirmed (true) or cancelled (false), and any error.
 func RunSlotSelector(groups []ItemGroup) ([]string, bool, error) {
 	model := NewSlotSelectorModel(groups)
-	p := tea.NewProgram(model)
+	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	finalModel, err := p.Run()
 	if err != nil {
