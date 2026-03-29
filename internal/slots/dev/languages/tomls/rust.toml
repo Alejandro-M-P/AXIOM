@@ -1,0 +1,7 @@
+id = "rust"
+category = "dev"
+subcategory = "languages"
+dependencies = []
+
+[install]
+cmd = "pacman -S rust --noconfirm"

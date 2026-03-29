@@ -1,9 +1,0 @@
-id = "python"
-name = "Python"
-description = "Lenguaje de programación Python"
-category = "dev"
-subcategory = "languages"
-dependencies = []
-
-[install]
-cmd = "sudo pacman -S --noconfirm python"

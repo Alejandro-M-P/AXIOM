@@ -115,6 +115,11 @@ func (d *OSDetector) detectFromOSRelease() (OSType, string, error) {
 
 // isCommandAvailable checks if a command exists in the system PATH
 func (d *OSDetector) isCommandAvailable(name string) bool {
+	return d.IsCommandAvailable(name)
+}
+
+// IsCommandAvailable checks if a command exists in the system PATH (public version)
+func (d *OSDetector) IsCommandAvailable(name string) bool {
 	cmd := d.execCommand("which", name)
 	err := cmd.Run()
 	return err == nil

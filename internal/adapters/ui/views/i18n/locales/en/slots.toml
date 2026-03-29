@@ -53,3 +53,7 @@ description = "Embedded database"
 [empty]
 name = "Empty"
 description = "Minimal image without installations"
+
+[rust]
+name = "Rust"
+description = "Rust programming language"

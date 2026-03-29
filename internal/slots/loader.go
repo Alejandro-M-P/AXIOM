@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -17,6 +18,7 @@ type tomlSlot struct {
 	Category     string   `toml:"category"`
 	SubCategory  string   `toml:"subcategory"`
 	Dependencies []string `toml:"dependencies"`
+	IsBaseTool   bool     `toml:"is_base_tool"`
 	Install      struct {
 		Cmd   string   `toml:"cmd"`
 		Steps []string `toml:"steps"`
@@ -53,6 +55,7 @@ func LoadSlotsFromTOML(basePath string) ([]SlotItem, error) {
 			Category:     SlotCategory(slot.Category),
 			SubCategory:  slot.SubCategory,
 			Deps:         slot.Dependencies,
+			IsBaseTool:   slot.IsBaseTool,
 			InstallCmd:   slot.Install.Cmd,
 			InstallSteps: slot.Install.Steps,
 		}
@@ -78,36 +81,67 @@ func parseTOML(path string) (*tomlSlot, error) {
 }
 
 // LoadAndRegisterSlots loads slots from TOML files and registers them in the global registry.
-// It looks for TOML files in internal/slots/**/toml/*.toml patterns.
+// It scans the internal/slots directory for any subdirectory containing a "tomls" folder.
 func LoadAndRegisterSlots() error {
-	// Get the project root (assume we're in internal/slots)
-	basePath := "."
-
-	// Try to find TOML directories
-	tomlPaths := []string{
-		"internal/slots/dev/ia/toml",
-		"internal/slots/dev/languages/toml",
-		"internal/slots/dev/tools/toml",
-		"internal/slots/data/toml",
-		"internal/slots/sandbox/toml",
+	// Get AXIOM root from environment or use relative path
+	rootDir := os.Getenv("AXIOM_PATH")
+	if rootDir == "" {
+		// Try to find project root from current directory
+		rootDir = findProjectRoot()
 	}
 
-	for _, tomlPath := range tomlPaths {
-		fullPath := filepath.Join(basePath, tomlPath)
-		items, err := LoadSlotsFromTOML(fullPath)
+	basePath := filepath.Join(rootDir, "internal", "slots")
+
+	// Verify the base path exists
+	if _, err := os.Stat(basePath); os.IsNotExist(err) {
+		return fmt.Errorf("slots directory not found: %s", basePath)
+	}
+
+	// Walk through all subdirectories looking for "tomls" folders
+	err := filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			// Skip if directory doesn't exist
-			if os.IsNotExist(err) {
-				continue
-			}
-			return fmt.Errorf("failed to load slots from %s: %w", tomlPath, err)
+			return nil // Skip errors and continue
 		}
 
-		// Register each item
-		for i := range items {
-			RegisterItem(&items[i])
+		// Look for directories named "tomls"
+		if info.IsDir() && strings.HasSuffix(path, "tomls") {
+			items, err := LoadSlotsFromTOML(path)
+			if err != nil {
+				// Log warning but continue
+				fmt.Fprintf(os.Stderr, "Warning: failed to load slots from %s: %v\n", path, err)
+				return nil
+			}
+
+			// Register each item
+			for i := range items {
+				RegisterItem(&items[i])
+			}
 		}
+
+		return nil
+	})
+
+	return err
+}
+
+// findProjectRoot attempts to find the project root directory
+// by looking for go.mod or internal/slots directory
+func findProjectRoot() string {
+	// Try current directory
+	if _, err := os.Stat("go.mod"); err == nil {
+		return "."
 	}
 
-	return nil
+	// Try parent directory
+	if _, err := os.Stat("../go.mod"); err == nil {
+		return ".."
+	}
+
+	// Try internal/slots relative path
+	if _, err := os.Stat("internal/slots"); err == nil {
+		return "."
+	}
+
+	// Default to current directory
+	return "."
 }

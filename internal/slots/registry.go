@@ -10,6 +10,10 @@ type ISlotRegistry interface {
 	// Discover returns all available slot items across all categories.
 	Discover() []SlotItem
 
+	// DiscoverUserSelectable returns all slot items that should be shown in the UI wizard.
+	// This excludes base tools which are installed automatically.
+	DiscoverUserSelectable() []SlotItem
+
 	// GetByCategory returns all items belonging to the specified slot category.
 	GetByCategory(category SlotCategory) []SlotItem
 

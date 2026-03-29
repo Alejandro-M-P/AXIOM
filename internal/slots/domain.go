@@ -51,3 +51,15 @@ func (s *SlotItem) Dependencies() []string {
 func (s *SlotItem) GetCategory() SlotCategory {
 	return s.Category
 }
+
+// FilterBaseTools returns a new slice with base tools removed.
+// Use this to prepare items for the UI wizard.
+func FilterBaseTools(items []SlotItem) []SlotItem {
+	result := make([]SlotItem, 0, len(items))
+	for _, item := range items {
+		if !item.IsBaseTool {
+			result = append(result, item)
+		}
+	}
+	return result
+}

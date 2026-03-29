@@ -53,3 +53,7 @@ description = "Base de datos embebida"
 [empty]
 name = "Empty"
 description = "Imagen mínima sin instalaciones"
+
+[rust]
+name = "Rust"
+description = "Lenguaje de programación Rust"

@@ -104,6 +104,11 @@ func (b *BaseInstaller) IsToolInstalled(tool string) bool {
 	return err == nil
 }
 
+// IsCommandAvailable is an alias for IsToolInstalled for consistency with OSDetector
+func (b *BaseInstaller) IsCommandAvailable(tool string) bool {
+	return b.IsToolInstalled(tool)
+}
+
 // InstallBaseTools installs the base tools defined in the OS preferences
 // This should be called once at the beginning of the installation process
 func (b *BaseInstaller) InstallBaseTools(ctx context.Context) error {

@@ -1,9 +1,0 @@
-id = "redis"
-name = "Redis"
-description = "Base de datos en memoria, cache y message broker"
-category = "data"
-subcategory = "databases"
-dependencies = []
-
-[install]
-cmd = "sudo pacman -S --noconfirm redis"

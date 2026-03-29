@@ -1,0 +1,9 @@
+id = "empty"
+name = "Empty"
+description = "Imagen mínima sin instalaciones adicionales"
+category = "sandbox"
+subcategory = ""
+dependencies = []
+
+[install]
+cmd = "echo 'No install needed'"

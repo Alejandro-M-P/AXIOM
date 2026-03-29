@@ -1,0 +1,9 @@
+id = "starship"
+name = "Starship"
+description = "Prompt minimalista para cualquier shell"
+category = "dev"
+subcategory = "tools"
+dependencies = []
+
+[install]
+cmd = "curl -sS https://starship.rs/install.sh | sh"

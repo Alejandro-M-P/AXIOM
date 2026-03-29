@@ -44,6 +44,11 @@ func main() {
 	// Create managers via DI
 	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter)
 
+	// Load slots from TOML files (in addition to init() registered slots)
+	if err := slots.LoadAndRegisterSlots(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to load slots from TOML: %v\n", err)
+	}
+
 	// Create slot manager with registry and engine
 	slotRegistry := slots.GetRegistry()
 	slotEngine := slots.NewInstallerEngine(slotRegistry)
