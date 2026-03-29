@@ -1,0 +1,9 @@
+id = "empty"
+name = "Empty"
+description = "Slot vacío para pruebas"
+category = "sandbox"
+subcategory = "test"
+dependencies = []
+
+[install]
+cmd = "echo 'No install needed'"

@@ -27,7 +27,7 @@ func init() {
 		ID:          "empty",
 		Name:        "Empty",
 		Description: "Imagen mínima sin instalaciones adicionales",
-		Category:    slots.SlotCategory(domain.SlotSANDBOX),
+		Category:    slots.SlotSANDBOX,
 		SubCategory: "",
 		Deps:        []string{},
 	})

@@ -26,7 +26,7 @@ func init() {
 		ID:          "starship",
 		Name:        "Starship",
 		Description: "Prompt minimalista para cualquier shell",
-		Category:    slots.SlotCategory(domain.SlotDEV),
+		Category:    slots.SlotDEV,
 		SubCategory: "tools",
 		Deps:        []string{},
 	})

@@ -90,6 +90,11 @@ func NewModel(axiomPath string, envExists bool, lang string) Model {
 
 func (m Model) Init() tea.Cmd { return textinput.Blink }
 
+// Step devuelve el paso actual del wizard (usado para verificar estado final)
+func (m Model) Step() Step {
+	return m.step
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:

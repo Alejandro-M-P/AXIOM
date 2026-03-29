@@ -56,7 +56,7 @@ func main() {
 	buildManager := build.NewManager(runtimeAdapter, fsAdapter, uiAdapter, "axiom-build", buildSlotAdapter)
 
 	// Create router with all managers and dispatch
-	router := NewRouter(bunkerManager, buildManager, slotManager)
+	router := NewRouter(bunkerManager, buildManager, slotManager, rootDir, fsAdapter)
 	if err := router.Handle(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

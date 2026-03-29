@@ -27,7 +27,7 @@ func init() {
 		ID:          "mongodb",
 		Name:        "MongoDB",
 		Description: "Base de datos NoSQL orientada a documentos",
-		Category:    slots.SlotCategory(domain.SlotDATA),
+		Category:    slots.SlotDATA,
 		SubCategory: "databases",
 		Deps:        []string{},
 	})

@@ -3,6 +3,7 @@ package slots
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"axiom/internal/adapters/ui/theme"
@@ -16,43 +17,60 @@ import (
 type WizardPhase int
 
 const (
-	PhaseSlotSelect     WizardPhase = iota // User picks DEV/DATA/SANDBOX
-	PhaseCategoryWizard                    // Step through categories
-	PhaseSummary                           // Final summary
+	PhaseSlotSelect WizardPhase = iota // User picks DEV/DATA/SANDBOX
+	PhaseItemWizard                    // Step through items one category at a time
+	PhaseSummary                       // Final summary
+)
+
+// ItemWizardPhase represents the current step within the item wizard.
+type ItemWizardPhase int
+
+const (
+	ItemPhaseNone ItemWizardPhase = iota
+	// For DEV slot
+	ItemPhaseAI
+	ItemPhaseLanguages
+	ItemPhaseTools
+	// For DATA slot
+	ItemPhasePostgres
+	ItemPhaseMySQL
+	ItemPhaseMongoDB
+	ItemPhaseRedis
+	ItemPhaseSQLite
 )
 
 // WizardModel is the Bubbletea model for wizard-style slot selection.
 type WizardModel struct {
-	presenter     ports.IPresenter
-	phase         WizardPhase
-	selectedSlot  string // "dev", "data", "sandbox"
-	categoryIndex int    // Which subcategory we're on
-	categories    []string
-	accumulated   map[string]bool // Selected item IDs across all steps
-	itemGroups    []ItemGroup     // Groups of items for current slot
-	slotCursor    int             // Cursor for slot selection
-	itemCursor    int             // Cursor for item selection within category
-	width         int
-	height        int
-	done          bool
-	canceled      bool
-	allItems      []slots.SlotItem // All items passed to the wizard (stored for filtering)
+	presenter      ports.IPresenter
+	phase          WizardPhase
+	selectedSlot   string            // "dev", "data", "sandbox"
+	itemPhase      ItemWizardPhase   // Current step within PhaseItemWizard
+	itemPhaseOrder []ItemWizardPhase // Ordered list of phases for current slot
+	accumulated    map[string]bool   // Selected item IDs across all steps
+	currentItems   []SlotItemDisplay // Items for the current step
+	slotCursor     int               // Cursor for slot selection
+	itemCursor     int               // Cursor for item selection within category
+	width          int
+	height         int
+	done           bool
+	canceled       bool
+	allItems       []slots.SlotItem // All items passed to the wizard (stored for filtering)
 }
 
 // NewWizardModel creates a new wizard model.
 func NewWizardModel(pres ports.IPresenter) *WizardModel {
 	return &WizardModel{
-		presenter:     pres,
-		phase:         PhaseSlotSelect,
-		selectedSlot:  "",
-		categoryIndex: 0,
-		categories:    []string{"ia", "languages", "tools", "data"},
-		accumulated:   make(map[string]bool),
-		itemGroups:    nil,
-		slotCursor:    0,
-		itemCursor:    0,
-		done:          false,
-		canceled:      false,
+		presenter:      pres,
+		phase:          PhaseSlotSelect,
+		selectedSlot:   "",
+		itemPhase:      ItemPhaseNone,
+		itemPhaseOrder: nil,
+		accumulated:    make(map[string]bool),
+		currentItems:   nil,
+		slotCursor:     0,
+		itemCursor:     0,
+		done:           false,
+		canceled:       false,
 	}
 }
 
@@ -79,8 +97,8 @@ func (m *WizardModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch m.phase {
 	case PhaseSlotSelect:
 		return m.handleSlotSelectKey(msg)
-	case PhaseCategoryWizard:
-		return m.handleCategoryWizardKey(msg)
+	case PhaseItemWizard:
+		return m.handleItemWizardKey(msg)
 	case PhaseSummary:
 		return m.handleSummaryKey(msg)
 	}
@@ -98,12 +116,14 @@ func (m *WizardModel) handleSlotSelectKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyEnter:
 		m.selectedSlot = slots[m.slotCursor]
-		m.loadItemsForSlot()
-		// If no categories (e.g., SANDBOX slot), skip to summary
-		if len(m.categories) == 0 {
+		m.setupItemWizard()
+		// If no phases (e.g., SANDBOX slot), skip to summary
+		if len(m.itemPhaseOrder) == 0 {
 			m.phase = PhaseSummary
 		} else {
-			m.phase = PhaseCategoryWizard
+			m.phase = PhaseItemWizard
+			m.itemPhase = m.itemPhaseOrder[0]
+			m.loadCurrentPhaseItems()
 			m.itemCursor = 0
 		}
 		return m, nil
@@ -123,34 +143,44 @@ func (m *WizardModel) handleSlotSelectKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleCategoryWizardKey handles keys in the category wizard phase.
-func (m *WizardModel) handleCategoryWizardKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	currentGroup := m.getCurrentGroup()
-	if currentGroup == nil {
-		return m, nil
-	}
-	totalItems := len(currentGroup.items)
+// handleItemWizardKey handles keys in the item wizard phase.
+func (m *WizardModel) handleItemWizardKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	totalItems := len(m.currentItems)
 
 	switch msg.Type {
 	case tea.KeyEsc:
-		m.canceled = true
-		return m, tea.Quit
-
-	case tea.KeyEnter:
-		if m.categoryIndex < len(m.categories)-1 {
-			m.categoryIndex++
+		// Go back to previous step or slot selection
+		currentIndex := m.getCurrentPhaseIndex()
+		if currentIndex > 0 {
+			// Go back to previous phase
+			m.itemPhase = m.itemPhaseOrder[currentIndex-1]
+			m.loadCurrentPhaseItems()
 			m.itemCursor = 0
 		} else {
+			// Go back to slot selection
+			m.phase = PhaseSlotSelect
+			m.itemPhase = ItemPhaseNone
+			m.itemPhaseOrder = nil
+			m.currentItems = nil
+		}
+		return m, nil
+
+	case tea.KeyEnter:
+		currentIndex := m.getCurrentPhaseIndex()
+		if currentIndex < len(m.itemPhaseOrder)-1 {
+			// Go to next phase
+			m.itemPhase = m.itemPhaseOrder[currentIndex+1]
+			m.loadCurrentPhaseItems()
+			m.itemCursor = 0
+		} else {
+			// Go to summary
 			m.phase = PhaseSummary
 		}
 		return m, nil
 
 	case tea.KeySpace:
-		itemID := ""
-		if currentGroup != nil && m.itemCursor < len(currentGroup.items) {
-			itemID = currentGroup.items[m.itemCursor].ID
-		}
-		if itemID != "" {
+		if m.itemCursor < totalItems {
+			itemID := m.currentItems[m.itemCursor].ID
 			m.accumulated[itemID] = !m.accumulated[itemID]
 		}
 		return m, nil
@@ -168,7 +198,9 @@ func (m *WizardModel) handleCategoryWizardKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 		return m, nil
 
 	case tea.KeyEnd:
-		m.itemCursor = totalItems - 1
+		if totalItems > 0 {
+			m.itemCursor = totalItems - 1
+		}
 		return m, nil
 
 	case tea.KeyHome:
@@ -176,6 +208,16 @@ func (m *WizardModel) handleCategoryWizardKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 		return m, nil
 	}
 	return m, nil
+}
+
+// getCurrentPhaseIndex returns the index of the current phase in itemPhaseOrder.
+func (m *WizardModel) getCurrentPhaseIndex() int {
+	for i, phase := range m.itemPhaseOrder {
+		if phase == m.itemPhase {
+			return i
+		}
+	}
+	return -1
 }
 
 // handleSummaryKey handles keys in the summary phase.
@@ -192,68 +234,72 @@ func (m *WizardModel) handleSummaryKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// loadItemsForSlot loads the items for the selected slot into itemGroups.
-func (m *WizardModel) loadItemsForSlot() {
-	// Filter categories based on selected slot
+// setupItemWizard configures the item wizard phases based on selected slot.
+func (m *WizardModel) setupItemWizard() {
 	switch m.selectedSlot {
 	case "dev":
-		m.categories = []string{"ia", "languages", "tools"}
-	case "data":
-		m.categories = []string{"data"}
-	case "sandbox":
-		m.categories = []string{}
-	default:
-		m.categories = []string{"ia", "languages", "tools", "data"}
-	}
-
-	// Filter items by category matching the selected slot
-	var filteredItems []slots.SlotItem
-	for _, item := range m.allItems {
-		if string(item.Category) == m.selectedSlot {
-			filteredItems = append(filteredItems, item)
+		m.itemPhaseOrder = []ItemWizardPhase{
+			ItemPhaseAI,
+			ItemPhaseLanguages,
+			ItemPhaseTools,
 		}
+	case "data":
+		m.itemPhaseOrder = []ItemWizardPhase{
+			ItemPhasePostgres,
+			ItemPhaseMySQL,
+			ItemPhaseMongoDB,
+			ItemPhaseRedis,
+			ItemPhaseSQLite,
+		}
+	case "sandbox":
+		m.itemPhaseOrder = []ItemWizardPhase{}
 	}
+}
 
-	// Group filtered items by subcategory
-	groupMap := make(map[string][]SlotItemDisplay)
-	for _, item := range filteredItems {
-		groupMap[item.SubCategory] = append(groupMap[item.SubCategory], SlotItemDisplay{
+// loadCurrentPhaseItems loads items for the current item phase.
+func (m *WizardModel) loadCurrentPhaseItems() {
+	m.currentItems = nil
+
+	for _, item := range m.allItems {
+		if !m.matchesCurrentPhase(item) {
+			continue
+		}
+
+		m.currentItems = append(m.currentItems, SlotItemDisplay{
 			ID:          item.ID,
 			Name:        item.Name,
 			Description: item.Description,
 		})
 	}
-
-	// Build ordered groups based on filtered categories
-	var groups []ItemGroup
-	for _, subcat := range m.categories {
-		if items, ok := groupMap[subcat]; ok {
-			groups = append(groups, ItemGroup{
-				title: m.getSubcategoryTitle(subcat),
-				items: items,
-			})
-		}
-	}
-
-	// Add remaining categories not in predefined order (if any)
-	for subcat, items := range groupMap {
-		if !contains(m.categories, subcat) {
-			groups = append(groups, ItemGroup{
-				title: m.getSubcategoryTitle(subcat),
-				items: items,
-			})
-		}
-	}
-
-	m.itemGroups = groups
 }
 
-// getCurrentGroup returns the current ItemGroup based on categoryIndex.
-func (m *WizardModel) getCurrentGroup() *ItemGroup {
-	if m.categoryIndex >= 0 && m.categoryIndex < len(m.itemGroups) {
-		return &m.itemGroups[m.categoryIndex]
+// matchesCurrentPhase checks if an item matches the current wizard phase.
+func (m *WizardModel) matchesCurrentPhase(item slots.SlotItem) bool {
+	// First check if item belongs to the selected slot
+	if string(item.Category) != m.selectedSlot {
+		return false
 	}
-	return nil
+
+	switch m.itemPhase {
+	case ItemPhaseAI:
+		return item.SubCategory == "ia"
+	case ItemPhaseLanguages:
+		return item.SubCategory == "languages"
+	case ItemPhaseTools:
+		return item.SubCategory == "tools"
+	case ItemPhasePostgres:
+		return item.ID == "postgres"
+	case ItemPhaseMySQL:
+		return item.ID == "mysql"
+	case ItemPhaseMongoDB:
+		return item.ID == "mongodb"
+	case ItemPhaseRedis:
+		return item.ID == "redis"
+	case ItemPhaseSQLite:
+		return item.ID == "sqlite"
+	}
+
+	return false
 }
 
 // View renders the wizard based on the current phase.
@@ -261,8 +307,8 @@ func (m *WizardModel) View() string {
 	switch m.phase {
 	case PhaseSlotSelect:
 		return m.viewSlotSelect()
-	case PhaseCategoryWizard:
-		return m.viewCategoryWizard()
+	case PhaseItemWizard:
+		return m.viewItemWizard()
 	case PhaseSummary:
 		return m.viewSummary()
 	}
@@ -361,20 +407,18 @@ func (m *WizardModel) viewSlotSelect() string {
 	return boxStyle.Render(content.String())
 }
 
-// viewCategoryWizard renders the category wizard step view.
-func (m *WizardModel) viewCategoryWizard() string {
+// viewItemWizard renders the item wizard step view (one category at a time).
+func (m *WizardModel) viewItemWizard() string {
 	// Use theme
 	t := theme.DefaultTheme()
 
-	// Get current category for header subtitle
-	currentGroup := m.getCurrentGroup()
-	categoryName := ""
-	if currentGroup != nil {
-		categoryName = currentGroup.title
-	}
+	// Get current phase title and step info
+	phaseTitle := m.getPhaseTitle()
+	currentStep := m.getCurrentPhaseIndex() + 1
+	totalSteps := len(m.itemPhaseOrder)
 
-	// Create header for category wizard phase
-	header := theme.NewHeader(t, "Select Items", categoryName, "↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel")
+	// Create header for item wizard phase
+	header := theme.NewHeader(t, "Select Items", phaseTitle, "Space: Toggle | Enter: Next | Esc: Back")
 
 	// Define colors from theme
 	accentColor := t.Primary
@@ -413,59 +457,58 @@ func (m *WizardModel) viewCategoryWizard() string {
 	content.WriteString("\n")
 
 	// Step indicator as title
-	stepIndicator := m.presenter.GetText("slot_wizard.step_indicator", m.categoryIndex+1, len(m.categories))
-	content.WriteString(titleStyle.Render(stepIndicator))
+	stepText := fmt.Sprintf("Step %d of %d", currentStep, totalSteps)
+	content.WriteString(titleStyle.Render(stepText))
 	content.WriteString("\n\n")
 
-	currentGroup = m.getCurrentGroup()
-	if currentGroup != nil {
-		// Group header
-		content.WriteString(headerStyle.Render(currentGroup.title))
-		content.WriteString("\n\n")
+	// Category header
+	content.WriteString(headerStyle.Render(phaseTitle))
+	content.WriteString("\n\n")
 
-		// Items list
-		for i, item := range currentGroup.items {
-			checked := "[ ]"
-			checkboxFg := mutedColor
+	// Items list
+	for i, item := range m.currentItems {
+		checked := "[ ]"
+		checkboxFg := mutedColor
 
-			if m.accumulated[item.ID] {
-				checked = "[x]"
-				checkboxFg = selectedColor
-			}
-
-			var lineStyle lipgloss.Style
-			var lineText string
-
-			if i == m.itemCursor {
-				// Selected item: cursor prefix INSIDE the styled render
-				checkboxStyle := lipgloss.NewStyle().Foreground(checkboxFg)
-				itemStyle := lipgloss.NewStyle().Foreground(textColor)
-				lineStyle = lipgloss.NewStyle().
-					Foreground(selectedColor).
-					Bold(true).
-					Width(contentWidth)
-				lineText = "❯ " + checkboxStyle.Render(checked) + " " + itemStyle.Render(item.Name) + " - " + item.Description
-			} else {
-				// Unselected item
-				checkboxStyle := lipgloss.NewStyle().Foreground(checkboxFg)
-				itemStyle := lipgloss.NewStyle().Foreground(mutedColor)
-				lineStyle = lipgloss.NewStyle().
-					Foreground(mutedColor).
-					Width(contentWidth)
-				lineText = "  " + checkboxStyle.Render(checked) + " " + itemStyle.Render(item.Name) + " - " + item.Description
-			}
-
-			content.WriteString(lineStyle.Render(lineText))
-			content.WriteString("\n")
+		if m.accumulated[item.ID] {
+			checked = "[x]"
+			checkboxFg = selectedColor
 		}
 
+		var lineStyle lipgloss.Style
+		var lineText string
+
+		if i == m.itemCursor {
+			// Selected item: cursor prefix INSIDE the styled render
+			checkboxStyle := lipgloss.NewStyle().Foreground(checkboxFg)
+			itemStyle := lipgloss.NewStyle().Foreground(textColor)
+			lineStyle = lipgloss.NewStyle().
+				Foreground(selectedColor).
+				Bold(true).
+				Width(contentWidth)
+			lineText = "❯ " + checkboxStyle.Render(checked) + " " + itemStyle.Render(item.Name) + " - " + item.Description
+		} else {
+			// Unselected item
+			checkboxStyle := lipgloss.NewStyle().Foreground(checkboxFg)
+			itemStyle := lipgloss.NewStyle().Foreground(mutedColor)
+			lineStyle = lipgloss.NewStyle().
+				Foreground(mutedColor).
+				Width(contentWidth)
+			lineText = "  " + checkboxStyle.Render(checked) + " " + itemStyle.Render(item.Name) + " - " + item.Description
+		}
+
+		content.WriteString(lineStyle.Render(lineText))
+		content.WriteString("\n")
+	}
+
+	if len(m.currentItems) > 0 {
 		content.WriteString("\n")
 
 		// Selected count
 		selectedCount := m.countCurrentSelections()
-		totalCount := len(currentGroup.items)
+		totalCount := len(m.currentItems)
 		countStyle := lipgloss.NewStyle().Foreground(greenColor)
-		countText := m.presenter.GetText("slot_wizard.selected_count", selectedCount, totalCount)
+		countText := fmt.Sprintf("Selected: %d/%d", selectedCount, totalCount)
 		content.WriteString(countStyle.Render(countText))
 		content.WriteString("\n")
 	}
@@ -474,6 +517,29 @@ func (m *WizardModel) viewCategoryWizard() string {
 	content.WriteString(helpStyle.Render(m.presenter.GetText("slot_wizard.help_category")))
 
 	return boxStyle.Render(content.String())
+}
+
+// getPhaseTitle returns the display title for the current item phase.
+func (m *WizardModel) getPhaseTitle() string {
+	switch m.itemPhase {
+	case ItemPhaseAI:
+		return m.presenter.GetText("slot_wizard.step_ai")
+	case ItemPhaseLanguages:
+		return m.presenter.GetText("slot_wizard.step_languages")
+	case ItemPhaseTools:
+		return m.presenter.GetText("slot_wizard.step_tools")
+	case ItemPhasePostgres:
+		return "PostgreSQL"
+	case ItemPhaseMySQL:
+		return "MySQL"
+	case ItemPhaseMongoDB:
+		return "MongoDB"
+	case ItemPhaseRedis:
+		return "Redis"
+	case ItemPhaseSQLite:
+		return "SQLite"
+	}
+	return ""
 }
 
 // viewSummary renders the final summary view.
@@ -540,26 +606,13 @@ func (m *WizardModel) viewSummary() string {
 	content.WriteString(slotLine)
 	content.WriteString("\n\n")
 
-	// Group selections by category
-	for _, group := range m.itemGroups {
-		hasSelected := false
-		for _, item := range group.items {
-			if m.accumulated[item.ID] {
-				hasSelected = true
-				break
-			}
-		}
-
-		if !hasSelected {
-			continue
-		}
-
-		// Group header
-		content.WriteString(headerStyle.Render(group.title))
+	// Show all selected items
+	if m.countTotalSelections() > 0 {
+		content.WriteString(headerStyle.Render(m.presenter.GetText("slot_wizard.selected_items")))
 		content.WriteString("\n")
 
-		// Selected items - cursor/check prefix INSIDE styled render
-		for _, item := range group.items {
+		// Selected items
+		for _, item := range m.allItems {
 			if m.accumulated[item.ID] {
 				lineStyle := lipgloss.NewStyle().
 					Foreground(textColor).
@@ -586,12 +639,8 @@ func (m *WizardModel) viewSummary() string {
 
 // countCurrentSelections counts selected items in the current category.
 func (m *WizardModel) countCurrentSelections() int {
-	currentGroup := m.getCurrentGroup()
-	if currentGroup == nil {
-		return 0
-	}
 	count := 0
-	for _, item := range currentGroup.items {
+	for _, item := range m.currentItems {
 		if m.accumulated[item.ID] {
 			count++
 		}
@@ -655,7 +704,11 @@ func RunWizard(items []slots.SlotItem, pres ports.IPresenter) ([]string, bool, e
 	// Store all items for later filtering when slot is selected
 	model.allItems = items
 
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	p := tea.NewProgram(model,
+		tea.WithAltScreen(),
+		tea.WithInput(os.Stdin),
+		tea.WithOutput(os.Stdout),
+	)
 
 	finalModel, err := p.Run()
 	if err != nil {

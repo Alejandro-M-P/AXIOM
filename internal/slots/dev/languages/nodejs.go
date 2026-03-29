@@ -26,7 +26,7 @@ func init() {
 		ID:          "nodejs",
 		Name:        "Node.js",
 		Description: "Runtime de JavaScript con npm",
-		Category:    slots.SlotCategory(domain.SlotDEV),
+		Category:    slots.SlotDEV,
 		SubCategory: "languages",
 		Deps:        []string{},
 	})

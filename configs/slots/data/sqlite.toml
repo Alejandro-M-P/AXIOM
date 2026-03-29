@@ -1,0 +1,9 @@
+id = "sqlite"
+name = "SQLite"
+description = "Base de datos embebida, sin servidor"
+category = "data"
+subcategory = "databases"
+dependencies = []
+
+[install]
+cmd = "sudo pacman -S --noconfirm sqlite"

@@ -27,7 +27,7 @@ func init() {
 		ID:          "sqlite",
 		Name:        "SQLite",
 		Description: "Base de datos embebida, sin servidor",
-		Category:    slots.SlotCategory(domain.SlotDATA),
+		Category:    slots.SlotDATA,
 		SubCategory: "databases",
 		Deps:        []string{},
 	})

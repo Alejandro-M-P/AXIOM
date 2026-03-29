@@ -5,11 +5,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
+	ui "axiom/internal/adapters/ui/views"
 	"axiom/internal/domain"
 	"axiom/internal/ports"
 	"axiom/internal/slots"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // Command constants.
@@ -65,17 +70,21 @@ type SlotManagerInterface interface {
 
 // Router dispatches CLI commands to appropriate managers.
 type Router struct {
-	bm  BunkerManagerInterface
-	bld BuildManagerInterface
-	slm SlotManagerInterface
+	bm        BunkerManagerInterface
+	bld       BuildManagerInterface
+	slm       SlotManagerInterface
+	axiomPath string
+	fs        ports.IFileSystem
 }
 
 // NewRouter creates a new Router with all managers.
-func NewRouter(bm BunkerManagerInterface, bld BuildManagerInterface, slm SlotManagerInterface) *Router {
+func NewRouter(bm BunkerManagerInterface, bld BuildManagerInterface, slm SlotManagerInterface, axiomPath string, fs ports.IFileSystem) *Router {
 	return &Router{
-		bm:  bm,
-		bld: bld,
-		slm: slm,
+		bm:        bm,
+		bld:       bld,
+		slm:       slm,
+		axiomPath: axiomPath,
+		fs:        fs,
 	}
 }
 
@@ -178,8 +187,7 @@ func (r *Router) Handle(args []string) error {
 		r.bm.GetUI().ShowLog("reset.not_implemented")
 		return nil
 	case CmdInit:
-		r.bm.GetUI().ShowLog("system.init_not_implemented")
-		return nil
+		return r.handleInit()
 	case CmdSlots:
 		items := r.slm.DiscoverSlots()
 		r.bm.GetUI().ShowLog("slots.discovered", len(items))
@@ -283,4 +291,42 @@ func resolveImageName(input string, available []string) string {
 	}
 
 	return ""
+}
+
+// handleInit ejecuta el wizard de inicialización TUI
+func (r *Router) handleInit() error {
+	// Verificar si existe archivo .env
+	envPath := filepath.Join(r.axiomPath, ".env")
+	envExists := r.fs.Exists(envPath)
+
+	// Determinar idioma desde LANG o default "es"
+	lang := os.Getenv("LANG")
+	if lang == "" {
+		lang = "es"
+	} else {
+		// Extraer código de idioma base (ej: "en_US.UTF-8" -> "en")
+		lang = strings.Split(lang, "_")[0]
+		lang = strings.Split(lang, ".")[0]
+		if lang != "en" && lang != "es" {
+			lang = "es"
+		}
+	}
+
+	// Ejecutar el wizard TUI
+	model := ui.NewModel(r.axiomPath, envExists, lang)
+	p := tea.NewProgram(model, tea.WithAltScreen())
+	finalModel, err := p.Run()
+	if err != nil {
+		return fmt.Errorf("init wizard failed: %w", err)
+	}
+
+	// Verificar si el wizard completó exitosamente
+	// Si el step es StepFinalizing, el usuario guardó la configuración
+	// Si es cualquier otro step, el usuario canceló
+	resultModel := finalModel.(ui.Model)
+	if resultModel.Step() != ui.StepFinalizing {
+		return errors.New("init cancelled by user")
+	}
+
+	return nil
 }

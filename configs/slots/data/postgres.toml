@@ -1,0 +1,9 @@
+id = "postgres"
+name = "PostgreSQL"
+description = "Sistema de base de datos relacional"
+category = "data"
+subcategory = "databases"
+dependencies = []
+
+[install]
+cmd = "sudo pacman -S --noconfirm postgresql"

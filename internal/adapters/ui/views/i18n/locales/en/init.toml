@@ -2,56 +2,56 @@
 title = "AXIOM Initialization"
 subtitle = "Configure your development environment"
 
-[init.language]
+[init_language]
 title = "LANGUAGE / IDIOMA"
 description = "Select your language / Selecciona tu idioma:"
 option_en = "English"
 option_es = "Español"
 
-[init.confirm]
+[init_confirm]
 title = "WARNING"
 description = "Overwrite existing .env file?"
 option_yes = "YES, CONTINUE"
 option_no = "NO, EXIT"
 
-[init.github_user]
+[init_github_user]
 title = "GITHUB USER"
 description = "Enter your username:"
 placeholder = "ex: user"
 
-[init.github_email]
+[init_github_email]
 title = "GITHUB EMAIL"
 description = "Enter your email:"
 placeholder = "ex: user@example.com"
 
-[init.auth_mode]
+[init_auth_mode]
 title = "AUTHENTICATION"
 description = "Select connection type:"
 option_ssh = "SSH (Recommended)"
 option_https = "HTTPS (Token)"
 
-[init.github_token]
+[init_github_token]
 title = "GITHUB TOKEN"
 description = "Paste your PAT token:"
 placeholder = "Required for HTTPS"
 
-[init.base_dir]
+[init_base_dir]
 title = "BASE DIRECTORY"
 description = "Root path:"
 placeholder = "Enter for: "
 
-[init.models_dir]
+[init_models_dir]
 title = "OLLAMA MODELS"
 description = "Models location?"
 
-[init.gpu]
+[init_gpu]
 title = "GPU HARDWARE"
 detected = "Detected: "
 suggested = "Suggested: "
 not_required = "GFX not required"
 placeholder = "(Enter to confirm)"
 
-[init.rocm_mode]
+[init_rocm_mode]
 title = "GPU DRIVERS"
 description = "Driver management:"
 option_host = "Host (Lightweight)"
@@ -59,7 +59,7 @@ option_image = "Image (Isolated)"
 recommended_amd = "Host (Recommended AMD/Intel)"
 recommended_nvidia = "Image (Recommended NVIDIA)"
 
-[init.review]
+[init_review]
 title = "FINAL REVIEW"
 description = "Review the data. Press Enter on a field to edit it."
 help = "Use Up/Down arrows to navigate."
@@ -75,11 +75,11 @@ empty = "(empty)"
 not_required = "Not required"
 na = "N/A"
 
-[init.buttons]
+[init_buttons]
 save = "SAVE AND CREATE"
 cancel = "CANCEL"
 
-[init.success]
+[init_success]
 message = "🛡️ AXIOM: Bunker configured successfully!"
 next_step = "🚀 Next step: Run"
 press_enter = "(Press Enter to exit)"

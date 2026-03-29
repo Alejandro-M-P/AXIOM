@@ -26,7 +26,7 @@ func init() {
 		ID:          "go",
 		Name:        "Go",
 		Description: "Lenguaje de programación Go",
-		Category:    slots.SlotCategory(domain.SlotDEV),
+		Category:    slots.SlotDEV,
 		SubCategory: "languages",
 		Deps:        []string{},
 	})

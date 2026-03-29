@@ -27,7 +27,7 @@ func init() {
 		ID:          "mysql",
 		Name:        "MySQL",
 		Description: "Sistema de base de datos relacional open source",
-		Category:    slots.SlotCategory(domain.SlotDATA),
+		Category:    slots.SlotDATA,
 		SubCategory: "databases",
 		Deps:        []string{},
 	})

@@ -27,7 +27,7 @@ func init() {
 		ID:          "postgres",
 		Name:        "PostgreSQL",
 		Description: "Sistema de base de datos relacional",
-		Category:    slots.SlotCategory(domain.SlotDATA),
+		Category:    slots.SlotDATA,
 		SubCategory: "databases",
 		Deps:        []string{},
 	})

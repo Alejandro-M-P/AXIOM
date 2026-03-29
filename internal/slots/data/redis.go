@@ -27,7 +27,7 @@ func init() {
 		ID:          "redis",
 		Name:        "Redis",
 		Description: "Base de datos en memoria, cache y message broker",
-		Category:    slots.SlotCategory(domain.SlotDATA),
+		Category:    slots.SlotDATA,
 		SubCategory: "databases",
 		Deps:        []string{},
 	})

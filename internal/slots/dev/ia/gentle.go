@@ -29,7 +29,7 @@ func init() {
 		ID:          "gentle",
 		Name:        "gentle-ai",
 		Description: "Framework de agentes AI con memoria persistente",
-		Category:    slots.SlotCategory(domain.SlotDEV),
+		Category:    slots.SlotDEV,
 		SubCategory: "ia",
 		Deps:        []string{},
 	})

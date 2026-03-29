@@ -29,7 +29,7 @@ func init() {
 		ID:          "engram",
 		Name:        "Engram",
 		Description: "Sistema de memoria persistente para agentes de IA",
-		Category:    slots.SlotCategory(domain.SlotDEV),
+		Category:    slots.SlotDEV,
 		SubCategory: "ia",
 		Deps:        []string{},
 	})

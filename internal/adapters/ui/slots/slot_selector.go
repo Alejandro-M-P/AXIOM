@@ -3,6 +3,7 @@ package slots
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"axiom/internal/adapters/ui/theme"
@@ -254,7 +255,11 @@ func (m *SlotSelectorModel) IsCanceled() bool {
 // Returns the selected item IDs, whether the user confirmed (true) or cancelled (false), and any error.
 func RunSlotSelector(groups []ItemGroup) ([]string, bool, error) {
 	model := NewSlotSelectorModel(groups)
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	p := tea.NewProgram(model,
+		tea.WithAltScreen(),
+		tea.WithInput(os.Stdin),
+		tea.WithOutput(os.Stdout),
+	)
 
 	finalModel, err := p.Run()
 	if err != nil {

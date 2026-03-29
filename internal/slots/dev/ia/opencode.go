@@ -26,7 +26,7 @@ func init() {
 		ID:          "opencode",
 		Name:        "opencode-ai",
 		Description: "Asistente de código AI basado en LLMs locales",
-		Category:    slots.SlotCategory(domain.SlotDEV),
+		Category:    slots.SlotDEV,
 		SubCategory: "ia",
 		Deps:        []string{},
 	})
