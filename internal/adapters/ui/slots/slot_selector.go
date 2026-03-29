@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"axiom/internal/adapters/ui"
+	"axiom/internal/adapters/ui/components"
 	"axiom/internal/adapters/ui/theme"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -30,14 +32,14 @@ type SelectedSlots struct {
 }
 
 // SlotSelectorModel is the Bubbletea model for slot item selection.
+// Embeds BaseModel for window size handling.
 type SlotSelectorModel struct {
+	ui.BaseModel   // Embed BaseModel for Width/Height from WindowSizeMsg
 	groups         []ItemGroup
 	selected       map[string]bool
 	cursor         int
 	done           bool
 	canceled       bool
-	width          int
-	height         int
 	firstItemIndex int // Index of first item in current group (for cursor mapping)
 }
 
@@ -60,8 +62,9 @@ func NewSlotSelectorModel(groups []ItemGroup) *SlotSelectorModel {
 }
 
 // Init initializes the model.
+// Calls BaseModel.Init() to request initial window size.
 func (m *SlotSelectorModel) Init() tea.Cmd {
-	return nil
+	return m.BaseModel.Init()
 }
 
 // Update handles user input.
@@ -71,8 +74,7 @@ func (m *SlotSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKey(msg)
 
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		m.BaseModel.Update(msg)
 	}
 	return m, nil
 }
@@ -121,13 +123,13 @@ func (m *SlotSelectorModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the slot selector.
+// View renders the slot selector using CenteredContainer for fullscreen TUI.
 func (m *SlotSelectorModel) View() string {
 	var builder strings.Builder
 	t := theme.DefaultTheme()
 
 	// Header
-	header := theme.NewHeader(t, "Slot Selection", "", "↑/↓: Navigate | Space: Toggle | Enter: Confirm | ?: Help")
+	header := theme.NewHeader(t, "Slot Selection", "", "↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel")
 	builder.WriteString(header.View())
 	builder.WriteString("\n")
 
@@ -179,7 +181,13 @@ func (m *SlotSelectorModel) View() string {
 		Foreground(t.Muted).
 		Padding(1, 0, 0, 0)
 
-	builder.WriteString(footerStyle.Render("────────────────────────────────────────────────────\n"))
+	// Dynamic footer width based on terminal width
+	footerWidth := m.Width
+	if footerWidth < 60 {
+		footerWidth = 60
+	}
+	footerLine := strings.Repeat("─", footerWidth-4)
+	builder.WriteString(footerStyle.Render(footerLine + "\n"))
 
 	// Selection summary
 	selectedCount := countSelected(m.selected, m.groups)
@@ -189,7 +197,9 @@ func (m *SlotSelectorModel) View() string {
 
 	builder.WriteString(footerStyle.Render("Space: toggle  │  Enter: confirm  │  Esc: cancel\n"))
 
-	return builder.String()
+	// Use CenteredContainer for fullscreen centering
+	centered := components.NewCenteredContainer(m.Width, m.Height)
+	return centered.Render(builder.String())
 }
 
 // countAllItems returns the total number of items across all groups.

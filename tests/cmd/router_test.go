@@ -70,6 +70,21 @@ func (m *mockUI) WithFields(fields map[string]interface{}) ports.IPresenter {
 	return m
 }
 
+func (m *mockUI) AskCreateBunker(images []string) (name string, image string, confirmed bool, err error) {
+	return "test-bunker", "axiom-dev", true, nil
+}
+
+func (m *mockUI) AskSelectBunker(bunkers []string, statuses map[string]string, title, subtitle string) (selected string, confirmed bool, err error) {
+	if len(bunkers) > 0 {
+		return bunkers[0], true, nil
+	}
+	return "", false, nil
+}
+
+func (m *mockUI) RunHelpTUI() error {
+	return nil
+}
+
 // Ensure mockUI implements ports.IPresenter
 var _ ports.IPresenter = (*mockUI)(nil)
 

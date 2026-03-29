@@ -91,6 +91,21 @@ func GetLocale() string {
 	return currentLocale
 }
 
+// GetEscapeButtonText returns the localized text for the escape button
+func GetEscapeButtonText() string {
+	if currentLocale == "en" {
+		if text, ok := Prompts["escape_button"]["text"]; ok {
+			return text
+		}
+		return "Exit" // fallback
+	}
+	// Default to Spanish
+	if text, ok := Prompts["escape_button"]["text"]; ok {
+		return text
+	}
+	return "Salir" // fallback
+}
+
 // loadLocale loads the TOML files for the specified locale
 func loadLocale(locale string) {
 	var commandsData, promptsData, logsData, lifecycleData, errorsData, initData, slotsData []byte

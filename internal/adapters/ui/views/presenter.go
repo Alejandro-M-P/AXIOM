@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"axiom/internal/adapters/ui/components"
 	"axiom/internal/adapters/ui/styles"
 	"axiom/internal/ports"
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,6 +15,56 @@ import (
 
 // missingTextPlaceholder is shown when a translation key is not found
 const missingTextPlaceholder = "[Texto no disponible]"
+
+// GetTextLocalized returns a localized string from i18n or returns the key if not found.
+// Handles keys like "fields.name", "labels.status", etc.
+func GetTextLocalized(key string) string {
+	parts := strings.SplitN(key, ".", 2)
+
+	if len(parts) == 2 {
+		section, subkey := parts[0], parts[1]
+
+		// Check Commands
+		if section == "commands" {
+			if text, ok := Commands[subkey]; ok {
+				if label, ok := text["label"]; ok {
+					return label
+				}
+				if title, ok := text["title"]; ok {
+					return title
+				}
+			}
+		}
+
+		// Check Lifecycle
+		if section == "labels" || section == "fields" {
+			if text, ok := Lifecycle[subkey]; ok {
+				if label, ok := text["label"]; ok {
+					return label
+				}
+			}
+			// Try as direct key in Commands
+			if text, ok := Commands[section]; ok {
+				if val, ok := text[subkey]; ok {
+					return val
+				}
+			}
+		}
+	}
+
+	// Fallback: try as direct key in Commands
+	if text, ok := Commands[key]; ok {
+		if label, ok := text["label"]; ok {
+			return label
+		}
+		if title, ok := text["title"]; ok {
+			return title
+		}
+	}
+
+	// Return key if not found
+	return key
+}
 
 // ConsoleUI implementa bunker.UI para pintar en la terminal
 type ConsoleUI struct{}
@@ -32,18 +83,22 @@ func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []ports.Field, ite
 		cmdData = map[string]string{"title": commandKey, "subtitle": "", "footer": ""}
 	}
 
-	var details []styles.BunkerDetail
+	// Convert fields to CardField for fullscreen TUI
+	var cardFields []components.CardField
 	for _, f := range fields {
-		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
+		// Get localized label
+		label := GetTextLocalized(f.Label)
+		value := f.Value
+		cardFields = append(cardFields, components.CardField{Label: label, Value: value})
 	}
 
-	fmt.Println(styles.RenderBunkerCard(
-		cmdData["title"],
-		cmdData["subtitle"],
-		details,
-		items,
-		cmdData["footer"],
-	))
+	// Get localized title and subtitle
+	title := cmdData["title"]
+	subtitle := cmdData["subtitle"]
+	footer := cmdData["footer"]
+
+	// Run fullscreen TUI
+	_ = components.RunCardTUI(title, subtitle, cardFields, items, footer)
 }
 
 func (c *ConsoleUI) AskConfirmInCard(commandKey string, fields []ports.Field, items []string, promptKey string) (bool, error) {
@@ -164,11 +219,20 @@ func mapSteps(steps []ports.LifecycleStep) []styles.LifecycleStep {
 }
 
 func (c *ConsoleUI) ShowWarning(title, subtitle string, fields []ports.Field, items []string, footer string) {
-	var details []styles.BunkerDetail
+	// Convert fields to CardField for fullscreen TUI
+	var cardFields []components.CardField
 	for _, f := range fields {
-		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
+		label := GetTextLocalized(f.Label)
+		cardFields = append(cardFields, components.CardField{Label: label, Value: f.Value})
 	}
-	fmt.Println(styles.RenderBunkerWarning(title, subtitle, details, items, footer))
+
+	// Get localized title and subtitle
+	localizedTitle := GetTextLocalized(title)
+	localizedSubtitle := GetTextLocalized(subtitle)
+	localizedFooter := GetTextLocalized(footer)
+
+	// Run fullscreen TUI
+	_ = components.RunCardTUI(localizedTitle, localizedSubtitle, cardFields, items, localizedFooter)
 }
 
 func (c *ConsoleUI) ShowLog(logKey string, args ...any) {
@@ -258,4 +322,37 @@ func (c *ConsoleUI) RunInitWizard(ctx context.Context) error {
 	// Placeholder - actual implementation would run the TUI wizard
 	fmt.Println("Init wizard not yet implemented")
 	return nil
+}
+
+// RunFullscreen runs a Bubbletea model in fullscreen mode using the alternate screen.
+// This is the central TUI runner that ensures consistent fullscreen behavior across all TUI components.
+// Returns the final model and any error encountered during execution.
+func RunFullscreen(model tea.Model) (tea.Model, error) {
+	p := tea.NewProgram(model,
+		tea.WithAltScreen(),
+		tea.WithInput(os.Stdin),
+		tea.WithOutput(os.Stdout),
+	)
+
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("failed to run fullscreen TUI: %w", err)
+	}
+
+	return finalModel, nil
+}
+
+// RunFullscreenSimple runs a Bubbletea model in fullscreen mode without stdin/stdout customization.
+// Use this for simpler cases where default input/output is sufficient.
+func RunFullscreenSimple(model tea.Model) (tea.Model, error) {
+	p := tea.NewProgram(model,
+		tea.WithAltScreen(),
+	)
+
+	finalModel, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("failed to run fullscreen TUI: %w", err)
+	}
+
+	return finalModel, nil
 }

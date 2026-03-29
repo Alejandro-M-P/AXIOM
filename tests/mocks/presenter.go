@@ -201,3 +201,21 @@ func (m *MockPresenter) AskReset(fields []ports.Field, items []string) (confirm 
 func (m *MockPresenter) RunInitWizard(ctx context.Context) error {
 	return nil
 }
+
+// AskCreateBunker implements ports.IPresenter.
+func (m *MockPresenter) AskCreateBunker(images []string) (name string, image string, confirmed bool, err error) {
+	return "test-bunker", "axiom-dev", true, nil
+}
+
+// AskSelectBunker implements ports.IPresenter.
+func (m *MockPresenter) AskSelectBunker(bunkers []string, statuses map[string]string, title, subtitle string) (selected string, confirmed bool, err error) {
+	if len(bunkers) > 0 {
+		return bunkers[0], true, nil
+	}
+	return "", false, nil
+}
+
+// RunHelpTUI implements ports.IPresenter.
+func (m *MockPresenter) RunHelpTUI() error {
+	return nil
+}

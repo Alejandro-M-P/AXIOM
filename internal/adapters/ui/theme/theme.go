@@ -36,7 +36,7 @@ func DefaultTheme() *Theme {
 		Success:    lipgloss.Color("#a3be8c"),
 		Error:      lipgloss.Color("#bf616a"),
 		Warning:    lipgloss.Color("#ebcb8b"),
-		Muted:      lipgloss.Color("#4c566a"),
+		Muted:      lipgloss.Color("#7b8ca8"), // Gris claro - visible en fondos oscuros
 		Text:       lipgloss.Color("#eceff4"),
 		Background: lipgloss.Color("#2e3440"),
 	}

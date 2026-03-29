@@ -9,3 +9,8 @@ desc = "Press Enter to delete this bunker"
 [select_available]
 title = "Available Bunkers"
 desc = "Press Enter to see the technical sheet"
+
+[escape_button]
+key = "ESC"
+text = "Exit"
+key_alt = "q"

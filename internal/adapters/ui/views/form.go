@@ -8,10 +8,34 @@ import (
 
 	"axiom/internal/adapters/system"
 	"axiom/internal/adapters/system/gpu"
+	"axiom/internal/adapters/ui/components"
 	"axiom/internal/adapters/ui/styles"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+// BaseModel is embedded in Model for window size handling
+type BaseModel struct {
+	Width  int
+	Height int
+}
+
+// Init sends a WindowSizeMsg to get initial dimensions
+func (m *BaseModel) Init() tea.Cmd {
+	return func() tea.Msg {
+		return tea.WindowSizeMsg{}
+	}
+}
+
+// Update handles WindowSizeMsg to update dimensions
+func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.Width = msg.Width
+		m.Height = msg.Height
+	}
+	return nil, nil
+}
 
 type Step int
 
@@ -44,6 +68,7 @@ const (
 )
 
 type Model struct {
+	BaseModel    // Embed BaseModel for Width/Height from WindowSizeMsg
 	step         Step
 	input        textinput.Model
 	config       install.Config
@@ -88,7 +113,10 @@ func NewModel(axiomPath string, envExists bool, lang string) Model {
 	}
 }
 
-func (m Model) Init() tea.Cmd { return textinput.Blink }
+// Init initializes the model and requests window size
+func (m Model) Init() tea.Cmd {
+	return tea.Batch(textinput.Blink, m.BaseModel.Init())
+}
 
 // Step devuelve el paso actual del wizard (usado para verificar estado final)
 func (m Model) Step() Step {
@@ -96,6 +124,9 @@ func (m Model) Step() Step {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Handle window size messages from BaseModel
+	m.BaseModel.Update(msg)
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -322,6 +353,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// View renders the form using CenteredContainer for fullscreen TUI.
 func (m Model) View() string {
 	header := styles.GetLogo() + "\n\n"
 
@@ -329,7 +361,10 @@ func (m Model) View() string {
 		body := styles.GreenStyle.Render("🛡️  AXIOM: Bunker configured successfully!") + "\n\n" +
 			"🚀 Next step: Run " + styles.GreenStyle.Render("axiom build") + "\n\n" +
 			styles.ExampleStyle.Render("(Press Enter to exit)")
-		return styles.WindowStyle.Render(header + body)
+
+		// Use CenteredContainer for fullscreen centering
+		centered := components.NewCenteredContainer(m.Width, m.Height)
+		return centered.Render(styles.WindowStyle.Render(header + body))
 	}
 
 	var body string
@@ -367,7 +402,28 @@ func (m Model) View() string {
 		body = m.renderReview()
 	}
 
-	return styles.WindowStyle.Render(header + body)
+	// Get EscapeButton text from i18n
+	var escapeText string
+	if Prompts != nil && Prompts["escape_button"] != nil {
+		if text, ok := Prompts["escape_button"]["text"]; ok {
+			escapeText = text
+		}
+	}
+	if escapeText == "" {
+		// fallback based on locale
+		if currentLocale == "en" {
+			escapeText = "Exit"
+		} else {
+			escapeText = "Salir"
+		}
+	}
+
+	// Add footer with EscapeButton
+	footer := "\n" + styles.ExampleStyle.Render("[Esc] "+escapeText+"  |  [Enter] Confirm")
+
+	// Use CenteredContainer for fullscreen centering
+	centered := components.NewCenteredContainer(m.Width, m.Height)
+	return centered.Render(styles.WindowStyle.Render(header + body + footer))
 }
 
 func (m Model) finalizeAction() tea.Cmd {

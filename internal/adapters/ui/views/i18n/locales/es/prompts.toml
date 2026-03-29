@@ -9,3 +9,8 @@ desc = "Pulsa Enter para eliminar este búnker"
 [select_available]
 title = "Búnkeres Disponibles"
 desc = "Pulsa Enter para ver la ficha técnica"
+
+[escape_button]
+key = "ESC"
+text = "Salir"
+key_alt = "q"

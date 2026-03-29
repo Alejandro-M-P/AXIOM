@@ -146,7 +146,7 @@ func (r *Router) Handle(args []string) error {
 	case CmdDeleteImage:
 		return r.bm.DeleteImage()
 	case CmdHelp, "-h", "--help":
-		return r.bm.Help()
+		return r.bm.GetUI().RunHelpTUI()
 	case CmdBuild:
 		// Load configuration
 		cfg, err := r.bm.LoadConfig()
@@ -241,30 +241,13 @@ func (r *Router) handleCreate() error {
 		"axiom-sandbox",
 	}
 
-	// Show selection menu
-	ui.ShowLogo()
-	selected, err := ui.AskString("create.select_image")
+	// Use TUI form for interactive creation
+	bunkerName, imageName, confirmed, err := ui.AskCreateBunker(images)
 	if err != nil {
-		return fmt.Errorf("create.image_selection: %w", err)
+		return fmt.Errorf("create.form_error: %w", err)
 	}
-
-	selected = strings.TrimSpace(strings.ToLower(selected))
-
-	// Resolve slot to image mapping or use exact name if provided
-	imageName := resolveImageName(selected, images)
-	if imageName == "" {
-		return fmt.Errorf("create.invalid_image")
-	}
-
-	// Ask for bunker name
-	bunkerName, err := ui.AskString("create.name_prompt")
-	if err != nil {
-		return fmt.Errorf("create.name_input: %w", err)
-	}
-
-	bunkerName = strings.TrimSpace(bunkerName)
-	if bunkerName == "" {
-		return fmt.Errorf("create.missing_name")
+	if !confirmed {
+		return nil // User cancelled
 	}
 
 	return r.bm.CreateWithImage(bunkerName, imageName)

@@ -72,6 +72,15 @@ type IPresenter interface {
 	// AskReset solicita confirmación de reset.
 	AskReset(fields []Field, items []string) (confirm bool, reason string, err error)
 
+	// AskCreateBunker solicita información para crear un nuevo bunker.
+	AskCreateBunker(images []string) (name string, image string, confirmed bool, err error)
+
+	// AskSelectBunker solicita selección de un bunker de forma interactiva.
+	AskSelectBunker(bunkers []string, statuses map[string]string, title, subtitle string) (selected string, confirmed bool, err error)
+
+	// RunHelpTUI ejecuta la ayuda en modo TUI interactivo.
+	RunHelpTUI() error
+
 	// RunInitWizard ejecuta el wizard de inicialización.
 	RunInitWizard(ctx context.Context) error
 }
