@@ -1,4 +1,6 @@
 id = "python"
+name = "Python"
+description = "Lenguaje de programación Python"
 category = "dev"
 subcategory = "languages"
 dependencies = []

@@ -5,6 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os/exec"
+
+	"axiom/internal/slots/base"
 )
 
 // ErrCircularDependency indicates that a circular dependency was detected.
@@ -14,8 +17,9 @@ var ErrCircularDependency = errors.New("circular dependency detected")
 // It handles dependency resolution and step execution.
 type IInstallerEngine interface {
 	// Execute runs the installation for the specified items in dependency order.
-	// The Executor function is called for each item to perform the actual installation.
-	Execute(items []SlotItem, exec Executor) error
+	// Commands are read from TOML configuration (InstallCmd or InstallSteps).
+	// The progress callback is called before each item installation.
+	Execute(items []SlotItem, progress Executor) error
 
 	// ExecuteWithContext runs the installation with context for cancellation support.
 	// The itemExec callback is called for each item with the item as parameter.
@@ -28,7 +32,9 @@ type IInstallerEngine interface {
 
 // InstallerEngine implements IInstallerEngine.
 type InstallerEngine struct {
-	registry ISlotRegistry
+	registry      ISlotRegistry
+	baseInstaller *base.BaseInstaller
+	analyzer      *base.SlotCommandAnalyzer
 }
 
 // NewInstallerEngine creates a new InstallerEngine instance.
@@ -38,36 +44,89 @@ func NewInstallerEngine(registry ISlotRegistry) *InstallerEngine {
 	}
 }
 
-// Execute runs the installation for the specified items in dependency order.
-// Each item's own Executor closure is called to perform the actual installation.
-// The exec parameter is a progress callback called before each item is installed.
-func (e *InstallerEngine) Execute(items []SlotItem, exec Executor) error {
-	if len(items) == 0 {
+// NewInstallerEngineWithBase creates a new InstallerEngine with base tools support.
+// This enables automatic installation of package managers and base tools.
+func NewInstallerEngineWithBase(registry ISlotRegistry, preferencesPath string) (*InstallerEngine, error) {
+	installer, err := base.NewBaseInstaller(preferencesPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create base installer: %w", err)
+	}
+
+	return &InstallerEngine{
+		registry:      registry,
+		baseInstaller: installer,
+		analyzer:      base.NewSlotCommandAnalyzer(installer),
+	}, nil
+}
+
+// PrepareEnvironment installs base tools and prepares the system for slot installation.
+// This should be called once before executing slot installations.
+func (e *InstallerEngine) PrepareEnvironment(ctx context.Context) error {
+	if e.analyzer == nil {
+		// Base tools not enabled, skip
 		return nil
 	}
+	return e.analyzer.PrepareEnvironment(ctx)
+}
 
-	// Resolve dependencies to get correct installation order
-	orderedItems, err := e.ResolveDependencies(items)
-	if err != nil {
-		return err
-	}
+// GetBaseInstaller returns the base installer if configured.
+func (e *InstallerEngine) GetBaseInstaller() *base.BaseInstaller {
+	return e.baseInstaller
+}
 
-	// Execute each item in order
-	for i := range orderedItems {
-		item := &orderedItems[i]
-
+// Execute runs the installation for the specified items in dependency order.
+// Installation commands are read from TOML (InstallCmd or InstallSteps).
+// The exec parameter is a progress callback called before each item is installed.
+func (e *InstallerEngine) Execute(items []SlotItem, progress Executor) error {
+	ctx := context.Background()
+	return e.ExecuteWithContext(ctx, items, func(ctx context.Context, item *SlotItem) error {
 		// Call progress callback if provided
-		if exec != nil {
-			if err := exec(context.Background()); err != nil {
+		if progress != nil {
+			if err := progress(ctx); err != nil {
 				return fmt.Errorf("installation cancelled for %s: %w", item.ID, err)
 			}
 		}
+		return e.executeInstall(ctx, item)
+	})
+}
 
-		// Execute the item's installation logic
-		if item.Executor != nil {
-			if err := item.Executor(context.Background()); err != nil {
-				return fmt.Errorf("failed to install %s: %w", item.ID, err)
+// executeInstall runs the installation commands for a single item.
+// Uses InstallCmd if present, otherwise executes InstallSteps sequentially.
+// Automatically ensures base tools are installed before executing commands.
+func (e *InstallerEngine) executeInstall(ctx context.Context, item *SlotItem) error {
+	// Skip if no install commands defined
+	if item.InstallCmd == "" && len(item.InstallSteps) == 0 {
+		return nil
+	}
+
+	// Single command mode
+	if item.InstallCmd != "" {
+		// Ensure base tools are installed before executing
+		if e.analyzer != nil {
+			if err := e.analyzer.AnalyzeAndInstallRequirements(ctx, item.InstallCmd); err != nil {
+				return fmt.Errorf("failed to install base tools for %s: %w", item.ID, err)
 			}
+		}
+
+		cmd := exec.CommandContext(ctx, "sh", "-c", item.InstallCmd)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("install command failed for %s: %w\nOutput: %s", item.ID, err, string(output))
+		}
+		return nil
+	}
+
+	// Multi-step mode
+	for _, step := range item.InstallSteps {
+		// Ensure base tools are installed before each step
+		if e.analyzer != nil {
+			if err := e.analyzer.AnalyzeAndInstallRequirements(ctx, step); err != nil {
+				return fmt.Errorf("failed to install base tools for %s: %w", item.ID, err)
+			}
+		}
+
+		cmd := exec.CommandContext(ctx, "sh", "-c", step)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("install step failed for %s: %w\nOutput: %s", item.ID, err, string(output))
 		}
 	}
 

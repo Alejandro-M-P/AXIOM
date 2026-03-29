@@ -1,4 +1,6 @@
 id = "nodejs"
+name = "Node.js"
+description = "Runtime de JavaScript con npm"
 category = "dev"
 subcategory = "languages"
 dependencies = []

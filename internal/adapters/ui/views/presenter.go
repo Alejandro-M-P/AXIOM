@@ -105,6 +105,17 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 				return text
 			}
 		}
+		// Handle slots.xxx.name and slots.xxx.description
+		if section == "slots" {
+			if slotData, ok := Slots[cat]; ok {
+				if text, ok := slotData[sub]; ok {
+					if len(args) > 0 {
+						return fmt.Sprintf(text, args...)
+					}
+					return text
+				}
+			}
+		}
 	}
 
 	if len(parts) == 2 {

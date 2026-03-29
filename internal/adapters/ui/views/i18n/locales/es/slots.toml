@@ -1,0 +1,55 @@
+[ollama]
+name = "Ollama"
+description = "Ejecuta modelos LLM localmente"
+
+[opencode]
+name = "OpenCode"
+description = "Editor IA con agentes"
+
+[engram]
+name = "Engram"
+description = "Sistema de memoria persistente"
+
+[gentle]
+name = "Gentle AI"
+description = "Framework de agentes AI"
+
+[go]
+name = "Go"
+description = "Lenguaje de programación Go"
+
+[nodejs]
+name = "Node.js"
+description = "Node.js runtime + npm"
+
+[python]
+name = "Python"
+description = "Lenguaje de programación Python"
+
+[starship]
+name = "Starship"
+description = "Prompt minimalista"
+
+[postgres]
+name = "PostgreSQL"
+description = "Base de datos relacional"
+
+[mysql]
+name = "MySQL"
+description = "Base de datos relacional"
+
+[mongodb]
+name = "MongoDB"
+description = "Base de datos NoSQL"
+
+[redis]
+name = "Redis"
+description = "Base de datos en memoria"
+
+[sqlite]
+name = "SQLite"
+description = "Base de datos embebida"
+
+[empty]
+name = "Empty"
+description = "Imagen mínima sin instalaciones"

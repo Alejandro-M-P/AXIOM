@@ -258,16 +258,26 @@ func (m *WizardModel) loadCurrentPhaseItems() {
 			continue
 		}
 
+		// Get name and description from i18n
+		name := m.presenter.GetText("slots." + item.ID + ".name")
+		description := m.presenter.GetText("slots." + item.ID + ".description")
+
 		m.currentItems = append(m.currentItems, SlotItemDisplay{
 			ID:          item.ID,
-			Name:        item.Name,
-			Description: item.Description,
+			Name:        name,
+			Description: description,
 		})
 	}
 }
 
 // matchesCurrentPhase checks if an item matches the current wizard phase.
+// Base tools (IsBaseTool=true) are excluded from the wizard.
 func (m *WizardModel) matchesCurrentPhase(item slots.SlotItem) bool {
+	// Skip base tools - they are installed automatically, not selected by user
+	if item.IsBaseTool {
+		return false
+	}
+
 	// First check if item belongs to the selected slot
 	if string(item.Category) != m.selectedSlot {
 		return false
@@ -595,7 +605,9 @@ func (m *WizardModel) viewSummary() string {
 				lineStyle := lipgloss.NewStyle().
 					Foreground(textColor).
 					Width(contentWidth)
-				lineText := "  ✓ " + item.Name
+				// Get name from i18n
+				itemName := m.presenter.GetText("slots." + item.ID + ".name")
+				lineText := "  ✓ " + itemName
 				content.WriteString(lineStyle.Render(lineText))
 				content.WriteString("\n")
 			}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -216,11 +217,43 @@ func (m *SlotManager) ExecuteWithContext(ctx context.Context, selected []SlotIte
 
 	return m.engine.ExecuteWithContext(ctx, selected, func(ctx context.Context, item *SlotItem) error {
 		m.ui.ShowLog("info", "Installing:", item.Name)
-		if item.Executor != nil {
-			return item.Executor(ctx)
-		}
-		return nil
+		// Execute installation commands from TOML
+		return m.executeInstall(ctx, item)
 	})
+}
+
+// executeInstall runs the installation commands for a single item from TOML config.
+func (m *SlotManager) executeInstall(ctx context.Context, item *SlotItem) error {
+	// Skip if no install commands defined
+	if item.InstallCmd == "" && len(item.InstallSteps) == 0 {
+		return nil
+	}
+
+	// Single command mode
+	if item.InstallCmd != "" {
+		m.ui.ShowLog("info", fmt.Sprintf("Running: %s", item.InstallCmd))
+		return m.runCommand(ctx, item.InstallCmd)
+	}
+
+	// Multi-step mode
+	for i, step := range item.InstallSteps {
+		m.ui.ShowLog("info", fmt.Sprintf("Step %d/%d: %s", i+1, len(item.InstallSteps), step))
+		if err := m.runCommand(ctx, step); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// runCommand executes a shell command with context support.
+func (m *SlotManager) runCommand(ctx context.Context, cmd string) error {
+	command := exec.CommandContext(ctx, "sh", "-c", cmd)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("command failed: %w\nOutput: %s", err, string(output))
+	}
+	return nil
 }
 
 // SaveSelection persists the user's slot selections to the config file.

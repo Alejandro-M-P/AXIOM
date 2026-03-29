@@ -17,20 +17,22 @@ const (
 	SlotSANDBOX SlotCategory = "sandbox"
 )
 
-// Executor is a function type that executes an installation step.
-// It takes a context and returns an error if the execution fails.
+// Executor is a function type for progress callbacks during installation.
+// It takes a context and returns an error if the execution should be cancelled.
 type Executor func(ctx context.Context) error
 
 // SlotItem represents a single installable unit within a slot.
 // It contains all information needed to install and manage that item.
 type SlotItem struct {
-	ID          string       // Unique identifier (e.g., "ollama", "go")
-	Name        string       // Human-readable name
-	Description string       // Description of what this item provides
-	Category    SlotCategory // Which slot this item belongs to (dev, data, sandbox)
-	SubCategory string       // Subcategory for UI grouping (ia, languages, tools, data)
-	Deps        []string     // IDs of items that must be installed first
-	Executor    Executor     // The actual installation logic
+	ID           string       // Unique identifier (e.g., "ollama", "go")
+	Name         string       // Human-readable name
+	Description  string       // Description of what this item provides
+	Category     SlotCategory // Which slot this item belongs to (dev, data, sandbox)
+	SubCategory  string       // Subcategory for UI grouping (ia, languages, tools, data)
+	Deps         []string     // IDs of items that must be installed first
+	InstallCmd   string       // Command to install (from TOML)
+	InstallSteps []string     // Multiple steps to install (from TOML, alternative to InstallCmd)
+	IsBaseTool   bool         // If true, this is a base tool not shown in the wizard
 }
 
 // SlotSelection represents a user's selection for a particular slot.

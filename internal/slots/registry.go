@@ -57,6 +57,18 @@ func (r *Registry) Discover() []SlotItem {
 	return result
 }
 
+// DiscoverUserSelectable returns all slot items that should be shown in the UI wizard.
+// This excludes base tools which are installed automatically.
+func (r *Registry) DiscoverUserSelectable() []SlotItem {
+	result := make([]SlotItem, 0)
+	for _, item := range r.itemsByID {
+		if !item.IsBaseTool {
+			result = append(result, *item)
+		}
+	}
+	return result
+}
+
 // GetByCategory returns all items belonging to the specified slot category.
 func (r *Registry) GetByCategory(category SlotCategory) []SlotItem {
 	items := r.itemsByCategory[category]

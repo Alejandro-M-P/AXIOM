@@ -1,4 +1,6 @@
 id = "go"
+name = "Go"
+description = "Lenguaje de programación Go"
 category = "dev"
 subcategory = "languages"
 dependencies = []

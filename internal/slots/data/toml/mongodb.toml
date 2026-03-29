@@ -1,4 +1,6 @@
 id = "mongodb"
+name = "MongoDB"
+description = "Base de datos NoSQL orientada a documentos"
 category = "data"
 subcategory = "databases"
 dependencies = []

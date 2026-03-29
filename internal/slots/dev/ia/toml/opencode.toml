@@ -1,4 +1,6 @@
 id = "opencode"
+name = "opencode-ai"
+description = "Asistente de código AI basado en LLMs locales"
 category = "dev"
 subcategory = "ia"
 dependencies = []
