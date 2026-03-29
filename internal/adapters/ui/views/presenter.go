@@ -12,6 +12,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// missingTextPlaceholder is shown when a translation key is not found
+const missingTextPlaceholder = "[Texto no disponible]"
+
 // ConsoleUI implementa bunker.UI para pintar en la terminal
 type ConsoleUI struct{}
 
@@ -107,7 +110,9 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 			return text
 		}
 	}
-	return key
+	// Log missing key for debugging (using fmt.Fprintln to stderr)
+	fmt.Fprintf(os.Stderr, "[i18n] Missing translation key: %s\n", key)
+	return missingTextPlaceholder
 }
 
 func (c *ConsoleUI) ClearScreen() {
@@ -183,7 +188,9 @@ func getPromptText(key string) string {
 			return text
 		}
 	}
-	return key
+	// Log missing key for debugging (using fmt.Fprintln to stderr)
+	fmt.Fprintf(os.Stderr, "[i18n] Missing prompt key: %s\n", key)
+	return missingTextPlaceholder
 }
 
 func (c *ConsoleUI) ShowHelp() {

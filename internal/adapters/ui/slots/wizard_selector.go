@@ -655,7 +655,7 @@ func RunWizard(items []slots.SlotItem, pres ports.IPresenter) ([]string, bool, e
 	// Store all items for later filtering when slot is selected
 	model.allItems = items
 
-	p := tea.NewProgram(model)
+	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	finalModel, err := p.Run()
 	if err != nil {
