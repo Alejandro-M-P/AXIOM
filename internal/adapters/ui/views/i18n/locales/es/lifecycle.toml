@@ -68,3 +68,51 @@ footer = "Todo está limpio."
 title = "Prune Completado"
 desc = "Se liberó el espacio de los entornos huérfanos."
 footer = "Todo está limpio."
+
+# Build process translations
+[build]
+title = "Construyendo: %s"
+subtitle_base = "GPU: %s | Modo: %s"
+subtitle_host = "host"
+subtitle_image = "imagen"
+success_sub = "Imagen %s construida exitosamente"
+image_exists_title = "Imagen existente"
+image_exists_warning = "Advertencia"
+image_exists_desc = "Esta imagen ya existe. Se sobrescribirá si continúas."
+image_exists_confirm = "¿Sobrescribir imagen existente?"
+
+[step]
+prepare_dirs = "Preparar directorios"
+recreate_container = "Recrear contenedor"
+install_base = "Instalar sistema base"
+install_dev = "Instalar herramientas de desarrollo"
+install_ai = "Instalar stack de AI"
+install_data = "Instalar bases de datos"
+export_image = "Exportar imagen"
+
+[detail]
+base_pkgs = "Paquetes del sistema"
+dev_tools = "Herramientas de desarrollo"
+ai_stack = "Stack de AI/LLM"
+data_stack = "Bases de datos"
+sync_cmd = "Sincronizando repositorios"
+pkgs_count = "%d paquetes"
+npm_global = "Instalación global npm"
+tmp_pacman = "Limpiando caché de pacman"
+
+[task]
+sync_repos = "Sincronizar repos"
+install_pkgs = "Instalar paquetes"
+install_opencode = "Instalar opencode"
+install_ollama = "Instalar Ollama"
+clean_caches = "Limpiar cachés"
+
+[group]
+base = "Sistema Base"
+dev = "Herramientas Dev"
+ai = "Stack AI"
+
+[rebuild]
+title = "Reconstruir Imagen"
+subtitle = "Eliminando y reconstruyendo"
+step_rm_image = "Eliminar imagen anterior"

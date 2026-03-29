@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	slotui "axiom/internal/adapters/ui/slots"
 	ui "axiom/internal/adapters/ui/views"
 	"axiom/internal/domain"
 	"axiom/internal/ports"
@@ -60,6 +61,7 @@ type BuildManagerInterface interface {
 type SlotManagerInterface interface {
 	DiscoverSlots() []any
 	GetAvailableItems(category string) ([]slots.SlotItem, error)
+	GetAllAvailableItems() ([]slots.SlotItem, error)
 	ExecuteSlots(selected []any) error
 	HasSelection() bool
 	GetSelectedItems(category string) ([]slots.SlotItem, error)
@@ -152,30 +154,37 @@ func (r *Router) Handle(args []string) error {
 			return fmt.Errorf("failed to load configuration: %w", err)
 		}
 
-		// Check if slot selection exists
-		if !r.slm.HasSelection() {
-			r.bm.GetUI().ShowLog("info", "No slot selection found. Running slot selector...")
+		// Get ALL available items from ALL slots (we need all to let user choose slot first)
+		allItems, err := r.slm.GetAllAvailableItems()
+		if err != nil {
+			return fmt.Errorf("failed to get slot items: %w", err)
+		}
 
-			// Get ALL available items for DEV slot (not selected ones!)
-			items, err := r.slm.GetAvailableItems("dev")
-			if err != nil {
-				return fmt.Errorf("failed to get slot items: %w", err)
-			}
+		// Run wizard selector - this lets user choose slot (dev/data/sandbox) AND items
+		// The wizard returns both the selected slot AND the selected item IDs
+		selectedIDs, selectedSlot, confirmed, err := slotui.RunWizardWithSlot(allItems, r.bm.GetUI())
+		if err != nil {
+			return fmt.Errorf("slot selector failed: %w", err)
+		}
+		if !confirmed {
+			return nil // User cancelled
+		}
 
-			// Run slot selector with available items
-			selectedIDs, confirmed, err := r.slm.RunSlotSelector("dev", items, nil)
-			if err != nil {
-				return fmt.Errorf("slot selector failed: %w", err)
-			}
-			if !confirmed {
-				return nil // User cancelled
-			}
+		// Map slot name to SlotCategory
+		var slotCategory slots.SlotCategory
+		switch selectedSlot {
+		case "data":
+			slotCategory = slots.SlotDATA
+		case "sandbox":
+			slotCategory = slots.SlotSANDBOX
+		default:
+			slotCategory = slots.SlotDEV
+		}
 
-			// Save selection
-			selections := []slots.SlotSelection{{Slot: slots.SlotDEV, Selected: selectedIDs}}
-			if err := r.slm.SaveSelection(selections); err != nil {
-				return fmt.Errorf("failed to save slot selection: %w", err)
-			}
+		// Save selection for the build process
+		selections := []slots.SlotSelection{{Slot: slotCategory, Selected: selectedIDs}}
+		if err := r.slm.SaveSelection(selections); err != nil {
+			return fmt.Errorf("failed to save slot selection: %w", err)
 		}
 
 		// Execute build with slot integration

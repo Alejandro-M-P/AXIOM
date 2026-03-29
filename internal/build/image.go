@@ -17,25 +17,36 @@ type BuildContext struct {
 	Config            domain.EnvConfig
 	GPUInfo           *domain.GPUInfo
 	ImageName         string
+	SlotName          string
 	BuildWorkspaceDir string
 	ContainerName     string
 }
 
 // PrepareBuildContext creates a BuildContext from the environment configuration.
-func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerName string) (*BuildContext, error) {
+// It generates container and workspace names based on the slot type.
+func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerName, slotName string) (*BuildContext, error) {
 	gpuInfo, err := ResolveBuildGPU(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("gpu_resolution: %w", err)
 	}
 
-	imageName := BaseImageName(gpuInfo.Type)
+	// Generate container name based on slot: axiom-dev, axiom-data, axiom-sandbox
+	// If containerName is provided (non-empty), use it; otherwise generate from slot
+	actualContainerName := containerName
+	if actualContainerName == "" {
+		actualContainerName = fmt.Sprintf("axiom-%s", slotName)
+	}
+
+	// Use slot name for image name: axiom-dev, axiom-data, axiom-sandbox
+	imageName := fmt.Sprintf("localhost/axiom-%s:latest", slotName)
 
 	return &BuildContext{
 		Config:            cfg,
 		GPUInfo:           gpuInfo,
 		ImageName:         imageName,
-		BuildWorkspaceDir: cfg.BuildWorkspaceDir(containerName),
-		ContainerName:     containerName,
+		SlotName:          slotName,
+		BuildWorkspaceDir: cfg.BuildWorkspaceDir(actualContainerName),
+		ContainerName:     actualContainerName,
 	}, nil
 }
 
@@ -88,6 +99,7 @@ func BuildContainerFlags(cfg domain.EnvConfig) string {
 func ExportBuildImage(ctx context.Context, runtime ports.IBunkerRuntime, containerName string, imageName string) error {
 	// Use podman commit since IBunkerRuntime doesn't have Commit method
 	cmd := exec.CommandContext(ctx, "podman", "commit",
+		"-f", "docker",
 		"-a", "axiom",
 		"-m", "AXIOM build image",
 		containerName,

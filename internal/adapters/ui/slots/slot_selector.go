@@ -262,6 +262,11 @@ func RunSlotSelector(groups []ItemGroup) ([]string, bool, error) {
 	)
 
 	finalModel, err := p.Run()
+
+	// Ensure terminal is cleaned up properly even if there's an error
+	// This prevents the "corrupted text" issue when running multiple times
+	cleanupTerminal()
+
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to run slot selector: %w", err)
 	}

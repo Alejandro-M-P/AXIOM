@@ -49,6 +49,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Warning: failed to load slots from TOML: %v\n", err)
 	}
 
+	// Verify registry has items after loading
+	if err := slots.ValidateNotEmpty(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: slot registry validation failed: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Create slot manager with registry and engine
 	slotRegistry := slots.GetRegistry()
 	slotEngine := slots.NewInstallerEngine(slotRegistry)

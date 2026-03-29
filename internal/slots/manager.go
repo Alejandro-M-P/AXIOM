@@ -122,6 +122,12 @@ func (m *SlotManager) GetAvailableItems(category string) ([]SlotItem, error) {
 	return m.GetByCategory(SlotCategory(category)), nil
 }
 
+// GetAllAvailableItems returns ALL items from ALL categories.
+// This is used by the build command to let users choose both slot and items.
+func (m *SlotManager) GetAllAvailableItems() ([]SlotItem, error) {
+	return m.registry.Discover(), nil
+}
+
 // Select returns slot items based on user configuration from the config file.
 // If no config exists, it returns an empty selection.
 func (m *SlotManager) Select(category SlotCategory) ([]SlotItem, error) {

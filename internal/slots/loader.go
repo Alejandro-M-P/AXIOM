@@ -2,6 +2,7 @@
 package slots
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,13 @@ import (
 
 	"github.com/BurntSushi/toml"
 )
+
+//go:embed dev/ia/tomls/*.toml
+//go:embed dev/languages/tomls/*.toml
+//go:embed dev/tools/tomls/*.toml
+//go:embed data/tomls/*.toml
+//go:embed sandbox/tomls/*.toml
+var embeddedTOMLs embed.FS
 
 // tomlSlot represents the structure of a slot TOML file.
 type tomlSlot struct {
@@ -23,6 +31,49 @@ type tomlSlot struct {
 		Cmd   string   `toml:"cmd"`
 		Steps []string `toml:"steps"`
 	} `toml:"install"`
+}
+
+// LoadSlotsFromEmbeddedTOML loads all slot items from embedded TOML files in the given directory path.
+// The path should be relative to the internal/slots directory (e.g., "dev/ia/tomls").
+func LoadSlotsFromEmbeddedTOML(tomlDir string) ([]SlotItem, error) {
+	entries, err := embeddedTOMLs.ReadDir(tomlDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read embedded directory %s: %w", tomlDir, err)
+	}
+
+	var items []SlotItem
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".toml" {
+			continue
+		}
+
+		filePath := filepath.Join(tomlDir, entry.Name())
+		content, err := embeddedTOMLs.ReadFile(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read embedded file %s: %w", filePath, err)
+		}
+
+		var slot tomlSlot
+		if err := toml.Unmarshal(content, &slot); err != nil {
+			return nil, fmt.Errorf("failed to parse embedded TOML %s: %w", filePath, err)
+		}
+
+		item := SlotItem{
+			ID:           slot.ID,
+			Name:         slot.Name,
+			Description:  slot.Description,
+			Category:     SlotCategory(slot.Category),
+			SubCategory:  slot.SubCategory,
+			Deps:         slot.Dependencies,
+			IsBaseTool:   slot.IsBaseTool,
+			InstallCmd:   slot.Install.Cmd,
+			InstallSteps: slot.Install.Steps,
+		}
+
+		items = append(items, item)
+	}
+
+	return items, nil
 }
 
 // LoadSlotsFromTOML loads all slot items from TOML files in the given directory.
@@ -81,8 +132,53 @@ func parseTOML(path string) (*tomlSlot, error) {
 }
 
 // LoadAndRegisterSlots loads slots from TOML files and registers them in the global registry.
-// It scans the internal/slots directory for any subdirectory containing a "tomls" folder.
+// If items are already registered (via init() functions), it skips loading.
+// Otherwise, it first tries to load from embedded files (for production builds),
+// then falls back to filesystem loading (for development).
 func LoadAndRegisterSlots() error {
+	// Check if items are already registered (from init() functions)
+	if ItemCount() > 0 {
+		return nil
+	}
+
+	// Track if we loaded anything
+	loadedCount := 0
+
+	// List of embedded TOML directories to try
+	tomlDirs := []string{
+		"dev/ia/tomls",
+		"dev/languages/tomls",
+		"dev/tools/tomls",
+		"data/tomls",
+		"sandbox/tomls",
+	}
+
+	// Try to load from embedded files first
+	embedWorks := true
+	for _, tomlDir := range tomlDirs {
+		items, err := LoadSlotsFromEmbeddedTOML(tomlDir)
+		if err != nil {
+			embedWorks = false
+			break
+		}
+		for i := range items {
+			RegisterItem(&items[i])
+			loadedCount++
+		}
+	}
+
+	// If embedded loading worked and we got items, we're done
+	if embedWorks && loadedCount > 0 {
+		return nil
+	}
+
+	// Fallback to filesystem loading for development
+	return loadFromFilesystem()
+}
+
+// loadFromFilesystem loads slot items from TOML files on the filesystem.
+// This is used as a fallback when embedded files are not available.
+func loadFromFilesystem() error {
 	// Get AXIOM root from environment or use relative path
 	rootDir := os.Getenv("AXIOM_PATH")
 	if rootDir == "" {

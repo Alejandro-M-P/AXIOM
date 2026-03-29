@@ -141,7 +141,10 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 }
 
 func (c *ConsoleUI) ClearScreen() {
-	fmt.Print("\033[H\033[2J")
+	// Clear screen and reset cursor
+	fmt.Print("\033[2J\033[H\033[3J")
+	// Also move cursor to beginning and clear line
+	fmt.Print("\r\x1b[2K")
 }
 
 func (c *ConsoleUI) RenderLifecycle(title, subtitle string, steps []ports.LifecycleStep, taskTitle string, taskSteps []ports.LifecycleStep) {

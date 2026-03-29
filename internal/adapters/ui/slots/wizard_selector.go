@@ -686,6 +686,11 @@ func (m *WizardModel) IsCanceled() bool {
 	return m.canceled
 }
 
+// GetSelectedSlot returns the slot that was selected in the wizard (e.g., "dev", "data", "sandbox").
+func (m *WizardModel) GetSelectedSlot() string {
+	return m.selectedSlot
+}
+
 // RunWizard runs the interactive wizard-style slot selector TUI.
 // Returns the selected item IDs, whether the user confirmed (true) or cancelled (false), and any error.
 func RunWizard(items []slots.SlotItem, pres ports.IPresenter) ([]string, bool, error) {
@@ -701,6 +706,11 @@ func RunWizard(items []slots.SlotItem, pres ports.IPresenter) ([]string, bool, e
 	)
 
 	finalModel, err := p.Run()
+
+	// Ensure terminal is cleaned up properly even if there's an error
+	// This prevents the "corrupted text" issue when running multiple times
+	cleanupTerminal()
+
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to run wizard selector: %w", err)
 	}
@@ -715,4 +725,56 @@ func RunWizard(items []slots.SlotItem, pres ports.IPresenter) ([]string, bool, e
 	}
 
 	return resultModel.GetSelectedIDs(), true, nil
+}
+
+// WizardResult holds the result of a wizard selection.
+type WizardResult struct {
+	SelectedIDs  []string
+	SelectedSlot string
+}
+
+// RunWizardWithSlot runs the wizard and returns both selected items AND the selected slot.
+// This is useful for build operations where the slot determines the image name.
+func RunWizardWithSlot(items []slots.SlotItem, pres ports.IPresenter) ([]string, string, bool, error) {
+	model := NewWizardModel(pres)
+
+	// Store all items for later filtering when slot is selected
+	model.allItems = items
+
+	p := tea.NewProgram(model,
+		tea.WithAltScreen(),
+		tea.WithInput(os.Stdin),
+		tea.WithOutput(os.Stdout),
+	)
+
+	finalModel, err := p.Run()
+
+	// Ensure terminal is cleaned up properly even if there's an error
+	cleanupTerminal()
+
+	if err != nil {
+		return nil, "", false, fmt.Errorf("failed to run wizard selector: %w", err)
+	}
+
+	resultModel, ok := finalModel.(*WizardModel)
+	if !ok {
+		return nil, "", false, fmt.Errorf("unexpected model type: %T", finalModel)
+	}
+
+	if resultModel.canceled {
+		return nil, "", false, nil
+	}
+
+	return resultModel.GetSelectedIDs(), resultModel.GetSelectedSlot(), true, nil
+}
+
+// cleanupTerminal forces exit from alternate screen mode and flushes stdout
+// to prevent corrupted display when running Bubble Tea programs multiple times
+func cleanupTerminal() {
+	// Exit alternate screen mode
+	fmt.Print("\033[?1049l")
+	// Reset cursor visibility (show cursor)
+	fmt.Print("\033[?25h")
+	// Flush stdout to ensure sequences are sent
+	os.Stdout.Sync()
 }

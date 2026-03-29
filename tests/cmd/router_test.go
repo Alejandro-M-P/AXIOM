@@ -9,6 +9,7 @@ import (
 	"axiom/internal/ports"
 	"axiom/internal/router"
 	"axiom/internal/slots"
+	"axiom/tests/mocks"
 )
 
 // mockUI implements ports.IPresenter for testing
@@ -207,6 +208,14 @@ func (m *mockSlotManager) GetSelectedItems(category string) ([]slots.SlotItem, e
 	return []slots.SlotItem{}, nil
 }
 
+func (m *mockSlotManager) GetAvailableItems(category string) ([]slots.SlotItem, error) {
+	return []slots.SlotItem{}, nil
+}
+
+func (m *mockSlotManager) GetAllAvailableItems() ([]slots.SlotItem, error) {
+	return []slots.SlotItem{}, nil
+}
+
 func (m *mockSlotManager) RunSlotSelector(category string, items []slots.SlotItem, preselected []string) ([]string, bool, error) {
 	return []string{}, false, nil
 }
@@ -224,7 +233,10 @@ func newTestRouter() (*router.Router, *mockBunkerManager, *mockBuildManager, *mo
 	bm := newMockBunkerManager()
 	bld := &mockBuildManager{}
 	slm := &mockSlotManager{}
-	return router.NewRouter(bm, bld, slm), bm, bld, slm
+	// Use empty string and mocks filesystem for tests
+	mockFS := mocks.NewMockFileSystem()
+	mockFS.Dirs["/home/test/axiom"] = true
+	return router.NewRouter(bm, bld, slm, "/home/test/axiom", mockFS), bm, bld, slm
 }
 
 // ============================================================================

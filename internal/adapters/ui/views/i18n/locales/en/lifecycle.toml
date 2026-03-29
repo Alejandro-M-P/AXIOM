@@ -66,3 +66,51 @@ footer = "Everything is clean."
 [warnings.prune_completed]
 title = "Prune Completed"
 desc = "The space from the orphan environments was freed."
+
+# Build process translations
+[build]
+title = "Building: %s"
+subtitle_base = "GPU: %s | Mode: %s"
+subtitle_host = "host"
+subtitle_image = "image"
+success_sub = "Image %s built successfully"
+image_exists_title = "Existing Image"
+image_exists_warning = "Warning"
+image_exists_desc = "This image already exists. It will be overwritten if you continue."
+image_exists_confirm = "Overwrite existing image?"
+
+[step]
+prepare_dirs = "Prepare directories"
+recreate_container = "Recreate container"
+install_base = "Install base system"
+install_dev = "Install development tools"
+install_ai = "Install AI stack"
+install_data = "Install databases"
+export_image = "Export image"
+
+[detail]
+base_pkgs = "System packages"
+dev_tools = "Development tools"
+ai_stack = "AI/LLM stack"
+data_stack = "Databases"
+sync_cmd = "Syncing repositories"
+pkgs_count = "%d packages"
+npm_global = "Global npm install"
+tmp_pacman = "Cleaning pacman cache"
+
+[task]
+sync_repos = "Sync repos"
+install_pkgs = "Install packages"
+install_opencode = "Install opencode"
+install_ollama = "Install Ollama"
+clean_caches = "Clean caches"
+
+[group]
+base = "Base System"
+dev = "Dev Tools"
+ai = "AI Stack"
+
+[rebuild]
+title = "Rebuild Image"
+subtitle = "Removing and rebuilding"
+step_rm_image = "Remove previous image"

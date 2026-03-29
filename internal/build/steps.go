@@ -14,6 +14,8 @@ type ModelStackConfig struct {
 }
 
 // InstallSystemBase installs the base system packages in the container.
+// NOTE: This function should be called within a Progress.RunStep() from the build manager.
+// It logs progress instead of creating a nested Progress to avoid UI conflicts.
 func InstallSystemBase(ctx context.Context, containerName string, cfg *BuildContext, ui ports.IPresenter, exec func(context.Context, string, ...string) error) error {
 	packages := []string{"base-devel", "git", "curl", "jq", "wget", "nodejs", "npm", "go", "fzf", "starship"}
 	if cfg.Config.ROCMMode == "image" {
@@ -27,106 +29,72 @@ func InstallSystemBase(ctx context.Context, containerName string, cfg *BuildCont
 		}
 	}
 
-	progress := NewProgress(ui, "",
-		ui.GetText("group.base"),
-		[]ports.LifecycleStep{
-			{Title: ui.GetText("task.sync_repos"), Detail: ui.GetText("detail.sync_cmd"), Status: ports.LifecyclePending},
-			{Title: ui.GetText("task.install_pkgs"), Detail: ui.GetText("detail.pkgs_count", len(packages)), Status: ports.LifecyclePending},
-		})
-
-	// Step 0: Sync repos
-	progress.StartStep(0)
+	// Sync repos
+	ui.ShowLog("info", ui.GetText("task.sync_repos"))
 	if err := exec(ctx, "sudo", "pacman", "-Sy", "--noconfirm"); err != nil {
-		progress.FailStep(err)
-		return err
+		return fmt.Errorf("failed to sync repos: %w", err)
 	}
-	progress.FinishStep()
 
-	// Step 1: Install packages
-	progress.StartStep(1)
+	// Install packages
+	ui.ShowLog("info", ui.GetText("task.install_pkgs"), ui.GetText("detail.pkgs_count", len(packages)))
 	args := []string{"sudo", "pacman", "-S", "--needed", "--noconfirm"}
 	args = append(args, packages...)
 	if err := exec(ctx, args[0], args[1:]...); err != nil {
-		progress.FailStep(err)
-		return err
+		return fmt.Errorf("failed to install packages: %w", err)
 	}
-	progress.FinishStep()
 
-	// Step 2: Install Homebrew
-	progress.StartStep(2)
+	// Install Homebrew
+	ui.ShowLog("info", "Installing Homebrew")
 	cmd := "NONINTERACTIVE=1 /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
 	if err := exec(ctx, "bash", "-c", cmd); err != nil {
-		progress.FailStep(err)
-		return err
+		return fmt.Errorf("failed to install homebrew: %w", err)
 	}
-	progress.FinishStep()
 
 	return nil
 }
 
 // InstallDeveloperTools installs development tools (opencode, engram, gentle-ai).
+// NOTE: This function should be called within a Progress.RunStep() from the build manager.
+// It logs progress instead of creating a nested Progress to avoid UI conflicts.
 func InstallDeveloperTools(ctx context.Context, containerName string, cfg *BuildContext, ui ports.IPresenter, exec func(context.Context, string, ...string) error) error {
-	progress := NewProgress(ui, "",
-		ui.GetText("group.dev"),
-		[]ports.LifecycleStep{
-			{Title: ui.GetText("task.install_opencode"), Detail: ui.GetText("detail.npm_global"), Status: ports.LifecyclePending},
-			{Title: "Configurando Homebrew Tap", Detail: "Gentleman-Programming/homebrew-tap", Status: ports.LifecyclePending},
-			{Title: "Instalando herramientas de desarrollo", Detail: "brew install engram gentle-ai", Status: ports.LifecyclePending},
-		})
-
-	// Step 0: Install opencode via npm
-	progress.StartStep(0)
+	// Install opencode via npm
+	ui.ShowLog("info", ui.GetText("task.install_opencode"))
 	if err := exec(ctx, "sudo", "npm", "install", "-g", "opencode-ai"); err != nil {
-		progress.FailStep(err)
-		return err
+		return fmt.Errorf("failed to install opencode: %w", err)
 	}
-	progress.FinishStep()
 
 	brewPath := "/home/linuxbrew/.linuxbrew/bin/brew"
 
-	// Step 1: Add Homebrew tap
-	progress.StartStep(1)
+	// Add Homebrew tap
+	ui.ShowLog("info", "Configuring Homebrew Tap: Gentleman-Programming/homebrew-tap")
 	if err := exec(ctx, brewPath, "tap", "Gentleman-Programming/homebrew-tap"); err != nil {
-		progress.FailStep(err)
-		return err
+		return fmt.Errorf("failed to add homebrew tap: %w", err)
 	}
-	progress.FinishStep()
 
-	// Step 2: Install engram and gentle-ai
-	progress.StartStep(2)
+	// Install engram and gentle-ai
+	ui.ShowLog("info", "Installing development tools: engram gentle-ai")
 	if err := exec(ctx, brewPath, "install", "engram", "gentle-ai"); err != nil {
-		progress.FailStep(err)
-		return err
+		return fmt.Errorf("failed to install dev tools: %w", err)
 	}
-	progress.FinishStep()
 
 	return nil
 }
 
 // InstallModelStack installs Ollama and configures the AI stack.
+// NOTE: This function should be called within a Progress.RunStep() from the build manager.
+// It logs progress instead of creating a nested Progress to avoid UI conflicts.
 func InstallModelStack(ctx context.Context, containerName string, cfg *BuildContext, modelConfig ModelStackConfig, ui ports.IPresenter, exec func(context.Context, string, ...string) error) error {
-	progress := NewProgress(ui, "",
-		ui.GetText("group.ai"),
-		[]ports.LifecycleStep{
-			{Title: ui.GetText("task.install_ollama"), Detail: cfg.GPUInfo.Type, Status: ports.LifecyclePending},
-			{Title: ui.GetText("task.clean_caches"), Detail: ui.GetText("detail.tmp_pacman"), Status: ports.LifecyclePending},
-		})
-
-	// Step 0: Install Ollama
-	progress.StartStep(0)
+	// Install Ollama
+	ui.ShowLog("info", ui.GetText("task.install_ollama"), cfg.GPUInfo.Type)
 	if err := installOllama(ctx, cfg.GPUInfo.Type, exec); err != nil {
-		progress.FailStep(err)
-		return err
+		return fmt.Errorf("failed to install ollama: %w", err)
 	}
-	progress.FinishStep()
 
-	// Step 1: Clean build caches
-	progress.StartStep(1)
+	// Clean build caches
+	ui.ShowLog("info", ui.GetText("task.clean_caches"))
 	if err := cleanBuildCaches(ctx, exec); err != nil {
-		progress.FailStep(err)
-		return err
+		return fmt.Errorf("failed to clean caches: %w", err)
 	}
-	progress.FinishStep()
 
 	return nil
 }

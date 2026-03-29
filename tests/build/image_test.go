@@ -21,7 +21,7 @@ func TestBuildContextCreation(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	buildCtx, err := build.PrepareBuildContext(ctx, cfg, "test-container")
+	buildCtx, err := build.PrepareBuildContext(ctx, cfg, "test-container", "dev")
 
 	if err != nil {
 		t.Fatalf("PrepareBuildContext failed: %v", err)

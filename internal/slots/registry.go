@@ -103,3 +103,17 @@ func GetRegistry() ISlotRegistry {
 func RegisterItem(item *SlotItem) {
 	globalRegistry.Register(item)
 }
+
+// ValidateNotEmpty checks if the registry contains any registered items.
+// Returns an error if the registry is empty.
+func ValidateNotEmpty() error {
+	if len(globalRegistry.itemsByID) == 0 {
+		return fmt.Errorf("slot registry is empty: no items registered")
+	}
+	return nil
+}
+
+// ItemCount returns the number of registered items in the global registry.
+func ItemCount() int {
+	return len(globalRegistry.itemsByID)
+}
