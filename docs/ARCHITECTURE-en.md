@@ -9,48 +9,174 @@ This allows AXIOM to be highly testable, scalable, and operable by both humans (
 
 ## 📂 Directory Structure
 
-All public and reusable source code is located in `pkg/`. The entry point is in `cmd/`.
+All business code is in `internal/`. Entry point is in `cmd/`.
 
-```text
-.
-├── cmd/axiom/                  # Entry point. Initializes and injects dependencies.
-├── pkg/
-│   ├── core/                   # 🧠 LAYER 1: Pure Business Logic
-│   │   ├── domain/             # Entities (Pure Structs: Bunker, Config).
-│   │   ├── ports/              # Interfaces that dictate how to interact with the outside.
-│   │   └── services/           # Business rules (Create, Validate, Delete).
-│   ├── controller/             # 🕹️ LAYER 2: The Orchestrator
-│   │   └── orchestrator.go     # Receives commands from main, queries, and delegates to the Core.
-│   └── adapters/               # 🔌 LAYER 3: Adapters (Outside World)
-│       ├── system/             # Interactions with OS, GPUs, and installations.
-│       ├── podman/             # Execution of container commands.
-│       ├── ui/                 # Human interface (Graphical terminal, colors, i18n).
-│       └── api/                # Machine interface (JSON output for AI agents).
-├── configs/assets/             # Static configuration files (opencode, starship).
-└── scripts/legacy_bash/        # Legacy scripts undergoing migration.
+```
+cmd/axiom/                  # Entry point
+├── main.go                 # Bootstrap + DI
+└── router_commands.go      # Router re-exports
+
+internal/                   # 🔒 Private AXIOM code
+├── domain/                 # 🧠 ENTITIES (pure, no deps)
+│   ├── bunker.go          # Bunker, BunkerConfig
+│   ├── system.go          # GPUInfo, EnvConfig
+│   └── slot.go            # SlotItem, SlotSelection
+│
+├── ports/                  # 🔌 CONTRACTS (interfaces)
+│   ├── runtime.go          # IBunkerRuntime
+│   ├── filesystem.go      # IFileSystem
+│   ├── system.go          # ISystem
+│   └── presenter.go       # IPresenter
+│
+├── bunker/                 # 🎯 DOMAIN: Bunker lifecycle
+│   ├── manager.go          # BunkerManager (coordinator)
+│   ├── create.go          # CreateBunker
+│   ├── delete.go          # DeleteBunker + DeleteImage
+│   ├── list.go            # ListBunkers + Info
+│   ├── stop.go            # StopBunker
+│   ├── prune.go           # PruneBunkers
+│   └── helpers.go         # sanitize, formatBytes
+│
+├── build/                  # 🎯 DOMAIN: Image build
+│   ├── manager.go          # BuildManager
+│   ├── image.go           # BuildImage + RebuildImage
+│   ├── steps.go           # Installation steps
+│   ├── progress.go       # Progress rendering
+│   └── gpu.go            # GPU detection & resolution
+│
+├── slots/                  # 🎯 DOMAIN: Slot system
+│   ├── manager.go         # SlotManager
+│   ├── registry.go       # Item discoverer
+│   ├── engine.go         # Installation engine
+│   ├── domain.go         # Domain models
+│   ├── loader.go         # TOML loading
+│   ├── base/             # Base system tools
+│   ├── dev/              # DEV slots (1 file = 1 item)
+│   │   ├── ia/           # Ollama, Opencode, Engram, Gentle
+│   │   ├── languages/    # Go, Node.js, Python
+│   │   └── tools/        # Starship
+│   ├── data/             # DATA slots (DBs)
+│   │   ├── postgres.go, mysql.go, mongodb.go, redis.go, sqlite.go
+│   └── sandbox/          # SANDBOX slot (empty)
+│
+├── router/                 # CLI command router
+│   └── router.go          # Handle() with 14 commands
+│
+└── adapters/              # 🔧 INFRASTRUCTURE
+    ├── runtime/           # Podman/Distrobox
+    │   ├── commands.go   # "podman", "distrobox" commands
+    │   └── podman.go     # IBunkerRuntime adapter
+    ├── filesystem/       # Filesystem
+    │   └── local.go     # IFileSystem adapter
+    ├── system/           # System, GPU, Config
+    │   ├── install.go   # Installation
+    │   ├── config.go    # TOML config
+    │   └── gpu/gpu.go   # GPU detection
+    └── ui/              # User interface
+        ├── views/        # Presenter, form, confirm
+        ├── styles/       # TUI styles
+        ├── theme/        # Themes
+        └── slots/        # Slot selector (Bubbletea)
 ```
 
 ---
 
-## ⚠️ The 4 Golden Rules (To Avoid Breaking Anything)
+## 🗑️ Legacy Scripts (Deprecated)
+
+> **Scripts in `lib/` and `scripts/` are NO LONGER USED.** They remain only as historical reference for the refactor.
+
+| Script | Status | Notes |
+|--------|--------|-------|
+| `lib/bunker_lifecycle.sh` | ❌ Deprecated | Functionality migrated to `internal/bunker/` |
+| `lib/git.sh` | ❌ Deprecated | Git tools planned for future migration |
+| `lib/env.sh` | ❌ Deprecated | Migrated to `adapters/system/config.go` |
+| `lib/gpu.sh` | ❌ Deprecated | Migrated to `adapters/system/gpu/gpu.go` |
+| `scripts/install.sh` | ❌ Deprecated | Migrated to `axiom init` (TUI) |
+
+---
+
+## ⚠️ The Golden Rules (To Avoid Breaking Anything)
 
 If you are going to modify or add code to AXIOM, **you must strictly respect these rules**:
 
 ### 1. Dependencies Flow Inward ⬇️
+```
+cmd/ → internal/ → domain → ports → bunker/build → adapters
+```
 - `cmd/` can import anything.
-- `pkg/adapters/` can import from `pkg/core/` and `pkg/controller/`.
-- `pkg/controller/` can import from `pkg/core/`.
-- **`pkg/core/` CANNOT import ANYTHING from `adapters`, `controller`, or `cmd`.** The Core is blind and does not know what type of interface is using it.
+- `internal/` can import from `domain/` and `ports/`.
+- **`internal/` CANNOT import ANYTHING from `adapters`**. The Core is blind and does not know what type of interface is using it.
 
 ### 2. Using `fmt.Print` in the Core is Forbidden 🚫🖨️
-The `pkg/core/` or `pkg/controller/` layer **must never** print directly to the screen (no `fmt.Println` or `log.Fatal`).
-- **How do I show an error or message?** You must use the `ports.IPresenter` interface (e.g., `presenter.ShowError(err)`). This way, if we are in console mode, it will be drawn in red; but if we are in AI Agent mode, it will be output as clean JSON.
+The `internal/` layer **must never** print directly to the screen.
+- **How do I show an error or message?** Use the `ports.IPresenter` interface (e.g., `presenter.ShowError(err)`).
 
 ### 3. Everything Communicates Through Domain Models 📦
-If you create a service that lists slots, do not return a block of text or formatted strings. Return a `[]domain.Slot`. It will be the job of the `adapters/ui/` layer to convert that array into a colorful table.
+Return domain structs (`[]domain.Bunker`), not formatted strings.
+Formatting for the user is the job of `adapters/ui/`.
 
 ### 4. Avoid Hardcoded Paths 🗺️
-Files like `opencode.json` or scripts should be read from the corresponding system directory or from configured directories (e.g., `configs/assets/`), never rigidly injected into the Core's logic.
+Files like `opencode.json` or scripts should be in `configs/`, never hardcoded.
+
+### 5. Each Slot Item = 1 Separate File 📦
+Each installable item (ollama, engram, postgres, etc.) lives in its **own .go file**.
+- No monolithic files with multiple installations
+- Adding a new item = create a new file, not modifying an existing one
+
+### 6. SlotManager is the Central Orchestrator 🎛️
+The `SlotManager` (in `internal/slots/manager.go`) is the only one that knows all available slots.
+
+---
+
+## 🚀 Available Commands
+
+| Command | Alias | Description | Status |
+|---------|-------|-------------|--------|
+| `create` | - | Create bunker (choose image) | ✅ |
+| `delete` | `rm` | Delete bunker | ✅ |
+| `list` | `ls` | List bunkers | ✅ |
+| `stop` | - | Stop bunker | ✅ |
+| `prune` | - | Clean orphans | ✅ |
+| `info` | - | Bunker info | ✅ |
+| `delete-image` | - | Delete image | ✅ |
+| `build` | - | Build image with slots | ✅ |
+| `rebuild` | - | Rebuild image | ⚠️ WIP |
+| `init` | - | Init wizard | ✅ |
+| `slots` | - | Show available slots | ✅ |
+| `enter` | - | Enter bunker | ⚠️ Partial |
+| `reset` | - | Total reset | ⚠️ WIP |
+| `help` | `-h`, `--help` | Help | ✅ |
+
+---
+
+## 🛡️ Implemented Slots
+
+| Category | Slot | Items |
+|----------|------|-------|
+| **DEV** | AI | Ollama, Opencode, Engram, Gentle-AI |
+| **DEV** | Languages | Go, Node.js, Python, Rust |
+| **DEV** | Tools | Starship |
+| **DATA** | Databases | PostgreSQL, MySQL, MongoDB, Redis, SQLite |
+| **SANDBOX** | Empty | Empty minimal image |
+
+---
+
+## 🧪 Tests
+
+```bash
+make test              # All tests with race detector
+make test-unit         # Tests without race (faster)
+make test-coverage     # With coverage report
+```
+
+### Coverage
+
+| Package | Coverage |
+|---------|----------|
+| `adapters/filesystem` | ~89% |
+| `adapters/runtime` | ~77% |
+| `bunker` | ~70%+ |
+| `build` | ~65%+ |
 
 ---
 
@@ -58,9 +184,33 @@ Files like `opencode.json` or scripts should be read from the corresponding syst
 
 Follow this workflow to add a new command (e.g., `axiom snapshot`):
 
-1.  **Core (Domain):** Do we need a new data model? (e.g., `type Snapshot struct`). Add it to `pkg/core/domain/`.
-2.  **Core (Ports):** Do we need Podman to do something new? Add the function to the `IPodman` interface in `pkg/core/ports/`.
-3.  **Core (Services):** Create the pure logic in `pkg/core/services/snapshot.go` that receives the ports and implements the validations.
-4.  **Adapters:** Implement the actual call to Podman in `pkg/adapters/podman/` and design how it will look on screen in `pkg/adapters/ui/views/`.
-5.  **Controller:** Add the route in the Orchestrator (`pkg/controller/`) so that when the user types `axiom snapshot`, it connects the Service with the Adapter.
-6.  **Main:** Make sure the dependencies are correctly injected in `cmd/axiom/main.go`.
+1.  **Domain:** Need a new data model? Add it to `internal/domain/`.
+2.  **Ports:** Need Podman to do something new? Add it to `internal/ports/`.
+3.  **Bunker/Build:** Create the logic in `internal/bunker/` or `internal/build/`.
+4.  **Adapters:** Implement the call in `internal/adapters/runtime/`.
+5.  **UI:** Design how it looks in `internal/adapters/ui/views/`.
+6.  **Router:** Add the route in `internal/router/router.go`.
+7.  **Main:** Ensure DI in `cmd/axiom/main.go`.
+
+---
+
+## 🎯 Switching from Podman to Docker
+
+The goal is that switching from Podman to Docker should be **1 file + 1 variable** change.
+
+### 1. `internal/adapters/runtime/commands.go`
+```go
+// THIS IS THE ONLY FILE with "podman", "distrobox" strings
+var Podman = CommandSet{
+    CreateBunker: func(name, image, home, flags string) []string {
+        return []string{"distrobox-create", "--name", name, ...}
+    },
+}
+```
+
+### 2. `cmd/axiom/main.go`
+```go
+// Change this line to use Docker:
+runtime = podman.NewPodmanAdapter(commands.Podman)
+// runtime = docker.NewDockerAdapter(commands.Docker)
+```

@@ -200,7 +200,21 @@ strings         implementation        IBunkerRuntime
 
 ---
 
-## 🔄 Estado de Refactorización
+## 🗑️ Scripts Legacy (Deprecated)
+
+> **Los scripts en `lib/` y `scripts/` ya NO se usan.** Quedan únicamente como referencia histórica para la refactorización.
+
+| Script | Estado | Notas |
+|--------|--------|-------|
+| `lib/bunker_lifecycle.sh` | ❌ Deprecated | Funcionalidad migrada a `internal/bunker/` |
+| `lib/git.sh` | ❌ Deprecated | Git tools planeados para migración futura |
+| `lib/env.sh` | ❌ Deprecated | Migrado a `adapters/system/config.go` |
+| `lib/gpu.sh` | ❌ Deprecated | Migrado a `adapters/system/gpu/gpu.go` |
+| `scripts/install.sh` | ❌ Deprecated | Migrado a `axiom init` (TUI) |
+
+---
+
+## 🔄 Estado de Implementación
 
 ### ✅ AXIOM 2.0 COMPLETO (2026-03-28)
 
@@ -247,20 +261,22 @@ make test-coverage     # Con coverage report
 
 ## 🚀 Comandos Disponibles
 
-| Comando | Alias | Descripción |
-|---------|-------|-------------|
-| `create` | - | Crear bunker (elige imagen: axiom-dev, axiom-data, axiom-sandbox) |
-| `delete` | `rm` | Eliminar bunker |
-| `list` | `ls` | Listar bunkers |
-| `stop` | - | Detener bunker |
-| `prune` | - | Limpiar bunkers huérfanos |
-| `build` | - | Construir imagen con slots seleccionados |
-| `rebuild` | - | Reconstruir imagen |
-| `info` | - | Info de bunker |
-| `enter` | - | Entrar a bunker |
-| `init` | - | Inicializar AXIOM |
-| `help` | `-h`, `--help` | Mostrar ayuda |
-| `slots` | - | Mostrar slots disponibles |
+| Comando | Alias | Descripción | Estado |
+|---------|-------|-------------|--------|
+| `create` | - | Crear bunker (elige imagen) | ✅ |
+| `delete` | `rm` | Eliminar bunker | ✅ |
+| `list` | `ls` | Listar bunkers | ✅ |
+| `stop` | - | Detener bunker | ✅ |
+| `prune` | - | Limpiar huérfanos | ✅ |
+| `info` | - | Info de bunker | ✅ |
+| `delete-image` | - | Eliminar imagen | ✅ |
+| `build` | - | Construir imagen con slots | ✅ |
+| `rebuild` | - | Reconstruir imagen | ⚠️ WIP |
+| `init` | - | Wizard de inicialización | ✅ |
+| `slots` | - | Mostrar slots disponibles | ✅ |
+| `enter` | - | Entrar a bunker | ⚠️ Parcial |
+| `reset` | - | Reset total | ⚠️ WIP |
+| `help` | `-h`, `--help` | Mostrar ayuda | ✅ |
 
 ---
 
@@ -336,10 +352,10 @@ func (s *Ollama) Install(ctx context.Context, exec Executor) error {
 | Slot | Categoría | Items |
 |------|-----------|-------|
 | **DEV** | IA | opencode, engram, gentle-ai, ollama |
-| **DEV** | Languages | go, nodejs, python |
+| **DEV** | Languages | go, nodejs, python, rust |
 | **DEV** | Tools | starship |
-| **DATA** | Bases de Datos | postgres, mysql, mongodb, redis, sqlite |
-| **SANDBOX** | — | `empty.go` — imagen mínima sola |
+| **DATA** | Databases | postgres, mysql, mongodb, redis, sqlite |
+| **SANDBOX** | — | empty — imagen mínima |
 
 ---
 
