@@ -50,7 +50,7 @@ func main() {
 	slotManager := slots.NewSlotManager(slotRegistry, slotEngine, uiAdapter, fsAdapter)
 
 	// Create build slot adapter and wire it up
-	buildSlotAdapter := newBuildSlotAdapter(slotManager)
+	buildSlotAdapter := newBuildSlotAdapter(slotManager, uiAdapter)
 
 	// Create build manager with the slot adapter
 	buildManager := build.NewManager(runtimeAdapter, fsAdapter, uiAdapter, "axiom-build", buildSlotAdapter)

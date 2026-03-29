@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"axiom/internal/domain"
+	"axiom/internal/ports"
 )
 
 // EnvConfig alias para domain.EnvConfig para evitar imports múltiples
@@ -230,7 +231,78 @@ func ensureTutorFile(path string) error {
 
 // LoadEnvFile parsea el archivo .env y retorna una configuración.
 func LoadEnvFile(fs interface{}, path string) (EnvConfig, error) {
-	// Placeholder - en la implementación real se usaría fs.(ports.IFileSystem)
-	// Por ahora retornamos config vacía
-	return EnvConfig{}, nil
+	fileSystem, ok := fs.(ports.IFileSystem)
+	if !ok {
+		return EnvConfig{}, fmt.Errorf("invalid filesystem interface")
+	}
+
+	data, err := fileSystem.ReadFile(path)
+	if err != nil {
+		// Si el archivo no existe, retornamos config vacía (no es error)
+		return EnvConfig{}, nil
+	}
+
+	cfg := EnvConfig{}
+	lines := strings.Split(string(data), "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Ignorar líneas vacías y comentarios
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parsear formato KEY="value" o KEY=value
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Remover comillas si existen
+		if len(value) >= 2 && strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
+			value = value[1 : len(value)-1]
+		}
+
+		// Mapear las variables de entorno a los campos de EnvConfig
+		switch key {
+		case "AXIOM_PATH":
+			cfg.AxiomPath = value
+		case "AXIOM_BASE_DIR":
+			cfg.BaseDir = value
+		case "AXIOM_GIT_USER":
+			cfg.GitUser = value
+		case "AXIOM_GIT_EMAIL":
+			cfg.GitEmail = value
+		case "AXIOM_GIT_TOKEN":
+			cfg.GitToken = value
+		case "AXIOM_AUTH_MODE":
+			cfg.AuthMode = value
+		case "AXIOM_GPU_TYPE":
+			cfg.GPUType = value
+		case "AXIOM_GFX_VAL":
+			cfg.GFXVal = value
+		case "AXIOM_ROCM_MODE":
+			cfg.ROCMMode = value
+		}
+	}
+
+	// Convertir BaseDir a ruta absoluta
+	if cfg.BaseDir == "" || cfg.BaseDir == "." {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return cfg, fmt.Errorf("failed to get current working directory: %w", err)
+		}
+		cfg.BaseDir = cwd
+	} else {
+		absPath, err := filepath.Abs(cfg.BaseDir)
+		if err != nil {
+			return cfg, fmt.Errorf("failed to resolve absolute path: %w", err)
+		}
+		cfg.BaseDir = absPath
+	}
+
+	return cfg, nil
 }

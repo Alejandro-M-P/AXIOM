@@ -3,6 +3,8 @@ package build
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 
 	"axiom/internal/domain"
 	"axiom/internal/ports"
@@ -72,8 +74,42 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 		selections = []SlotSelection{}
 	}
 
-	// If no selections exist, run the slot selector
-	if len(selections) == 0 || !m.hasValidSelection(selections) {
+	// If selections exist, ask user whether to use them or reselect
+	if len(selections) > 0 && m.hasValidSelection(selections) {
+		// Count total selected items
+		totalItems := 0
+		for _, sel := range selections {
+			totalItems += len(sel.Selected)
+		}
+
+		m.ui.ShowLogo()
+		m.ui.ShowCommandCard(
+			"build",
+			[]ports.Field{
+				{Label: "slot_wizard.previous_selection_title", Value: m.ui.GetText("slot_wizard.previous_selection_desc")},
+				{Label: "slot_wizard.items_selected", Value: fmt.Sprintf("%d", totalItems)},
+			},
+			nil,
+		)
+
+		usePrevious, err := m.ui.AskConfirm("slot_wizard.use_previous")
+		if err != nil {
+			return fmt.Errorf("failed to ask confirmation: %w", err)
+		}
+
+		if !usePrevious {
+			// User wants to reselect
+			m.ui.ShowLog("info", "Running slot selector...")
+			selections, err = m.runSlotSelectionUI()
+			if err != nil {
+				return fmt.Errorf("slot selection failed: %w", err)
+			}
+			if len(selections) == 0 {
+				return fmt.Errorf("build cancelled: no slot selection made")
+			}
+		}
+	} else {
+		// No selections exist, run the slot selector
 		m.ui.ShowLog("info", "No slot selection found. Running slot selector...")
 		selections, err = m.runSlotSelectionUI()
 		if err != nil {
@@ -359,10 +395,22 @@ func (m *Manager) installModelStack(ctx context.Context, buildCtx *BuildContext)
 	return InstallModelStack(ctx, m.buildContainer, buildCtx, modelConfig, m.ui, exec)
 }
 
-// exportBuildImage commits the container to an image.
-// Note: This requires a host command since IBunkerRuntime doesn't have Commit.
+// exportBuildImage commits the container to an image using podman commit.
+// Note: This uses a host command since IBunkerRuntime doesn't have Commit method.
 func (m *Manager) exportBuildImage(ctx context.Context, buildCtx *BuildContext) error {
-	// TODO: This needs a host command approach since IBunkerRuntime doesn't have CommitContainer
-	// For now, we'll use a placeholder that indicates this needs implementation
-	return fmt.Errorf("export_image: IBunkerRuntime does not support image commit - requires host command")
+	// Use podman commit to save the container as an image
+	cmd := exec.CommandContext(ctx, "podman", "commit",
+		"-a", "axiom",
+		"-m", "AXIOM build image",
+		m.buildContainer,
+		buildCtx.ImageName,
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("export_image: failed to commit container: %w", err)
+	}
+
+	return nil
 }

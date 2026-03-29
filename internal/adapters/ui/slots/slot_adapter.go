@@ -2,19 +2,22 @@
 package slots
 
 import (
+	"axiom/internal/ports"
 	"axiom/internal/slots"
 )
 
 // SlotSelectorUI provides the TUI for slot selection.
 // It wraps the slot manager and provides interactive selection.
 type SlotSelectorUI struct {
-	manager *slots.SlotManager
+	manager   *slots.SlotManager
+	presenter ports.IPresenter
 }
 
 // NewSlotSelectorUI creates a new SlotSelectorUI.
-func NewSlotSelectorUI(manager *slots.SlotManager) *SlotSelectorUI {
+func NewSlotSelectorUI(manager *slots.SlotManager, pres ports.IPresenter) *SlotSelectorUI {
 	return &SlotSelectorUI{
-		manager: manager,
+		manager:   manager,
+		presenter: pres,
 	}
 }
 
@@ -61,6 +64,12 @@ func runSlotSelectorWithGroups(groups []ItemGroup) ([]string, bool, error) {
 		return nil, false, nil
 	}
 	return result, true, nil
+}
+
+// RunWizard presents the wizard-style slot selector.
+// Returns selected item IDs and whether user confirmed.
+func (u *SlotSelectorUI) RunWizard(items []slots.SlotItem) ([]string, bool, error) {
+	return RunWizard(items, u.presenter)
 }
 
 // buildItemGroups converts []slots.SlotItem to []ItemGroup for the UI.

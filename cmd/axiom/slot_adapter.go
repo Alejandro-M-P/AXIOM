@@ -3,6 +3,7 @@ package main
 import (
 	"axiom/internal/adapters/ui/slots"
 	"axiom/internal/build"
+	"axiom/internal/ports"
 	slotmanager "axiom/internal/slots"
 )
 
@@ -17,30 +18,33 @@ type buildSlotAdapter struct {
 // This allows the SlotManager to use the TUI selector while keeping the UI dependency
 // in the adapter layer.
 type uiRunnerAdapter struct {
-	ui *slots.SlotSelectorUI
+	ui      *slots.SlotSelectorUI
+	manager *slotmanager.SlotManager
 }
 
 // RunSlotSelector implements slotmanager.UISelectorRunner.
+// It calls the wizard-style selector instead of the flat selector.
 func (a *uiRunnerAdapter) RunSlotSelector(groups []slotmanager.ItemGroup) ([]string, error) {
-	// Use the Builder to construct ItemGroups since fields are private
-	builder := slots.NewBuilder()
-	for _, g := range groups {
-		for _, item := range g.Items {
-			// Builder.AddItem takes (subcategory, id, name, description)
-			// We use the group title as subcategory key
-			builder.AddItem(g.Title, item.ID, item.Name, item.Description)
-		}
+	// Get all items from registry to pass to wizard
+	items := a.manager.Discover()
+
+	// Call the wizard with all items
+	selected, confirmed, err := a.ui.RunWizard(items)
+	if err != nil {
+		return nil, err
 	}
-	uiGroups := builder.Build()
-	return a.ui.Execute(uiGroups)
+	if !confirmed {
+		return nil, nil // User cancelled
+	}
+	return selected, nil
 }
 
 // newBuildSlotAdapter creates a new build slot adapter.
-func newBuildSlotAdapter(manager *slotmanager.SlotManager) *buildSlotAdapter {
-	ui := slots.NewSlotSelectorUI(manager)
+func newBuildSlotAdapter(manager *slotmanager.SlotManager, pres ports.IPresenter) *buildSlotAdapter {
+	ui := slots.NewSlotSelectorUI(manager, pres)
 
 	// Create the UI runner adapter and inject it into the SlotManager
-	runner := &uiRunnerAdapter{ui: ui}
+	runner := &uiRunnerAdapter{ui: ui, manager: manager}
 	manager.SetUISelectorRunner(runner)
 
 	return &buildSlotAdapter{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -83,11 +84,23 @@ func BuildContainerFlags(cfg domain.EnvConfig) string {
 	)
 }
 
-// ExportBuildImage commits the build container to an image.
+// ExportBuildImage commits the build container to an image using podman commit.
 func ExportBuildImage(ctx context.Context, runtime ports.IBunkerRuntime, containerName string, imageName string) error {
-	// Commit is not in IBunkerRuntime, need to use host command
-	// This would need a different approach - for now return error indicating unimplemented
-	return fmt.Errorf("export_image_requires_host_command")
+	// Use podman commit since IBunkerRuntime doesn't have Commit method
+	cmd := exec.CommandContext(ctx, "podman", "commit",
+		"-a", "axiom",
+		"-m", "AXIOM build image",
+		containerName,
+		imageName,
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to commit container: %w", err)
+	}
+
+	return nil
 }
 
 // DestroyBuildContainer removes the build container and cleans up workspace.

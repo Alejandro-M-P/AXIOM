@@ -92,7 +92,15 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 	parts := strings.Split(key, ".")
 	if len(parts) == 2 {
 		cat, sub := parts[0], parts[1]
+		// Check Lifecycle first
 		if text, ok := Lifecycle[cat][sub]; ok {
+			if len(args) > 0 {
+				return fmt.Sprintf(text, args...)
+			}
+			return text
+		}
+		// Then check Commands (for slot_wizard, etc.)
+		if text, ok := Commands[cat][sub]; ok {
 			if len(args) > 0 {
 				return fmt.Sprintf(text, args...)
 			}
