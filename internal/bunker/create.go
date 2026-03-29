@@ -21,6 +21,11 @@ type BunkerFlags struct {
 
 // create maneja la lógica de creación de un búnker.
 func (m *Manager) create(ctx context.Context, name string) error {
+	return m.createWithImage(ctx, name, "")
+}
+
+// createWithImage maneja la lógica de creación de un búnker con imagen específica.
+func (m *Manager) createWithImage(ctx context.Context, name, image string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return fmt.Errorf("missing_name")
@@ -41,7 +46,12 @@ func (m *Manager) create(ctx context.Context, name string) error {
 	envDir := cfg.BuildWorkspaceDir(name)
 	rcPath := filepath.Join(envDir, ".bashrc")
 	hardware := resolveBuildGPU(cfg)
-	imageName := baseImageName(hardware.Type)
+
+	// Use provided image or auto-detect based on GPU
+	imageName := strings.TrimSpace(image)
+	if imageName == "" {
+		imageName = baseImageName(hardware.Type)
+	}
 	sshMounted := sshVolumeFlag() != ""
 
 	m.ui.ShowLogo()

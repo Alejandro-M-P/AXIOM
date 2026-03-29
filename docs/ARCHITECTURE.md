@@ -45,6 +45,35 @@ Todo el código de negocio está en `internal/`. El punto de entrada está en `c
 │   │   ├── progress.go          # Progress rendering
 │   │   └── gpu.go               # resolveBuildGPU, normalizeGPUType
 │   │
+│   ├── slots/                    # 🎯 DOMINIO: Sistema de slots instalables
+│   │   ├── manager.go           # SlotManager (coordinador central)
+│   │   ├── registry.go          # Descubre items disponibles
+│   │   ├── engine.go            # Ejecuta instalaciones ordenadas
+│   │   ├── domain.go            # Modelos: SlotItem, SlotSelection
+│   │   ├── dev/                 # Items DEV (1 archivo = 1 item)
+│   │   │   ├── ia/              # Herramientas IA
+│   │   │   │   ├── ollama.go    # Ollama LLM runtime
+│   │   │   │   ├── opencode.go  # opencode-ai
+│   │   │   │   ├── engram.go    # engram memoria IA
+│   │   │   │   └── gentle.go    # gentle-ai
+│   │   │   ├── languages/       # Programming languages
+│   │   │   │   ├── go.go        # Go
+│   │   │   │   ├── nodejs.go    # Node.js + npm
+│   │   │   │   └── python.go    # Python
+│   │   │   └── tools/           # Herramientas varias
+│   │   │       └── starship.go  # starship prompt
+│   │   ├── data/                # Items DATA (1 archivo = 1 item)
+│   │   │   ├── postgres.go      # PostgreSQL
+│   │   │   ├── mysql.go         # MySQL
+│   │   │   ├── mongodb.go       # MongoDB
+│   │   │   ├── redis.go         # Redis
+│   │   │   └── sqlite.go        # SQLite
+│   │   └── sandbox/             # Items SANDBOX
+│   │       └── empty.go         # Imagen mínima sin instalaciones
+│   │
+│   └── adapters/ui/slots/       # 🎯 TUI: Slot selector (Bubbletea)
+│       ├── slot_selector.go     # Componente TUI multi-select
+│       └── slot_adapter.go      # Bridge domain → UI
 │   └── adapters/                 # 🔧 INFRAESTRUCTURA
 │       ├── runtime/             # Container runtime
 │       │   ├── commands.go      # ⚠️ SOLO AQUÍ: "podman", "distrobox"
@@ -69,8 +98,24 @@ Todo el código de negocio está en `internal/`. El punto de entrada está en `c
 │   └── mocks/                  # Mocks compartidos
 │
 ├── configs/                     # 📄 Templates y assets
-│   ├── templates.go            # .bashrc, starship.toml
-│   └── assets/                  # opencode.json
+│   ├── assets/                  # opencode.json
+│   │   └── available.toml     # Comandos de instalación de slots
+│   └── slots/                  # (deprecated - usar i18n/locales)
+│
+├── internal/adapters/ui/views/i18n/  # 🌐 Traducciones
+│   └── locales/
+│       ├── en/
+│       │   ├── available.toml  # Nombres y descripciones EN
+│       │   ├── commands.toml
+│       │   ├── errors.toml
+│       │   ├── logs.toml
+│       │   └── prompts.toml
+│       └── es/
+│           ├── available.toml  # Nombres y descripciones ES
+│           ├── commands.toml
+│           ├── errors.toml
+│           ├── logs.toml
+│           └── prompts.toml
 │
 └── docs/                       # 📚 Documentación
 ```
@@ -99,6 +144,19 @@ El trabajo de formatear para el usuario es de `adapters/ui/`.
 
 ### 4. Evitar rutas *Hardcodeadas* 🗺️
 Archivos como `opencode.json` o scripts deben estar en `configs/`, nunca inyectados rígidamente.
+
+### 5. Cada Slot Item = 1 archivo separado 📦
+Cada item instalable (ollama, engram, postgres, etc.) vive en su **propio archivo .go**.
+- No hay archivos monolíticos con múltiples instalaciones
+- Agregar un nuevo item = crear un archivo nuevo, no modificar uno existente
+- El `SlotManager` coordina pero cada item se instala a sí mismo
+
+### 6. El SlotManager es el orquestador central 🎛️
+El `SlotManager` (en `internal/slots/manager.go`) es el único que conoce todos los slots disponibles.
+- `BuildManager` delega en `SlotManager`
+- `SlotManager` usa `Registry` para descubrir items
+- `SlotManager` usa `Engine` para ejecutar en orden
+- **Ningún item sabe del manager ni de otros items**
 
 ---
 
@@ -157,6 +215,18 @@ strings         implementation        IBunkerRuntime
 | 2026-03-28 | Tests | ~200+ tests con mocks, coverage 77-89% |
 | 2026-03-28 | Cleanup | Eliminado `pkg/` legacy, `unit_tests/` |
 
+### 🔄 AXIOM Slots System (Completado)
+
+| Fecha | Cambio | Descripción |
+|-------|--------|-------------|
+| 2026-03-29 | Slots Core | SlotManager, Registry, Engine implementados |
+| 2026-03-29 | DEV Items | IA (ollama, opencode, engram, gentle), Languages (go, nodejs, python), Tools (starship) |
+| 2026-03-29 | DATA Items | postgres, mysql, mongodb, redis, sqlite |
+| 2026-03-29 | SANDBOX | empty.go — imagen mínima |
+| 2026-03-29 | TUI Selector | Bubbletea slot selector con multi-select |
+| 2026-03-29 | Create Flow | Selección de imagen (axiom-dev, axiom-data, axiom-sandbox) |
+| 2026-03-29 | i18n | Traducciones EN/ES para slots en `i18n/locales/` |
+
 ---
 
 ## 🧪 Tests
@@ -179,27 +249,97 @@ make test-coverage     # Con coverage report
 
 | Comando | Alias | Descripción |
 |---------|-------|-------------|
-| `create` | - | Crear un bunker |
+| `create` | - | Crear bunker (elige imagen: axiom-dev, axiom-data, axiom-sandbox) |
 | `delete` | `rm` | Eliminar bunker |
 | `list` | `ls` | Listar bunkers |
 | `stop` | - | Detener bunker |
 | `prune` | - | Limpiar bunkers huérfanos |
-| `build` | - | Construir imagen |
+| `build` | - | Construir imagen con slots seleccionados |
 | `rebuild` | - | Reconstruir imagen |
 | `info` | - | Info de bunker |
 | `enter` | - | Entrar a bunker |
 | `init` | - | Inicializar AXIOM |
 | `help` | `-h`, `--help` | Mostrar ayuda |
+| `slots` | - | Mostrar slots disponibles |
 
 ---
 
 ## 🛡️ Slots System (AXIOM 2.0+)
 
-| Slot | Propósito | Características |
-|------|-----------|-----------------|
-| **DEV** | Oficina de Programación | IA, lenguajes, agentes |
-| **DATA** | Laboratorio de Persistencia | MySQL, Postgres, Mongo |
-| **BOX** | Zona de Pruebas | Aislamiento, carpetas mapeadas |
+Cada slot es un **grupo de items instalables** seleccionado por el usuario.
+
+### Imágenes generadas
+
+| Slot | Imagen | Descripción |
+|------|--------|-------------|
+| **DEV** | `axiom-dev` | IA tools + lenguajes + starship |
+| **DATA** | `axiom-data` | Bases de datos seleccionadas |
+| **SANDBOX** | `axiom-sandbox` | Imagen mínima sin instalaciones |
+
+### Flujo `axiom build`
+
+```
+axiom build
+    ↓
+BuildManager → Check SlotManager.HasSelection()
+    ↓
+Si no hay selección → Mostrar TUI Slot Selector (Bubbletea)
+    ↓
+Usuario selecciona items con checkboxes (Space= toggle, Enter= confirmar)
+    ↓
+SlotManager.SaveSelection() → guarda en memoria
+    ↓
+Engine.Execute(items) → instala en orden de dependencias
+    ↓
+runtime.CommitImage() → genera imagen (axiom-dev/data/sandbox)
+```
+
+### Flujo `axiom create`
+
+```
+axiom create
+    ↓
+Pregunta: "¿Qué imagen querés usar?"
+    ├── axiom-dev   (DEV slot)
+    ├── axiom-data  (DATA slot)
+    └── axiom-sandbox (SANDBOX)
+    ↓
+Usuario elige (1, 2, 3 o nombre)
+    ↓
+Pregunta: "¿Nombre del bunker?"
+    ↓
+Crea bunker con la imagen seleccionada
+```
+
+### Estructura de un Item
+
+```go
+// internal/slots/dev/ia/ollama.go
+type Ollama struct{}
+
+func (s *Ollama) ID() string          { return "ollama" }
+func (s *Ollama) Name() string        { return "Ollama" }
+func (s *Ollama) Description() string { return "Ejecuta modelos LLM localmente" }
+func (s *Ollama) Category() SlotCategory { return SlotDEV }
+func (s *Ollama) SubCategory() string { return "ia" }  // ia, languages, tools
+func (s *Ollama) Dependencies() []string { return []string{} }
+
+func (s *Ollama) Install(ctx context.Context, exec Executor) error {
+    // curl -fsSL https://ollama.com/download/ollama-linux-amd64.tar.zst
+    // tar -xzf -C /usr
+    return nil
+}
+```
+
+### Slots Disponibles
+
+| Slot | Categoría | Items |
+|------|-----------|-------|
+| **DEV** | IA | opencode, engram, gentle-ai, ollama |
+| **DEV** | Languages | go, nodejs, python |
+| **DEV** | Tools | starship |
+| **DATA** | Bases de Datos | postgres, mysql, mongodb, redis, sqlite |
+| **SANDBOX** | — | `empty.go` — imagen mínima sola |
 
 ---
 

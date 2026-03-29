@@ -1,0 +1,54 @@
+# Slot items available for installation
+# Language: English
+
+[dev.ia.ollama]
+name = "Ollama"
+description = "Run LLM models locally (Llama, Mistral, etc.)"
+
+[dev.ia.opencode]
+name = "opencode-ai"
+description = "AI code assistant based on local LLMs"
+
+[dev.ia.engram]
+name = "Engram"
+description = "Persistent memory system for AI agents"
+
+[dev.ia.gentle]
+name = "gentle-ai"
+description = "AI agents framework with persistent memory"
+
+[dev.languages.go]
+name = "Go"
+description = "Go programming language"
+
+[dev.languages.nodejs]
+name = "Node.js"
+description = "JavaScript runtime with npm"
+
+[dev.languages.python]
+name = "Python"
+description = "Python programming language"
+
+[dev.tools.starship]
+name = "Starship"
+description = "Minimalist prompt for any shell"
+
+[data.postgres]
+name = "PostgreSQL"
+description = "Relational database system"
+
+[data.mysql]
+name = "MySQL"
+description = "Relational database system"
+
+[data.mongodb]
+name = "MongoDB"
+description = "NoSQL database"
+
+[data.redis]
+name = "Redis"
+description = "In-memory database"
+
+[data.sqlite]
+name = "SQLite"
+description = "Embedded SQL database"

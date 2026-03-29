@@ -5,8 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"axiom/internal/domain"
 	"axiom/internal/ports"
 	"axiom/internal/router"
+	"axiom/internal/slots"
 )
 
 // mockUI implements ports.IPresenter for testing
@@ -106,6 +108,12 @@ func (m *mockBunkerManager) Create(name string) error {
 	return m.createErr
 }
 
+func (m *mockBunkerManager) CreateWithImage(name, image string) error {
+	m.createCalled = true
+	m.lastCreatedName = name
+	return m.createErr
+}
+
 func (m *mockBunkerManager) Delete(name string) error {
 	m.deleteCalled = true
 	m.lastDeletedName = name
@@ -143,8 +151,80 @@ func (m *mockBunkerManager) Help() error {
 	return m.helpErr
 }
 
+func (m *mockBunkerManager) LoadConfig() (domain.EnvConfig, error) {
+	return domain.EnvConfig{}, nil
+}
+
 func (m *mockBunkerManager) GetUI() ports.IPresenter {
 	return m.ui
+}
+
+// mockBuildManager implements BuildManagerInterface for testing
+type mockBuildManager struct {
+	buildErr    error
+	rebuildErr  error
+	buildCalled bool
+}
+
+func (m *mockBuildManager) Build(ctx context.Context, cfg domain.EnvConfig) error {
+	m.buildCalled = true
+	return m.buildErr
+}
+
+func (m *mockBuildManager) Rebuild(ctx context.Context, cfg domain.EnvConfig) error {
+	return m.rebuildErr
+}
+
+// mockSlotManager implements SlotManagerInterface for testing
+type mockSlotManager struct {
+	discoverSlotsCalled bool
+	executeSlotsCalled  bool
+	ui                  *mockUI
+}
+
+func (m *mockSlotManager) DiscoverSlots() []any {
+	m.discoverSlotsCalled = true
+	return nil
+}
+
+func (m *mockSlotManager) ExecuteSlots(selected []any) error {
+	m.executeSlotsCalled = true
+	return nil
+}
+
+func (m *mockSlotManager) GetUI() ports.IPresenter {
+	if m.ui == nil {
+		m.ui = &mockUI{}
+	}
+	return m.ui
+}
+
+func (m *mockSlotManager) HasSelection() bool {
+	return false
+}
+
+func (m *mockSlotManager) GetSelectedItems(category string) ([]slots.SlotItem, error) {
+	return []slots.SlotItem{}, nil
+}
+
+func (m *mockSlotManager) RunSlotSelector(category string, items []slots.SlotItem, preselected []string) ([]string, bool, error) {
+	return []string{}, false, nil
+}
+
+func (m *mockSlotManager) SaveSelection(selections []slots.SlotSelection) error {
+	return nil
+}
+
+func (m *mockSlotManager) LoadSelection() ([]slots.SlotSelection, error) {
+	return []slots.SlotSelection{}, nil
+}
+
+// newTestRouter creates a router with all mock managers
+func newTestRouter() (*router.Router, *mockBunkerManager, *mockBuildManager, *mockSlotManager) {
+	bm := newMockBunkerManager()
+	bld := &mockBuildManager{}
+	slm := &mockSlotManager{}
+	return router.NewRouter(bm, bld, slm), bm, bld, slm
 }
 
 // ============================================================================
@@ -152,8 +232,7 @@ func (m *mockBunkerManager) GetUI() ports.IPresenter {
 // ============================================================================
 
 func TestRouter_KnownCommands(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	knownCommands := []string{
 		"create", "delete", "list", "stop", "prune",
@@ -187,8 +266,7 @@ func TestRouter_KnownCommands(t *testing.T) {
 // ============================================================================
 
 func TestRouter_UnknownCommand(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	testCases := []struct {
 		name string
@@ -223,8 +301,7 @@ func TestRouter_UnknownCommand(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleCreate(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test create with name
 	err := r.Handle([]string{"create", "mybunker"})
@@ -258,8 +335,7 @@ func TestRouter_HandleCreate(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleDelete(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test delete with name
 	err := r.Handle([]string{"delete", "oldbunker"})
@@ -289,8 +365,7 @@ func TestRouter_HandleDelete(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleList(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	err := r.Handle([]string{"list"})
 	if err != nil {
@@ -306,8 +381,7 @@ func TestRouter_HandleList(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleStop(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	err := r.Handle([]string{"stop"})
 	if err != nil {
@@ -323,8 +397,7 @@ func TestRouter_HandleStop(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandlePrune(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	err := r.Handle([]string{"prune"})
 	if err != nil {
@@ -340,8 +413,7 @@ func TestRouter_HandlePrune(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleBuild(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Build is not yet implemented, should return nil but log message
 	err := r.Handle([]string{"build"})
@@ -370,8 +442,7 @@ func TestRouter_HandleBuild(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleRebuild(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Rebuild is not yet implemented, should return nil but log message
 	err := r.Handle([]string{"rebuild"})
@@ -400,8 +471,7 @@ func TestRouter_HandleRebuild(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleHelp(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test help command
 	err := r.Handle([]string{"help"})
@@ -418,8 +488,7 @@ func TestRouter_HandleHelp(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleEnter(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test enter without name - should return error
 	err := r.Handle([]string{"enter"})
@@ -446,8 +515,7 @@ func TestRouter_HandleEnter(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleInit(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	err := r.Handle([]string{"init"})
 	if err != nil {
@@ -472,8 +540,7 @@ func TestRouter_HandleInit(t *testing.T) {
 // ============================================================================
 
 func TestRouter_CommandAliases(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test "rm" alias for "delete"
 	bm.deleteCalled = false
@@ -504,8 +571,7 @@ func TestRouter_CommandAliases(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HelpFlags(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	testCases := []struct {
 		name string
@@ -534,8 +600,7 @@ func TestRouter_HelpFlags(t *testing.T) {
 // ============================================================================
 
 func TestRouter_EmptyArgs(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Empty args should call help
 	err := r.Handle([]string{})
@@ -552,8 +617,7 @@ func TestRouter_EmptyArgs(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleInfo(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test info with name
 	err := r.Handle([]string{"info", "mybunker"})
@@ -587,8 +651,7 @@ func TestRouter_HandleInfo(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleDeleteImage(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	err := r.Handle([]string{"delete-image"})
 	if err != nil {
@@ -655,8 +718,7 @@ func TestKnownCommand(t *testing.T) {
 
 func TestFirstArg(t *testing.T) {
 	// We need to test firstArg indirectly through Handle
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	testCases := []struct {
 		name         string
@@ -740,8 +802,7 @@ func TestFirstArg(t *testing.T) {
 // ============================================================================
 
 func TestRouter_CaseInsensitivity(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, _, _, _ := newTestRouter()
 
 	// Test that commands are case insensitive
 	testCases := []struct {
@@ -769,8 +830,7 @@ func TestRouter_CaseInsensitivity(t *testing.T) {
 // ============================================================================
 
 func TestRouter_ErrorPropagation(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test error propagation from Delete
 	bm.deleteErr = errors.New("delete failed")
@@ -810,8 +870,7 @@ func TestRouter_ErrorPropagation(t *testing.T) {
 // ============================================================================
 
 func TestRouter_Subcommands(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test that subcommands are passed to handlers
 	testCases := []struct {
@@ -852,8 +911,7 @@ func TestRouter_Subcommands(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleReset(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	err := r.Handle([]string{"reset"})
 	if err != nil {
@@ -878,8 +936,7 @@ func TestRouter_HandleReset(t *testing.T) {
 // ============================================================================
 
 func TestRouter_WhitespaceHandling(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test that whitespace is trimmed and commands are recognized
 	testCases := []struct {
@@ -915,8 +972,7 @@ func TestRouter_WhitespaceHandling(t *testing.T) {
 // ============================================================================
 
 func TestRouter_NewRouter(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	if r == nil {
 		t.Fatal("NewRouter returned nil")
@@ -937,8 +993,7 @@ func TestRouter_NewRouter(t *testing.T) {
 // ============================================================================
 
 func TestRouter_AllCommandsRouteCorrectly(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	commands := []struct {
 		name         string
@@ -1182,8 +1237,7 @@ func TestMockPresenter(t *testing.T) {
 // ============================================================================
 
 func TestRouter_CommandsWithSubArgsPreserveFirstArg(t *testing.T) {
-	bm := newMockBunkerManager()
-	r := router.NewRouter(bm)
+	r, bm, _, _ := newTestRouter()
 
 	// Test that the first argument is correctly extracted even with sub-args
 	testCases := []struct {

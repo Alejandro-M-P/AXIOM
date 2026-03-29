@@ -102,6 +102,11 @@ func (m *Manager) Create(name string) error {
 	return m.CreateBunker(context.Background(), name)
 }
 
+// CreateWithImage creates a bunker with a specific image.
+func (m *Manager) CreateWithImage(name, image string) error {
+	return m.createWithImage(context.Background(), name, image)
+}
+
 // Delete es un alias para DeleteBunker sin contexto.
 func (m *Manager) Delete(name string) error {
 	return m.DeleteBunker(context.Background(), name, false, false)

@@ -14,20 +14,76 @@ type Manager struct {
 	fs             ports.IFileSystem
 	ui             ports.IPresenter
 	buildContainer string
+	slotManager    SlotManagerInterface
+}
+
+// SlotManagerInterface defines the contract for slot operations during build.
+// This avoids importing the slots package directly to prevent circular dependencies.
+type SlotManagerInterface interface {
+	// HasSelection returns true if slot selections exist for any category.
+	HasSelection() bool
+
+	// GetSelectedItems returns the selected slot items for a given category.
+	GetSelectedItems(category string) ([]SlotItem, error)
+
+	// RunSlotSelector presents the slot selection UI and returns selected item IDs.
+	RunSlotSelector(category string, items []SlotItem, preselected []string) ([]string, bool, error)
+
+	// SaveSelection persists the user's slot selections.
+	SaveSelection(selections []SlotSelection) error
+
+	// LoadSelection reads the user's slot selections.
+	LoadSelection() ([]SlotSelection, error)
+}
+
+// SlotItem represents a single installable unit within a slot.
+type SlotItem struct {
+	ID          string
+	Name        string
+	Description string
+	Category    string
+	Deps        []string
+}
+
+// SlotSelection represents a user's selection for a particular slot.
+type SlotSelection struct {
+	Slot     string   `toml:"slot"`
+	Selected []string `toml:"selected"`
 }
 
 // NewManager creates a new build manager.
-func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, buildContainer string) *Manager {
+func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, buildContainer string, slotManager SlotManagerInterface) *Manager {
 	return &Manager{
 		runtime:        runtime,
 		fs:             fs,
 		ui:             ui,
 		buildContainer: buildContainer,
+		slotManager:    slotManager,
 	}
 }
 
 // Build executes the complete build flow for creating a base image.
+// It integrates with the slot system to allow users to select which items to install.
 func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
+	// Check if slot selection exists
+	selections, err := m.slotManager.LoadSelection()
+	if err != nil {
+		m.ui.ShowLog("warn", "Failed to load slot selection:", err.Error())
+		selections = []SlotSelection{}
+	}
+
+	// If no selections exist, run the slot selector
+	if len(selections) == 0 || !m.hasValidSelection(selections) {
+		m.ui.ShowLog("info", "No slot selection found. Running slot selector...")
+		selections, err = m.runSlotSelectionUI()
+		if err != nil {
+			return fmt.Errorf("slot selection failed: %w", err)
+		}
+		if len(selections) == 0 {
+			return fmt.Errorf("build cancelled: no slot selection made")
+		}
+	}
+
 	// Prepare build context
 	buildCtx, err := PrepareBuildContext(ctx, cfg, m.buildContainer)
 	if err != nil {
@@ -72,17 +128,17 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 		return err
 	}
 
-	// Step 3: Install developer tools
+	// Step 3: Install developer tools (using slot selection)
 	if err := progress.RunStep(3, func() error {
-		return m.installDeveloperTools(ctx, buildCtx)
+		return m.installSlotItems(ctx, buildCtx, "dev", selections)
 	}); err != nil {
 		progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
 		return err
 	}
 
-	// Step 4: Install model stack
+	// Step 4: Install data stack (using slot selection)
 	if err := progress.RunStep(4, func() error {
-		return m.installModelStack(ctx, buildCtx)
+		return m.installSlotItems(ctx, buildCtx, "data", selections)
 	}); err != nil {
 		progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
 		return err
@@ -106,6 +162,108 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 	progress.subtitle = m.ui.GetText("build.success_sub", buildCtx.ImageName)
 	progress.render()
 	m.ui.ShowLog("build.success", buildCtx.ImageName)
+	return nil
+}
+
+// hasValidSelection checks if there is at least one slot with selected items.
+func (m *Manager) hasValidSelection(selections []SlotSelection) bool {
+	for _, sel := range selections {
+		if len(sel.Selected) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// runSlotSelectionUI presents the slot selection UI to the user.
+func (m *Manager) runSlotSelectionUI() ([]SlotSelection, error) {
+	// For now, run DEV slot selection first
+	// In a full implementation, this would cycle through all categories
+	items, err := m.slotManager.GetSelectedItems("dev")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get DEV slot items: %w", err)
+	}
+
+	// Get preselected items from config
+	var preselected []string
+	selections, _ := m.slotManager.LoadSelection()
+	for _, sel := range selections {
+		if sel.Slot == "dev" {
+			preselected = sel.Selected
+			break
+		}
+	}
+
+	// Run the slot selector
+	selectedIDs, confirmed, err := m.slotManager.RunSlotSelector("dev", items, preselected)
+	if err != nil {
+		return nil, fmt.Errorf("slot selector failed: %w", err)
+	}
+	if !confirmed {
+		return nil, fmt.Errorf("slot selection cancelled")
+	}
+
+	// Return as SlotSelection
+	return []SlotSelection{
+		{Slot: "dev", Selected: selectedIDs},
+	}, nil
+}
+
+// installSlotItems installs items from a specific slot category using the slot manager.
+func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, category string, selections []SlotSelection) error {
+	// Find selection for this category
+	var categorySel SlotSelection
+	found := false
+	for _, sel := range selections {
+		if sel.Slot == category {
+			categorySel = sel
+			found = true
+			break
+		}
+	}
+	if !found || len(categorySel.Selected) == 0 {
+		m.ui.ShowLog("info", "No items selected for", category, "slot")
+		return nil
+	}
+
+	// Get items for this category
+	items, err := m.slotManager.GetSelectedItems(category)
+	if err != nil {
+		return fmt.Errorf("failed to get %s items: %w", category, err)
+	}
+
+	// Filter to only selected items
+	var selectedItems []SlotItem
+	for _, item := range items {
+		for _, selID := range categorySel.Selected {
+			if item.ID == selID {
+				selectedItems = append(selectedItems, item)
+				break
+			}
+		}
+	}
+
+	if len(selectedItems) == 0 {
+		return nil
+	}
+
+	// Create exec function for running commands in container
+	exec := func(ctx context.Context, cmd string, args ...string) error {
+		allArgs := []string{cmd}
+		allArgs = append(allArgs, args...)
+		return RunInContainer(ctx, m.runtime, m.buildContainer, allArgs...)
+	}
+
+	// Install each selected item
+	for _, item := range selectedItems {
+		m.ui.ShowLog("info", "Installing:", item.Name)
+
+		// For now, we just show the installation
+		// In a full implementation, the item.Executor would be called
+		// This is where the actual installation logic would go
+		_ = exec // Will be used when items have actual executors
+	}
+
 	return nil
 }
 

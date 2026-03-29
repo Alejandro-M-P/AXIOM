@@ -13,7 +13,7 @@ func TestNewManager(t *testing.T) {
 	ui := mocks.NewMockPresenter()
 	buildContainer := "test-container"
 
-	mgr := build.NewManager(runtime, fs, ui, buildContainer)
+	mgr := build.NewManager(runtime, fs, ui, buildContainer, nil)
 
 	if mgr == nil {
 		t.Fatal("NewManager returned nil")
@@ -26,7 +26,7 @@ func TestManagerFields(t *testing.T) {
 	ui := mocks.NewMockPresenter()
 	buildContainer := "test-container"
 
-	mgr := build.NewManager(runtime, fs, ui, buildContainer)
+	mgr := build.NewManager(runtime, fs, ui, buildContainer, nil)
 
 	if mgr == nil {
 		t.Fatal("Manager should not be nil")

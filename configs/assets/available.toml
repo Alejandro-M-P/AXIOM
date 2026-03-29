@@ -1,0 +1,54 @@
+# Slot items available for installation
+# Commands are in the item definitions
+
+[[dev.ia]]
+id = "ollama"
+install_cmd = "curl -fsSL https://ollama.com/download/ollama-linux-amd64.tar.zst -o /tmp/ollama.tar.zst && tar -xzf /tmp/ollama.tar.zst -C /usr"
+
+[[dev.ia]]
+id = "opencode"
+install_cmd = "npm install -g opencode-ai"
+
+[[dev.ia]]
+id = "engram"
+install_cmd = "brew tap gentle-ai/engram && brew install engram"
+
+[[dev.ia]]
+id = "gentle"
+install_cmd = "curl -fsSL https://github.com/gentle-ai/gentle/releases/latest/download/gentle-linux-amd64 -o /tmp/gentle"
+
+[[dev.languages]]
+id = "go"
+install_cmd = "pacman -S --noconfirm go"
+
+[[dev.languages]]
+id = "nodejs"
+install_cmd = "pacman -S --noconfirm nodejs npm"
+
+[[dev.languages]]
+id = "python"
+install_cmd = "pacman -S --noconfirm python"
+
+[[dev.tools]]
+id = "starship"
+install_cmd = "curl -sS https://starship.rs/install.sh | sh"
+
+[[data]]
+id = "postgres"
+install_cmd = "pacman -S --noconfirm postgresql"
+
+[[data]]
+id = "mysql"
+install_cmd = "pacman -S --noconfirm mysql"
+
+[[data]]
+id = "mongodb"
+install_cmd = "pacman -S --noconfirm mongodb"
+
+[[data]]
+id = "redis"
+install_cmd = "pacman -S --noconfirm redis"
+
+[[data]]
+id = "sqlite"
+install_cmd = "pacman -S --noconfirm sqlite"

@@ -1,0 +1,54 @@
+# Elementos disponibles para instalación
+# Idioma: Español
+
+[dev.ia.ollama]
+name = "Ollama"
+description = "Ejecuta modelos LLM localmente (Llama, Mistral, etc.)"
+
+[dev.ia.opencode]
+name = "opencode-ai"
+description = "Asistente de código con IA basado en LLMs locales"
+
+[dev.ia.engram]
+name = "Engram"
+description = "Sistema de memoria persistente para agentes de IA"
+
+[dev.ia.gentle]
+name = "gentle-ai"
+description = "Framework de agentes IA con memoria persistente"
+
+[dev.languages.go]
+name = "Go"
+description = "Lenguaje de programación Go"
+
+[dev.languages.nodejs]
+name = "Node.js"
+description = "Runtime de JavaScript con npm"
+
+[dev.languages.python]
+name = "Python"
+description = "Lenguaje de programación Python"
+
+[dev.tools.starship]
+name = "Starship"
+description = "Prompt minimalista para cualquier shell"
+
+[data.postgres]
+name = "PostgreSQL"
+description = "Sistema de base de datos relacional"
+
+[data.mysql]
+name = "MySQL"
+description = "Sistema de base de datos relacional"
+
+[data.mongodb]
+name = "MongoDB"
+description = "Base de datos NoSQL"
+
+[data.redis]
+name = "Redis"
+description = "Base de datos en memoria"
+
+[data.sqlite]
+name = "SQLite"
+description = "Base de datos SQL embebida"
