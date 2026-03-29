@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"axiom/internal/adapters/ui/styles"
 	"axiom/internal/adapters/ui/theme"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -127,18 +126,9 @@ func (m *SlotSelectorModel) View() string {
 	t := theme.DefaultTheme()
 
 	// Header
-	builder.WriteString(styles.GetLogo())
+	header := theme.NewHeader(t, "Slot Selection", "", "↑/↓: Navigate | Space: Toggle | Enter: Confirm | ?: Help")
+	builder.WriteString(header.View())
 	builder.WriteString("\n")
-
-	// Title
-	titleStyle := lipgloss.NewStyle().
-		Foreground(t.Primary).
-		Bold(true).
-		Padding(0, 2)
-
-	builder.WriteString(titleStyle.Render("╭─ Slot Selection ───────────────────────────────────╮\n"))
-	builder.WriteString(titleStyle.Render("│  Select items to install (space to toggle)         │\n"))
-	builder.WriteString(titleStyle.Render("╰────────────────────────────────────────────────────╯\n\n"))
 
 	// Render groups
 	cursor := 0

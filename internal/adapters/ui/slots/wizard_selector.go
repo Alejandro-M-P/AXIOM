@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"axiom/internal/adapters/ui/theme"
 	"axiom/internal/ports"
 	"axiom/internal/slots"
 	tea "github.com/charmbracelet/bubbletea"
@@ -270,10 +271,16 @@ func (m *WizardModel) View() string {
 
 // viewSlotSelect renders the slot selection view.
 func (m *WizardModel) viewSlotSelect() string {
-	// Define colors
-	accentColor := lipgloss.Color("#88c0d0")
-	dimColor := lipgloss.Color("#4c566a")
-	selectedColor := lipgloss.Color("#88c0d0")
+	// Use theme
+	t := theme.DefaultTheme()
+
+	// Create header for slot selection phase
+	header := theme.NewHeader(t, "Select Slot Type", "", "↑/↓: Navigate | Enter: Confirm | Esc: Cancel")
+
+	// Define colors from theme
+	accentColor := t.Primary
+	dimColor := t.Muted
+	selectedColor := t.Primary
 
 	// Box style - fixed width container
 	boxWidth := 78
@@ -291,7 +298,7 @@ func (m *WizardModel) viewSlotSelect() string {
 		Bold(true)
 
 	descStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#d8dee9"))
+		Foreground(t.Text)
 
 	helpStyle := lipgloss.NewStyle().
 		Foreground(dimColor)
@@ -307,6 +314,10 @@ func (m *WizardModel) viewSlotSelect() string {
 	}
 
 	var content strings.Builder
+
+	// Add header at the start
+	content.WriteString(header.View())
+	content.WriteString("\n")
 
 	// Title
 	content.WriteString(titleStyle.Render(m.presenter.GetText("slot_wizard.title")))
@@ -352,13 +363,26 @@ func (m *WizardModel) viewSlotSelect() string {
 
 // viewCategoryWizard renders the category wizard step view.
 func (m *WizardModel) viewCategoryWizard() string {
-	// Define colors
-	accentColor := lipgloss.Color("#88c0d0")
-	dimColor := lipgloss.Color("#4c566a")
-	selectedColor := lipgloss.Color("#88c0d0")
-	mutedColor := lipgloss.Color("#4c566a")
-	textColor := lipgloss.Color("#eceff4")
-	greenColor := lipgloss.Color("#a3be8c")
+	// Use theme
+	t := theme.DefaultTheme()
+
+	// Get current category for header subtitle
+	currentGroup := m.getCurrentGroup()
+	categoryName := ""
+	if currentGroup != nil {
+		categoryName = currentGroup.title
+	}
+
+	// Create header for category wizard phase
+	header := theme.NewHeader(t, "Select Items", categoryName, "↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel")
+
+	// Define colors from theme
+	accentColor := t.Primary
+	dimColor := t.Muted
+	selectedColor := t.Primary
+	mutedColor := t.Muted
+	textColor := t.Text
+	greenColor := t.Success
 
 	// Box style - fixed width container
 	boxWidth := 78
@@ -384,12 +408,16 @@ func (m *WizardModel) viewCategoryWizard() string {
 
 	var content strings.Builder
 
+	// Add header at the start
+	content.WriteString(header.View())
+	content.WriteString("\n")
+
 	// Step indicator as title
 	stepIndicator := m.presenter.GetText("slot_wizard.step_indicator", m.categoryIndex+1, len(m.categories))
 	content.WriteString(titleStyle.Render(stepIndicator))
 	content.WriteString("\n\n")
 
-	currentGroup := m.getCurrentGroup()
+	currentGroup = m.getCurrentGroup()
 	if currentGroup != nil {
 		// Group header
 		content.WriteString(headerStyle.Render(currentGroup.title))
@@ -450,11 +478,17 @@ func (m *WizardModel) viewCategoryWizard() string {
 
 // viewSummary renders the final summary view.
 func (m *WizardModel) viewSummary() string {
-	// Define colors
-	accentColor := lipgloss.Color("#88c0d0")
-	dimColor := lipgloss.Color("#4c566a")
-	textColor := lipgloss.Color("#eceff4")
-	greenColor := lipgloss.Color("#a3be8c")
+	// Use theme
+	t := theme.DefaultTheme()
+
+	// Create header for summary phase
+	header := theme.NewHeader(t, "Summary", "", "↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel")
+
+	// Define colors from theme
+	accentColor := t.Primary
+	dimColor := t.Muted
+	textColor := t.Text
+	greenColor := t.Success
 
 	// Box style - fixed width container
 	boxWidth := 78
@@ -472,7 +506,7 @@ func (m *WizardModel) viewSummary() string {
 		Bold(true)
 
 	descStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#d8dee9"))
+		Foreground(t.Text)
 
 	headerStyle := lipgloss.NewStyle().
 		Foreground(greenColor).
@@ -482,6 +516,10 @@ func (m *WizardModel) viewSummary() string {
 		Foreground(dimColor)
 
 	var content strings.Builder
+
+	// Add header at the start
+	content.WriteString(header.View())
+	content.WriteString("\n")
 
 	// Title
 	content.WriteString(titleStyle.Render(m.presenter.GetText("slot_wizard.summary")))
