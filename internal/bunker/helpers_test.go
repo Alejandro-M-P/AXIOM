@@ -245,11 +245,7 @@ func TestResolveBuildGPU_Helper(t *testing.T) {
 }
 
 func TestSSHVolumeFlag_NoAgent(t *testing.T) {
-	original := os.Getenv("SSH_AUTH_SOCK")
-	os.Unsetenv("SSH_AUTH_SOCK")
-	defer os.Setenv("SSH_AUTH_SOCK", original)
-
-	result := sshVolumeFlag()
+	result := sshVolumeFlag("")
 	if result != "" {
 		t.Errorf("expected empty string when no SSH agent, got %q", result)
 	}
@@ -265,12 +261,10 @@ func TestSSHVolumeFlag_WithAgent(t *testing.T) {
 	}
 	f.Close()
 
-	original := os.Getenv("SSH_AUTH_SOCK")
-	os.Setenv("SSH_AUTH_SOCK", socketPath)
-	defer os.Setenv("SSH_AUTH_SOCK", original)
-
-	result := sshVolumeFlag()
-	_ = result
+	result := sshVolumeFlag(socketPath)
+	if result == "" {
+		t.Error("expected non-empty result with valid socket")
+	}
 }
 
 func TestEnvConfigAlias_Correct(t *testing.T) {

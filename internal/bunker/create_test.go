@@ -15,7 +15,7 @@ func TestCreateValidation_EmptyName(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.CreateBunker(context.Background(), "")
 	if err == nil {
@@ -31,7 +31,7 @@ func TestCreateValidation_EmptyNameWithSpaces(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.CreateBunker(context.Background(), "   ")
 	if err == nil {
@@ -47,7 +47,7 @@ func TestCreateValidation_InvalidChars(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	invalidNames := []string{
 		"../etc",
@@ -76,7 +76,7 @@ func TestCreateRuntimeError(t *testing.T) {
 	runtime.CreateBunkerErr = errors.New("runtime error")
 	runtime.Images = []string{"localhost/axiom-generic:latest"}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.CreateBunker(context.Background(), "test-bunker")
 	if err == nil {
@@ -91,7 +91,7 @@ func TestCreateWithFlags(t *testing.T) {
 
 	runtime.Images = []string{"localhost/axiom-generic:latest"}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.CreateBunker(context.Background(), "valid-name")
 	if err != nil && err.Error() != "missing_name" && err.Error() != "invalid_name" && err.Error() != "access_denied" {
@@ -130,7 +130,7 @@ func TestCreateContainerFlags(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	cfg := EnvConfig{
 		BaseDir:   "/home/user/projects",
@@ -139,7 +139,7 @@ func TestCreateContainerFlags(t *testing.T) {
 		AuthMode:  "local",
 	}
 
-	flags := mgr.createContainerFlags(cfg, "generic", "test-bunker", "/home/user/projects/test-bunker")
+	flags := mgr.createContainerFlags(cfg, "generic", "test-bunker", "/home/user/projects/test-bunker", "")
 
 	// Verify key flags are present
 	expectedParts := []string{
@@ -283,18 +283,13 @@ func TestBaseImageName_Function(t *testing.T) {
 }
 
 func TestPrepareSSHAgent_LocalAuthMode(t *testing.T) {
-	cfg := EnvConfig{
-		AuthMode: "local",
-	}
-
-	prepareSSHAgent(cfg)
+	// Test removed - function moved to system adapter
+	// The logic is now in ports.ISystem.PrepareSSHAgent
 }
 
 func TestEnterBunker_Integration(t *testing.T) {
-	err := enterBunker("test-bunker", "/fake/rcpath")
-	if err == nil {
-		t.Log("enterBunker succeeded (may indicate distrobox is available)")
-	}
+	// Test removed - enterBunker moved to runtime adapter
+	// Use runtime.EnterBunker directly in integration tests
 }
 
 func TestWriteShellBootstrap_Placeholder(t *testing.T) {

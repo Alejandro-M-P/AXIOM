@@ -109,6 +109,9 @@ sync_repos = "Sincronizar repos"
 install_pkgs = "Instalar paquetes"
 install_opencode = "Instalar opencode"
 install_ollama = "Instalar Ollama"
+install_homebrew = "Instalando Homebrew"
+configure_brew_tap = "Configurando Homebrew Tap: %s"
+install_dev_tools = "Instalando herramientas de desarrollo: %s"
 clean_caches = "Limpiar cachés"
 
 [group]

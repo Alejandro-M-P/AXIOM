@@ -48,7 +48,8 @@ type IBunkerRuntime interface {
 	StartContainer(ctx context.Context, name string) error
 
 	// EnterBunker entra en un bunker de forma interactiva (TTY).
-	EnterBunker(ctx context.Context, name string) error
+	// rcPath es la ruta al archivo rcfile de bash (puede ser vacío).
+	EnterBunker(ctx context.Context, name, rcPath string) error
 
 	// ExecuteInBunker ejecuta un comando dentro de un bunker.
 	ExecuteInBunker(ctx context.Context, name string, args ...string) error

@@ -18,7 +18,7 @@ func TestListEmpty(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.ListBunkers(context.Background())
 	if err != nil {
@@ -39,7 +39,7 @@ func TestListWithBunkers(t *testing.T) {
 		{Name: "bunker-1", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.ListBunkers(context.Background())
 	if err != nil {
@@ -57,7 +57,7 @@ func TestListFormatting_MultipleBunkers(t *testing.T) {
 		{Name: "bunker-2", Status: "stopped", Image: "localhost/axiom-rdna4:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.ListBunkers(context.Background())
 	// With multiple bunkers, interactive selection is needed which is not fully implemented
@@ -75,7 +75,7 @@ func TestBunkerInfo_Success(t *testing.T) {
 		{Name: "test-bunker", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.BunkerInfo(context.Background(), "test-bunker")
 	if err != nil {
@@ -103,7 +103,7 @@ func TestBunkerInfo_EmptyNameFallsBackToList(t *testing.T) {
 		{Name: "bunker-1", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	err := mgr.BunkerInfo(context.Background(), "")
 	if err != nil {
@@ -120,7 +120,7 @@ func TestBunkerStatus_Running(t *testing.T) {
 		{Name: "test-bunker", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	status := mgr.BunkerStatus(context.Background(), "test-bunker")
 	if status != "running" {
@@ -137,7 +137,7 @@ func TestBunkerStatus_Stopped(t *testing.T) {
 		{Name: "test-bunker", Status: "stopped", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	status := mgr.BunkerStatus(context.Background(), "test-bunker")
 	if status != "stopped" {
@@ -152,7 +152,7 @@ func TestBunkerStatus_NotFound(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	status := mgr.BunkerStatus(context.Background(), "nonexistent")
 	if status != "stopped" {
@@ -167,7 +167,7 @@ func TestBunkerStatus_ListError(t *testing.T) {
 
 	runtime.ListBunkersErr = context.DeadlineExceeded
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	status := mgr.BunkerStatus(context.Background(), "test-bunker")
 	if status != "stopped" {
@@ -353,7 +353,7 @@ func TestImageExists_Function(t *testing.T) {
 
 	runtime.Images = []string{"localhost/axiom-generic:latest"}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	if !mgr.ImageExists(context.Background(), "localhost/axiom-generic:latest") {
 		t.Error("expected ImageExists to return true for existing image")
@@ -371,7 +371,7 @@ func TestListAxiomImages_Empty(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui)
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	images, err := mgr.ListAxiomImages(context.Background())
 	if err != nil {

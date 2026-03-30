@@ -1,10 +1,12 @@
 package system
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system/gpu"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
@@ -39,6 +41,55 @@ func (s *SystemAdapter) CheckDeps() error {
 		}
 	}
 	return nil
+}
+
+func (s *SystemAdapter) RefreshSudo(ctx context.Context) error {
+	cmd := exec.CommandContext(ctx, "sudo", "-v")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func (s *SystemAdapter) UserHomeDir() (string, error) {
+	return os.UserHomeDir()
+}
+
+func (s *SystemAdapter) SSHKeyPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".ssh", "id_ed25519"), nil
+}
+
+func (s *SystemAdapter) SSHAgentSocket() (string, error) {
+	sock := os.Getenv("SSH_AUTH_SOCK")
+	if sock == "" {
+		return "", nil
+	}
+	info, err := os.Stat(sock)
+	if err != nil || info.Mode()&os.ModeSocket == 0 {
+		return "", nil
+	}
+	return sock, nil
+}
+
+func (s *SystemAdapter) PrepareSSHAgent(ctx context.Context) error {
+	keyPath, err := s.SSHKeyPath()
+	if err != nil {
+		return err
+	}
+
+	ctx1, cancel1 := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel1()
+	if exec.CommandContext(ctx1, "ssh-add", "-l").Run() == nil {
+		return nil
+	}
+
+	ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel2()
+	return exec.CommandContext(ctx2, "ssh-add", keyPath).Run()
 }
 
 var _ ports.ISystem = (*SystemAdapter)(nil)

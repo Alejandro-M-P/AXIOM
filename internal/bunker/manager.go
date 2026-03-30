@@ -20,16 +20,18 @@ type Manager struct {
 	runtime ports.IBunkerRuntime
 	fs      ports.IFileSystem
 	ui      ports.IPresenter
+	system  ports.ISystem
 	mu      sync.Mutex // Protege operaciones que pueden tener race conditions
 }
 
 // NewManager crea una nueva instancia del Manager con sus dependencias.
-func NewManager(rootDir string, runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter) *Manager {
+func NewManager(rootDir string, runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem) *Manager {
 	return &Manager{
 		rootDir: rootDir,
 		runtime: runtime,
 		fs:      fs,
 		ui:      ui,
+		system:  system,
 	}
 }
 

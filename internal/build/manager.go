@@ -98,7 +98,7 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 	imageName = buildCtx.ImageName
 	exists, err := m.runtime.ImageExists(ctx, imageName)
 	if err != nil {
-		m.ui.ShowLog("warn", "Failed to check image existence:", err.Error())
+		m.ui.ShowLog("build.image_check_failed", err.Error())
 	}
 	if exists {
 		confirm, err := m.ui.AskConfirmInCard(
@@ -257,7 +257,7 @@ func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, 
 		}
 	}
 	if !found || len(categorySel.Selected) == 0 {
-		m.ui.ShowLog("info", "No items selected for", category, "slot")
+		m.ui.ShowLog("build.no_items_selected", category)
 		return nil
 	}
 
@@ -292,7 +292,7 @@ func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, 
 
 	// Install each selected item
 	for _, item := range selectedItems {
-		m.ui.ShowLog("info", "Installing:", item.Name)
+		m.ui.ShowLog("build.installing_item", item.Name)
 
 		// For now, we just show the installation
 		// In a full implementation, the item.Executor would be called

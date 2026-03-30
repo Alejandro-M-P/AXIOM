@@ -4,3 +4,8 @@ bunker_deleted = "- Bunker '%s' deleted (Reason: %s)"
 [gpu]
 forced_by_env = "Forced by .env"
 unknown = "Unknown"
+
+[build]
+image_check_failed = "Failed to check image existence: %s"
+no_items_selected = "No items selected for %s slot"
+installing_item = "Installing: %s"

@@ -160,8 +160,8 @@ func (a *PodmanAdapter) StartContainer(ctx context.Context, name string) error {
 	return a.StartBunker(ctx, name)
 }
 
-func (a *PodmanAdapter) EnterBunker(ctx context.Context, name string) error {
-	args := a.cmds.EnterBunker(name)
+func (a *PodmanAdapter) EnterBunker(ctx context.Context, name, rcPath string) error {
+	args := a.cmds.EnterBunker(name, rcPath)
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

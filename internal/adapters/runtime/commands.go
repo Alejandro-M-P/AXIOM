@@ -15,9 +15,10 @@ type CommandSet struct {
 	RemoveImage    func(image string, force bool) []string
 	CommitImage    func(containerName, imageName, author, message string) []string
 	ContainerState func(name string) []string
+	StartContainer func(name string) []string
 
 	// Execution
-	EnterBunker     func(name string) []string
+	EnterBunker     func(name, rcPath string) []string
 	ExecuteInBunker func(name string, args ...string) []string
 }
 
@@ -77,8 +78,14 @@ var Podman = CommandSet{
 			"--filter", "name=" + name,
 			"--format", "{{.State}}"}
 	},
-	EnterBunker: func(name string) []string {
-		return []string{"distrobox-enter", name, "--", "bash", "--rcfile", "/dev/null", "-i"}
+	StartContainer: func(name string) []string {
+		return []string{"podman", "start", name}
+	},
+	EnterBunker: func(name, rcPath string) []string {
+		if rcPath == "" {
+			rcPath = "/dev/null"
+		}
+		return []string{"distrobox-enter", name, "--", "bash", "--rcfile", rcPath, "-i"}
 	},
 	ExecuteInBunker: func(name string, args ...string) []string {
 		result := []string{"distrobox-enter", "-n", name, "--"}

@@ -52,7 +52,10 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	if imageName == "" {
 		imageName = baseImageName(hardware.Type)
 	}
-	sshMounted := sshVolumeFlag() != ""
+
+	// Get SSH agent socket for volume mounting
+	sshSocket, _ := m.system.SSHAgentSocket()
+	sshMounted := sshVolumeFlag(sshSocket) != ""
 
 	m.ui.ShowLogo()
 	m.ui.ShowCommandCard(
@@ -68,11 +71,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 		nil,
 	)
 
-	sudoCmd := exec.Command("sudo", "-v")
-	sudoCmd.Stdin = os.Stdin
-	sudoCmd.Stdout = os.Stdout
-	sudoCmd.Stderr = os.Stderr
-	if err := sudoCmd.Run(); err != nil {
+	if err := m.system.RefreshSudo(ctx); err != nil {
 		return fmt.Errorf("access_denied")
 	}
 
@@ -81,7 +80,9 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 		return err
 	}
 	if exists {
-		prepareSSHAgent(cfg)
+		if strings.ToLower(strings.TrimSpace(cfg.AuthMode)) == "ssh" {
+			_ = m.system.PrepareSSHAgent(ctx)
+		}
 		m.ui.ShowWarning(
 			"warnings.bunker_exists.title",
 			"warnings.bunker_exists.desc",
@@ -92,7 +93,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 			nil,
 			"warnings.bunker_exists.footer",
 		)
-		return enterBunker(name, rcPath)
+		return m.runtime.EnterBunker(ctx, name, rcPath)
 	}
 
 	if !m.ImageExists(ctx, imageName) {
@@ -122,7 +123,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 		return err
 	}
 
-	flags := m.createContainerFlags(cfg, hardware.Type, name, projectDir)
+	flags := m.createContainerFlags(cfg, hardware.Type, name, projectDir, sshSocket)
 	if err := m.runtime.CreateBunker(ctx, name, imageName, envDir, flags); err != nil {
 		return err
 	}
@@ -175,7 +176,9 @@ WaitLoop:
 		return err
 	}
 
-	prepareSSHAgent(cfg)
+	if strings.ToLower(strings.TrimSpace(cfg.AuthMode)) == "ssh" {
+		_ = m.system.PrepareSSHAgent(ctx)
+	}
 	m.ui.ShowWarning(
 		"warnings.bunker_ready.title",
 		"warnings.bunker_ready.desc",
@@ -187,7 +190,7 @@ WaitLoop:
 		nil,
 		"warnings.bunker_ready.footer",
 	)
-	return enterBunker(name, rcPath)
+	return m.runtime.EnterBunker(ctx, name, rcPath)
 }
 
 // bunkerExists verifica si un búnker existe.
@@ -196,7 +199,7 @@ func (m *Manager) bunkerExists(name string) (bool, error) {
 }
 
 // createContainerFlags genera los flags para crear el contenedor.
-func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir string) string {
+func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir, sshSocket string) string {
 	parts := []string{
 		fmt.Sprintf("--volume %s:/%s:z", projectDir, name),
 		fmt.Sprintf("--volume %s:/ai_config:z", cfg.AIConfigDir()),
@@ -211,7 +214,7 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir 
 	if cfg.ROCMMode == "host" {
 		parts = append(parts, hostGPUVolumeFlags(gpuType)...)
 	}
-	if sshFlag := sshVolumeFlag(); sshFlag != "" {
+	if sshFlag := sshVolumeFlag(sshSocket); sshFlag != "" {
 		parts = append(parts, sshFlag)
 	}
 
@@ -258,30 +261,6 @@ func hostGPUVolumeFlags(gpuType string) []string {
 		}
 	}
 	return flags
-}
-
-// prepareSSHAgent prepara el agent SSH si está configurado.
-func prepareSSHAgent(cfg EnvConfig) {
-	if strings.ToLower(strings.TrimSpace(cfg.AuthMode)) != "ssh" {
-		return
-	}
-	ctx1, cancel1 := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel1()
-	if exec.CommandContext(ctx1, "ssh-add", "-l").Run() == nil {
-		return
-	}
-	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel2()
-	_ = exec.CommandContext(ctx2, "ssh-add", filepath.Join(os.Getenv("HOME"), ".ssh", "id_ed25519")).Run()
-}
-
-// enterBunker entra en un búnker de forma interactiva.
-func enterBunker(name, rcPath string) error {
-	cmd := exec.Command("distrobox-enter", name, "--", "bash", "--rcfile", rcPath, "-i")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
 
 // Placeholder functions - implementar según necesidad

@@ -205,16 +205,12 @@ func bunkerEnvPath(cfg EnvConfig, name string) string {
 }
 
 // sshVolumeFlag retorna el flag de volumen SSH si hay un agent SSH activo.
-func sshVolumeFlag() string {
-	sock := strings.TrimSpace(os.Getenv("SSH_AUTH_SOCK"))
-	if sock == "" {
+// El socketPath viene del sistema (ISystem.SSHAgentSocket).
+func sshVolumeFlag(socketPath string) string {
+	if socketPath == "" {
 		return ""
 	}
-	info, err := os.Stat(sock)
-	if err != nil || info.Mode()&os.ModeSocket == 0 {
-		return ""
-	}
-	return fmt.Sprintf("--volume %s:%s", sock, sock)
+	return fmt.Sprintf("--volume %s:%s", socketPath, socketPath)
 }
 
 // ensureTutorFile asegura que el archivo tutor exista.

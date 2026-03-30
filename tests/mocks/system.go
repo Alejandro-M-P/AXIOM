@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"context"
 	"sync"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
@@ -16,12 +17,16 @@ type MockSystem struct {
 	mu sync.Mutex
 
 	// Track calls
-	DetectGPUCalls int
-	CheckDepsCalls int
+	DetectGPUCalls       int
+	CheckDepsCalls       int
+	RefreshSudoCalls     int
+	PrepareSSHAgentCalls int
 
 	// Return values
-	GPUInfo      domain.GPUInfo
-	CheckDepsErr error
+	GPUInfo            domain.GPUInfo
+	CheckDepsErr       error
+	RefreshSudoErr     error
+	PrepareSSHAgentErr error
 }
 
 // NewMockSystem creates a new MockSystem with default values.
@@ -51,6 +56,32 @@ func (m *MockSystem) CheckDeps() error {
 	defer m.mu.Unlock()
 	m.CheckDepsCalls++
 	return m.CheckDepsErr
+}
+
+func (m *MockSystem) RefreshSudo(ctx context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.RefreshSudoCalls++
+	return m.RefreshSudoErr
+}
+
+func (m *MockSystem) UserHomeDir() (string, error) {
+	return "/home/test", nil
+}
+
+func (m *MockSystem) SSHKeyPath() (string, error) {
+	return "/home/test/.ssh/id_ed25519", nil
+}
+
+func (m *MockSystem) SSHAgentSocket() (string, error) {
+	return "", nil
+}
+
+func (m *MockSystem) PrepareSSHAgent(ctx context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.PrepareSSHAgentCalls++
+	return m.PrepareSSHAgentErr
 }
 
 // MockDependencyChecker implements ports.IDependencyChecker for testing.

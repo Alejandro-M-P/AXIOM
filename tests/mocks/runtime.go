@@ -20,7 +20,7 @@ var _ interface {
 	CommitImage(ctx context.Context, containerName, imageName, author, message string) error
 	ContainerState(ctx context.Context, name string) (string, error)
 	StartContainer(ctx context.Context, name string) error
-	EnterBunker(ctx context.Context, name string) error
+	EnterBunker(ctx context.Context, name, rcPath string) error
 	ExecuteInBunker(ctx context.Context, name string, args ...string) error
 } = (*MockRuntime)(nil)
 
@@ -312,7 +312,7 @@ func (m *MockRuntime) StartContainer(ctx context.Context, name string) error {
 }
 
 // EnterBunker implements ports.IBunkerRuntime.
-func (m *MockRuntime) EnterBunker(ctx context.Context, name string) error {
+func (m *MockRuntime) EnterBunker(ctx context.Context, name, rcPath string) error {
 	return nil
 }
 

@@ -44,7 +44,7 @@ func InstallSystemBase(ctx context.Context, containerName string, cfg *BuildCont
 	}
 
 	// Install Homebrew
-	ui.ShowLog("info", "Installing Homebrew")
+	ui.ShowLog("info", ui.GetText("task.install_homebrew"))
 	cmd := "NONINTERACTIVE=1 /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
 	if err := exec(ctx, "bash", "-c", cmd); err != nil {
 		return fmt.Errorf("failed to install homebrew: %w", err)
@@ -66,13 +66,13 @@ func InstallDeveloperTools(ctx context.Context, containerName string, cfg *Build
 	brewPath := "/home/linuxbrew/.linuxbrew/bin/brew"
 
 	// Add Homebrew tap
-	ui.ShowLog("info", "Configuring Homebrew Tap: Gentleman-Programming/homebrew-tap")
+	ui.ShowLog("info", ui.GetText("task.configure_brew_tap", "Gentleman-Programming/homebrew-tap"))
 	if err := exec(ctx, brewPath, "tap", "Gentleman-Programming/homebrew-tap"); err != nil {
 		return fmt.Errorf("failed to add homebrew tap: %w", err)
 	}
 
 	// Install engram and gentle-ai
-	ui.ShowLog("info", "Installing development tools: engram gentle-ai")
+	ui.ShowLog("info", ui.GetText("task.install_dev_tools", "engram gentle-ai"))
 	if err := exec(ctx, brewPath, "install", "engram", "gentle-ai"); err != nil {
 		return fmt.Errorf("failed to install dev tools: %w", err)
 	}
