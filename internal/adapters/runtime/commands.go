@@ -11,8 +11,10 @@ type CommandSet struct {
 	BunkerExists func(name string) []string
 
 	// Images
-	ImageExists func(image string) []string
-	RemoveImage func(image string, force bool) []string
+	ImageExists    func(image string) []string
+	RemoveImage    func(image string, force bool) []string
+	CommitImage    func(containerName, imageName, author, message string) []string
+	ContainerState func(name string) []string
 
 	// Execution
 	EnterBunker     func(name string) []string
@@ -57,6 +59,23 @@ var Podman = CommandSet{
 			return []string{"podman", "rmi", image, "--force"}
 		}
 		return []string{"podman", "rmi", image}
+	},
+	CommitImage: func(containerName, imageName, author, message string) []string {
+		return []string{"podman", "commit",
+			"--pause=false",
+			"-f", "docker",
+			"--change", "CMD=/bin/bash",
+			"--change", "ENTRYPOINT=",
+			"-a", author,
+			"-m", message,
+			containerName,
+			imageName,
+		}
+	},
+	ContainerState: func(name string) []string {
+		return []string{"podman", "ps", "-a",
+			"--filter", "name=" + name,
+			"--format", "{{.State}}"}
 	},
 	EnterBunker: func(name string) []string {
 		return []string{"distrobox-enter", name, "--", "bash", "--rcfile", "/dev/null", "-i"}

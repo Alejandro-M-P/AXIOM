@@ -3,9 +3,6 @@ package build
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
@@ -319,8 +316,8 @@ func (m *Manager) Rebuild(ctx context.Context, cfg domain.EnvConfig) error {
 	confirm, _ := m.ui.AskConfirmInCard(
 		"rebuild",
 		[]ports.Field{
-			{Label: "Imagen", Value: targetImage},
-			{Label: "GPU", Value: buildCtx.GPUInfo.Type},
+			{Label: m.ui.GetText("rebuild.image_label"), Value: targetImage},
+			{Label: m.ui.GetText("rebuild.gpu_label"), Value: buildCtx.GPUInfo.Type},
 		},
 		nil,
 		"rebuild.confirm",
@@ -426,47 +423,30 @@ func (m *Manager) installModelStack(ctx context.Context, buildCtx *BuildContext)
 	return InstallModelStack(ctx, containerName, buildCtx, modelConfig, m.ui, exec)
 }
 
-// exportBuildImage commits the container to an image using podman commit.
-// Note: This uses a host command since IBunkerRuntime doesn't have Commit method.
+// exportBuildImage commits the container to an image using the runtime.
 func (m *Manager) exportBuildImage(ctx context.Context, buildCtx *BuildContext) error {
 	containerName := buildCtx.ContainerName
 
-	// First verify container exists and get its detailed state
-	checkCmd := exec.CommandContext(ctx, "podman", "ps", "-a", "--filter", "name="+containerName, "--format", "{{.Names}}\t{{.State}}\t{{.Status}}")
-	checkOut, err := checkCmd.Output()
+	// Get container state
+	state, err := m.runtime.ContainerState(ctx, containerName)
 	if err != nil {
 		return fmt.Errorf("export_image: failed to check container status: %w", err)
 	}
-
-	output := string(checkOut)
-	if output == "" {
+	if state == "" {
 		return fmt.Errorf("export_image: container %s not found", containerName)
 	}
 
-	// Check if container is running, if not try to start it
-	if !strings.Contains(output, "running") {
-		startCmd := exec.CommandContext(ctx, "podman", "start", containerName)
-		startOut, startErr := startCmd.CombinedOutput()
-		if startErr != nil {
-			return fmt.Errorf("export_image: failed to start container: %w - %s", startErr, string(startOut))
+	// Check if container is running, if not start it
+	if state != "running" {
+		if err := m.runtime.StartContainer(ctx, containerName); err != nil {
+			return fmt.Errorf("export_image: failed to start container: %w", err)
 		}
 	}
 
-	// Use podman commit to save the container as an image
-	cmd := exec.CommandContext(ctx, "podman", "commit",
-		"--pause=false",
-		"-f", "docker",
-		"--change", "CMD=/bin/bash",
-		"--change", "ENTRYPOINT=",
-		"-a", "axiom",
-		"-m", "AXIOM build image",
-		containerName,
-		buildCtx.ImageName,
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
+	// Commit the container to an image
+	author := m.ui.GetText("build.commit.author")
+	message := m.ui.GetText("build.commit.message")
+	if err := m.runtime.CommitImage(ctx, containerName, buildCtx.ImageName, author, message); err != nil {
 		return fmt.Errorf("export_image: failed to commit container: %w", err)
 	}
 

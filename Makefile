@@ -22,11 +22,15 @@ TESTS=tests
 test:
 	@echo "🔍 Running all tests..."
 	@echo ""
-	$(GOTEST) -v -race ./$(TESTS)/...
-	$(GOTEST) -v -race ./$(INTERNAL)/...
-	$(GOTEST) -v -race ./$(CMD)/...
-	@echo ""
-	@echo "✅ All tests passed!"
+	@$(GOTEST) -v -race ./$(TESTS)/... > /tmp/test_tests.log 2>&1; TESTS_RESULT=$$?; \
+	$(GOTEST) -v -race ./$(INTERNAL)/... > /tmp/test_internal.log 2>&1; INTERNAL_RESULT=$$?; \
+	$(GOTEST) -v -race ./$(CMD)/... > /tmp/test_cmd.log 2>&1; CMD_RESULT=$$?; \
+	@echo ""; \
+	[ $$TESTS_RESULT -eq 0 ] && echo "✅ tests/ ✓" || echo "❌ tests/ ✗"; \
+	[ $$INTERNAL_RESULT -eq 0 ] && echo "✅ internal/ ✓" || echo "❌ internal/ ✗"; \
+	[ $$CMD_RESULT -eq 0 ] && echo "✅ cmd/ ✓" || echo "❌ cmd/ ✗"; \
+	@echo ""; \
+	@echo "🏁 Tests completed"
 
 ## test-unit: Run unit tests without race detector (faster)
 test-unit:

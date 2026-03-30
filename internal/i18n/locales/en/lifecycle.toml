@@ -79,6 +79,10 @@ image_exists_warning = "Warning"
 image_exists_desc = "This image already exists. It will be overwritten if you continue."
 image_exists_confirm = "Overwrite existing image?"
 
+[build.commit]
+author = "axiom"
+message = "AXIOM build image"
+
 [step]
 prepare_dirs = "Prepare directories"
 recreate_container = "Recreate container"
@@ -114,3 +118,5 @@ ai = "AI Stack"
 title = "Rebuild Image"
 subtitle = "Removing and rebuilding"
 step_rm_image = "Remove previous image"
+image_label = "Image"
+gpu_label = "GPU"

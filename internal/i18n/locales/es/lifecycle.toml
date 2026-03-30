@@ -81,6 +81,10 @@ image_exists_warning = "Advertencia"
 image_exists_desc = "Esta imagen ya existe. Se sobrescribirá si continúas."
 image_exists_confirm = "¿Sobrescribir imagen existente?"
 
+[build.commit]
+author = "axiom"
+message = "Imagen de construcción de AXIOM"
+
 [step]
 prepare_dirs = "Preparar directorios"
 recreate_container = "Recrear contenedor"
@@ -116,3 +120,5 @@ ai = "Stack AI"
 title = "Reconstruir Imagen"
 subtitle = "Eliminando y reconstruyendo"
 step_rm_image = "Eliminar imagen anterior"
+image_label = "Imagen"
+gpu_label = "GPU"

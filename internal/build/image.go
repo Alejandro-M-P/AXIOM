@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -95,24 +94,10 @@ func BuildContainerFlags(cfg domain.EnvConfig) string {
 	)
 }
 
-// ExportBuildImage commits the build container to an image using podman commit.
-func ExportBuildImage(ctx context.Context, runtime ports.IBunkerRuntime, containerName string, imageName string) error {
-	// Use podman commit since IBunkerRuntime doesn't have Commit method
-	cmd := exec.CommandContext(ctx, "podman", "commit",
-		"-f", "docker",
-		"-a", "axiom",
-		"-m", "AXIOM build image",
-		containerName,
-		imageName,
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to commit container: %w", err)
-	}
-
-	return nil
+// ExportBuildImage commits the build container to an image using the runtime.
+// author and message are visible to the user (translatable via i18n).
+func ExportBuildImage(ctx context.Context, runtime ports.IBunkerRuntime, containerName string, imageName string, author, message string) error {
+	return runtime.CommitImage(ctx, containerName, imageName, author, message)
 }
 
 // DestroyBuildContainer removes the build container and cleans up workspace.
@@ -138,15 +123,6 @@ func ensureTutorFile(fs ports.IFileSystem, path string) error {
 		return err
 	}
 	return file.Close()
-}
-
-// CurrentUserGroup returns the current user:group string.
-func CurrentUserGroup() string {
-	user := os.Getenv("USER")
-	if user == "" {
-		user = "root"
-	}
-	return user + ":" + user
 }
 
 // removePathWritable makes all files writable then removes the path.

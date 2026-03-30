@@ -17,6 +17,9 @@ var _ interface {
 	BunkerExists(ctx context.Context, name string) (bool, error)
 	ImageExists(ctx context.Context, image string) (bool, error)
 	RemoveImage(ctx context.Context, image string, force bool) error
+	CommitImage(ctx context.Context, containerName, imageName, author, message string) error
+	ContainerState(ctx context.Context, name string) (string, error)
+	StartContainer(ctx context.Context, name string) error
 	EnterBunker(ctx context.Context, name string) error
 	ExecuteInBunker(ctx context.Context, name string, args ...string) error
 } = (*MockRuntime)(nil)
@@ -31,22 +34,29 @@ type MockRuntime struct {
 	// Images available
 	Images []string
 
+	// Container states (name -> state)
+	ContainerStates map[string]string
+
 	// Errors to return on operations
-	CreateBunkerErr error
-	StartBunkerErr  error
-	StopBunkerErr   error
-	RemoveBunkerErr error
-	ListBunkersErr  error
-	BunkerExistsErr error
-	ImageExistsErr  error
-	RemoveImageErr  error
-	ExecuteErr      error
+	CreateBunkerErr   error
+	StartBunkerErr    error
+	StopBunkerErr     error
+	RemoveBunkerErr   error
+	ListBunkersErr    error
+	BunkerExistsErr   error
+	ImageExistsErr    error
+	RemoveImageErr    error
+	CommitImageErr    error
+	ContainerStateErr error
+	StartContainerErr error
+	ExecuteErr        error
 
 	// Track calls
 	CreateBunkerCalls []CreateBunkerCall
 	StartBunkerCalls  []string
 	StopBunkerCalls   []string
 	RemoveBunkerCalls []RemoveBunkerCall
+	CommitImageCalls  []CommitImageCall
 	ExecuteCalls      []ExecuteCall
 
 	// Configuration
@@ -66,6 +76,13 @@ type RemoveBunkerCall struct {
 	Force bool
 }
 
+type CommitImageCall struct {
+	ContainerName string
+	ImageName     string
+	Author        string
+	Message       string
+}
+
 type ExecuteCall struct {
 	Name string
 	Args []string
@@ -76,10 +93,12 @@ func NewMockRuntime() *MockRuntime {
 	return &MockRuntime{
 		Bunkers:           []domain.Bunker{},
 		Images:            []string{"localhost/axiom-generic:latest"},
+		ContainerStates:   map[string]string{},
 		CreateBunkerCalls: []CreateBunkerCall{},
 		StartBunkerCalls:  []string{},
 		StopBunkerCalls:   []string{},
 		RemoveBunkerCalls: []RemoveBunkerCall{},
+		CommitImageCalls:  []CommitImageCall{},
 		ExecuteCalls:      []ExecuteCall{},
 	}
 }
@@ -243,6 +262,52 @@ func (m *MockRuntime) RemoveImage(ctx context.Context, image string, force bool)
 			break
 		}
 	}
+	return nil
+}
+
+// CommitImage implements ports.IBunkerRuntime.
+func (m *MockRuntime) CommitImage(ctx context.Context, containerName, imageName, author, message string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.CommitImageCalls = append(m.CommitImageCalls, CommitImageCall{
+		ContainerName: containerName,
+		ImageName:     imageName,
+		Author:        author,
+		Message:       message,
+	})
+
+	if m.CommitImageErr != nil {
+		return m.CommitImageErr
+	}
+	return nil
+}
+
+// ContainerState implements ports.IBunkerRuntime.
+func (m *MockRuntime) ContainerState(ctx context.Context, name string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.ContainerStateErr != nil {
+		return "", m.ContainerStateErr
+	}
+
+	if state, ok := m.ContainerStates[name]; ok {
+		return state, nil
+	}
+	return "running", nil
+}
+
+// StartContainer implements ports.IBunkerRuntime.
+func (m *MockRuntime) StartContainer(ctx context.Context, name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.StartContainerErr != nil {
+		return m.StartContainerErr
+	}
+
+	m.ContainerStates[name] = "running"
 	return nil
 }
 

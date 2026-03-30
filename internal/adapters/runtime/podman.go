@@ -135,6 +135,31 @@ func (a *PodmanAdapter) RemoveImage(ctx context.Context, image string, force boo
 	return nil
 }
 
+func (a *PodmanAdapter) CommitImage(ctx context.Context, containerName, imageName, author, message string) error {
+	args := a.cmds.CommitImage(containerName, imageName, author, message)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to commit image: %w\n%s", err, string(output))
+	}
+	return nil
+}
+
+func (a *PodmanAdapter) ContainerState(ctx context.Context, name string) (string, error) {
+	args := a.cmds.ContainerState(name)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to get container state: %w", err)
+	}
+	return string(output), nil
+}
+
+func (a *PodmanAdapter) StartContainer(ctx context.Context, name string) error {
+	// StartBunker already does this - delegate to it
+	return a.StartBunker(ctx, name)
+}
+
 func (a *PodmanAdapter) EnterBunker(ctx context.Context, name string) error {
 	args := a.cmds.EnterBunker(name)
 	cmd := exec.Command(args[0], args[1:]...)

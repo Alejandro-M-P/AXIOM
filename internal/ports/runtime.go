@@ -37,6 +37,16 @@ type IBunkerRuntime interface {
 	// RemoveImage elimina una imagen.
 	RemoveImage(ctx context.Context, image string, force bool) error
 
+	// CommitImage hace commit de un contenedor a una imagen.
+	// author y message son textos visibles para el usuario (traducibles).
+	CommitImage(ctx context.Context, containerName, imageName, author, message string) error
+
+	// ContainerState devuelve el estado de un contenedor (running, exited, etc.).
+	ContainerState(ctx context.Context, name string) (string, error)
+
+	// StartContainer inicia un contenedor existente.
+	StartContainer(ctx context.Context, name string) error
+
 	// EnterBunker entra en un bunker de forma interactiva (TTY).
 	EnterBunker(ctx context.Context, name string) error
 
