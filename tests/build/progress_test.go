@@ -3,9 +3,9 @@ package build_test
 import (
 	"testing"
 
-	"axiom/internal/build"
-	"axiom/internal/ports"
-	"axiom/tests/mocks"
+	"github.com/Alejandro-M-P/AXIOM/internal/build"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestProgressStartStep(t *testing.T) {

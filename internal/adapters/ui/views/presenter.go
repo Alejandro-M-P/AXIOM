@@ -8,9 +8,10 @@ import (
 	"os"
 	"strings"
 
-	"axiom/internal/adapters/ui/components"
-	"axiom/internal/adapters/ui/styles"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -27,7 +28,7 @@ func GetTextLocalized(key string) string {
 
 		// Check Commands
 		if section == "commands" {
-			if text, ok := Commands[subkey]; ok {
+			if text, ok := i18n.Commands[subkey]; ok {
 				if label, ok := text["label"]; ok {
 					return label
 				}
@@ -39,13 +40,13 @@ func GetTextLocalized(key string) string {
 
 		// Check Lifecycle
 		if section == "labels" || section == "fields" {
-			if text, ok := Lifecycle[subkey]; ok {
+			if text, ok := i18n.Lifecycle[subkey]; ok {
 				if label, ok := text["label"]; ok {
 					return label
 				}
 			}
 			// Try as direct key in Commands
-			if text, ok := Commands[section]; ok {
+			if text, ok := i18n.Commands[section]; ok {
 				if val, ok := text[subkey]; ok {
 					return val
 				}
@@ -53,14 +54,14 @@ func GetTextLocalized(key string) string {
 		}
 
 		// Check Logs
-		if text, ok := Logs[section]; ok {
+		if text, ok := i18n.Logs[section]; ok {
 			if val, ok2 := text[subkey]; ok2 {
 				return val
 			}
 		}
 
 		// Check Errors
-		if text, ok := Errors[section]; ok {
+		if text, ok := i18n.Errors[section]; ok {
 			if val, ok2 := text[subkey]; ok2 {
 				return val
 			}
@@ -68,7 +69,7 @@ func GetTextLocalized(key string) string {
 	}
 
 	// Fallback: try as direct key in Commands
-	if text, ok := Commands[key]; ok {
+	if text, ok := i18n.Commands[key]; ok {
 		if label, ok := text["label"]; ok {
 			return label
 		}
@@ -93,7 +94,7 @@ func (c *ConsoleUI) ShowLogo() {
 }
 
 func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []ports.Field, items []string) {
-	cmdData, ok := Commands[commandKey]
+	cmdData, ok := i18n.Commands[commandKey]
 	if !ok {
 		cmdData = map[string]string{"title": commandKey, "subtitle": "", "footer": ""}
 	}
@@ -168,7 +169,7 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 	if len(parts) == 3 {
 		section, cat, sub := parts[0], parts[1], parts[2]
 		if section == "errors" {
-			if text, ok := Errors[cat][sub]; ok {
+			if text, ok := i18n.Errors[cat][sub]; ok {
 				if len(args) > 0 {
 					return fmt.Sprintf(text, args...)
 				}
@@ -177,7 +178,7 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 		}
 		// Handle slots.xxx.name and slots.xxx.description
 		if section == "slots" {
-			if slotData, ok := Slots[cat]; ok {
+			if slotData, ok := i18n.Slots[cat]; ok {
 				if text, ok := slotData[sub]; ok {
 					if len(args) > 0 {
 						return fmt.Sprintf(text, args...)
@@ -191,14 +192,14 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 	if len(parts) == 2 {
 		cat, sub := parts[0], parts[1]
 		// Check Lifecycle first
-		if text, ok := Lifecycle[cat][sub]; ok {
+		if text, ok := i18n.Lifecycle[cat][sub]; ok {
 			if len(args) > 0 {
 				return fmt.Sprintf(text, args...)
 			}
 			return text
 		}
 		// Then check Commands (for slot_wizard, etc.)
-		if text, ok := Commands[cat][sub]; ok {
+		if text, ok := i18n.Commands[cat][sub]; ok {
 			if len(args) > 0 {
 				return fmt.Sprintf(text, args...)
 			}
@@ -253,7 +254,7 @@ func (c *ConsoleUI) ShowWarning(title, subtitle string, fields []ports.Field, it
 func (c *ConsoleUI) ShowLog(logKey string, args ...any) {
 	parts := strings.Split(logKey, ".")
 	if len(parts) == 2 {
-		if text, ok := Logs[parts[0]][parts[1]]; ok {
+		if text, ok := i18n.Logs[parts[0]][parts[1]]; ok {
 			if len(args) > 0 {
 				fmt.Printf(text+"\n", args...)
 			} else {
@@ -293,11 +294,11 @@ func getPromptText(key string) string {
 	if len(parts) == 2 {
 		cat, sub := parts[0], parts[1]
 		// Check Prompts first
-		if text, ok := Prompts[cat][sub]; ok {
+		if text, ok := i18n.Prompts[cat][sub]; ok {
 			return text
 		}
 		// Fallback to Commands
-		if text, ok := Commands[cat][sub]; ok {
+		if text, ok := i18n.Commands[cat][sub]; ok {
 			return text
 		}
 	}
@@ -307,7 +308,7 @@ func getPromptText(key string) string {
 }
 
 func (c *ConsoleUI) ShowHelp() {
-	cmdData := Commands["help"]
+	cmdData := i18n.Commands["help"]
 	var details []styles.BunkerDetail
 	for i := 1; i <= 10; i++ {
 		if val, ok := cmdData[fmt.Sprintf("cmd_%d", i)]; ok {

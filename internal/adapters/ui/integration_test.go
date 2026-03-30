@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"axiom/internal/adapters/ui/components"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"axiom/internal/router"
+	"github.com/Alejandro-M-P/AXIOM/internal/router"
 )
 
 // Re-export router types and functions for backwards compatibility

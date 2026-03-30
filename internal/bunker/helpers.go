@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"axiom/internal/domain"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // EnvConfig alias para domain.EnvConfig para evitar imports múltiples

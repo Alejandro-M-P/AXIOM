@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // ModelStackConfig holds configuration for the AI/ML model stack installation.

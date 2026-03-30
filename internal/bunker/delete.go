@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // delete maneja la eliminación de un búnker.

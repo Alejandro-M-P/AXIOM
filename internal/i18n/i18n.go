@@ -1,4 +1,4 @@
-package ui
+package i18n
 
 import (
 	_ "embed"
@@ -10,48 +10,48 @@ import (
 
 // Spanish locale files
 //
-//go:embed i18n/locales/es/commands.toml
+//go:embed locales/es/commands.toml
 var esCommandsTOML []byte
 
-//go:embed i18n/locales/es/prompts.toml
+//go:embed locales/es/prompts.toml
 var esPromptsTOML []byte
 
-//go:embed i18n/locales/es/logs.toml
+//go:embed locales/es/logs.toml
 var esLogsTOML []byte
 
-//go:embed i18n/locales/es/lifecycle.toml
+//go:embed locales/es/lifecycle.toml
 var esLifecycleTOML []byte
 
-//go:embed i18n/locales/es/errors.toml
+//go:embed locales/es/errors.toml
 var esErrorsTOML []byte
 
-//go:embed i18n/locales/es/init.toml
+//go:embed locales/es/init.toml
 var esInitTOML []byte
 
-//go:embed i18n/locales/es/slots.toml
+//go:embed locales/es/slots.toml
 var esSlotsTOML []byte
 
 // English locale files
 //
-//go:embed i18n/locales/en/commands.toml
+//go:embed locales/en/commands.toml
 var enCommandsTOML []byte
 
-//go:embed i18n/locales/en/prompts.toml
+//go:embed locales/en/prompts.toml
 var enPromptsTOML []byte
 
-//go:embed i18n/locales/en/logs.toml
+//go:embed locales/en/logs.toml
 var enLogsTOML []byte
 
-//go:embed i18n/locales/en/lifecycle.toml
+//go:embed locales/en/lifecycle.toml
 var enLifecycleTOML []byte
 
-//go:embed i18n/locales/en/errors.toml
+//go:embed locales/en/errors.toml
 var enErrorsTOML []byte
 
-//go:embed i18n/locales/en/init.toml
+//go:embed locales/en/init.toml
 var enInitTOML []byte
 
-//go:embed i18n/locales/en/slots.toml
+//go:embed locales/en/slots.toml
 var enSlotsTOML []byte
 
 // Data maps for the loaded locale

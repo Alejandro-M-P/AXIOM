@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // list maneja la listados de búnkeres.

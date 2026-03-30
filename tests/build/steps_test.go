@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"axiom/internal/build"
-	"axiom/internal/domain"
-	"axiom/tests/mocks"
+	"github.com/Alejandro-M-P/AXIOM/internal/build"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestInstallSystemBase(t *testing.T) {

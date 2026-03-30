@@ -2,7 +2,7 @@
 package ia
 
 import (
-	"axiom/internal/slots"
+	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 )
 
 func init() {

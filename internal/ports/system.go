@@ -1,6 +1,6 @@
 package ports
 
-import "axiom/internal/domain"
+import "github.com/Alejandro-M-P/AXIOM/internal/domain"
 
 // ISystem define el contrato para operaciones del sistema.
 // Incluye detección de hardware, verificación de dependencias, etc.

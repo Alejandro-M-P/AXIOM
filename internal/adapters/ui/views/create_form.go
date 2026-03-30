@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"axiom/internal/adapters/ui/styles"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )

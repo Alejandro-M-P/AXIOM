@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
-	"axiom/internal/domain"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 const defaultBuildContainerName = "axiom-build"

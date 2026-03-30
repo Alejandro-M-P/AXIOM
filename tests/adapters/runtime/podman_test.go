@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"testing"
 
-	"axiom/internal/adapters/runtime"
-	"axiom/internal/domain"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // ============================================================================

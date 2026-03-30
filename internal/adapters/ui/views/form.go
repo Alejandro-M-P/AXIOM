@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"axiom/internal/adapters/system"
-	"axiom/internal/adapters/system/gpu"
-	"axiom/internal/adapters/ui/components"
-	"axiom/internal/adapters/ui/styles"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system/gpu"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -71,7 +72,7 @@ type Model struct {
 	BaseModel    // Embed BaseModel for Width/Height from WindowSizeMsg
 	step         Step
 	input        textinput.Model
-	config       install.Config
+	config       system.Config
 	axiomPath    string
 	cursor       int
 	reviewCursor int
@@ -91,7 +92,7 @@ func NewModel(axiomPath string, envExists bool, lang string) Model {
 	// Siempre empezamos preguntando el idioma
 	start := StepLanguage
 
-	initialConfig := install.Config{
+	initialConfig := system.Config{
 		BaseDir:    fmt.Sprintf("%s/dev", os.Getenv("HOME")),
 		GfxVersion: hw.GfxVal,
 		GpuType:    hw.Type,
@@ -404,14 +405,14 @@ func (m Model) View() string {
 
 	// Get EscapeButton text from i18n
 	var escapeText string
-	if Prompts != nil && Prompts["escape_button"] != nil {
-		if text, ok := Prompts["escape_button"]["text"]; ok {
+	if i18n.Prompts != nil && i18n.Prompts["escape_button"] != nil {
+		if text, ok := i18n.Prompts["escape_button"]["text"]; ok {
 			escapeText = text
 		}
 	}
 	if escapeText == "" {
 		// fallback based on locale
-		if currentLocale == "en" {
+		if i18n.GetLocale() == "en" {
 			escapeText = "Exit"
 		} else {
 			escapeText = "Salir"
@@ -431,10 +432,10 @@ func (m Model) finalizeAction() tea.Cmd {
 		// Guardamos el idioma seleccionado en el entorno actual para que otras fases lo lean
 		os.Setenv("AXIOM_LANG", m.language)
 
-		_ = install.CheckDeps()
-		_ = install.PrepareFS(m.axiomPath, m.config.BaseDir)
+		_ = system.CheckDeps()
+		_ = system.PrepareFS(m.axiomPath, m.config.BaseDir)
 		_ = m.config.Save(m.axiomPath)
-		_ = install.CreateWrapper(m.axiomPath)
+		_ = system.CreateWrapper(m.axiomPath)
 		return nil
 	}
 }

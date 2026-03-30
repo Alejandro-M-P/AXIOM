@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // BunkerFlags contiene las flags para crear un búnker.

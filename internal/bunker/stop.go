@@ -3,7 +3,7 @@ package bunker
 import (
 	"context"
 
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // stop maneja la detención de un búnker.

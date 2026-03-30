@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // prune maneja la limpieza de búnkeres huérfanos.

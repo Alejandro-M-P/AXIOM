@@ -3,8 +3,9 @@ package ui
 import (
 	"strings"
 
-	"axiom/internal/adapters/ui/styles"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -56,7 +57,7 @@ func (m confirmModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m confirmModel) View() string {
-	cmdData, ok := Commands[m.commandKey]
+	cmdData, ok := i18n.Commands[m.commandKey]
 	if !ok {
 		cmdData = map[string]string{"title": m.commandKey, "subtitle": "", "footer": ""}
 	}
@@ -163,7 +164,7 @@ func (m deleteFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m deleteFormModel) View() string {
-	cmdData := Commands["delete"]
+	cmdData := i18n.Commands["delete"]
 	var details []styles.BunkerDetail
 	for _, f := range m.fields {
 		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
@@ -247,7 +248,7 @@ func (m resetFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m resetFormModel) View() string {
-	cmdData := Commands["reset"]
+	cmdData := i18n.Commands["reset"]
 	var details []styles.BunkerDetail
 	for _, f := range m.fields {
 		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})

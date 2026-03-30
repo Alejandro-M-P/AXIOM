@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"axiom/internal/slots/base"
+	"github.com/Alejandro-M-P/AXIOM/internal/slots/base"
 )
 
 // ErrCircularDependency indicates that a circular dependency was detected.

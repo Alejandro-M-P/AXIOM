@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"axiom/internal/domain"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // Manager orchestrates build operations.

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"axiom/internal/domain"
-	"axiom/internal/ports"
-	"axiom/internal/router"
-	"axiom/internal/slots"
-	"axiom/tests/mocks"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/router"
+	"github.com/Alejandro-M-P/AXIOM/internal/slots"
+	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 // mockUI implements ports.IPresenter for testing

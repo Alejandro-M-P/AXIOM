@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"axiom/internal/domain"
-	"axiom/internal/ports"
-	"axiom/internal/slots"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 )
 
 // Command constants.

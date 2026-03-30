@@ -6,7 +6,7 @@ package ports
 import (
 	"context"
 
-	"axiom/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 )
 
 // IBunkerRuntime define el contrato para operaciones de bunkers (contenedores AXIOM).

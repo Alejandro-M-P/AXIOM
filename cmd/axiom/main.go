@@ -7,22 +7,22 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"axiom/internal/adapters/filesystem"
-	"axiom/internal/adapters/runtime"
-	"axiom/internal/adapters/system/install"
-	slotui "axiom/internal/adapters/ui/slots"
-	ui "axiom/internal/adapters/ui/views"
-	"axiom/internal/build"
-	"axiom/internal/bunker"
-	"axiom/internal/slots"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system"
+	slotui "github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/slots"
+	ui "github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/views"
+	"github.com/Alejandro-M-P/AXIOM/internal/build"
+	"github.com/Alejandro-M-P/AXIOM/internal/bunker"
+	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 
 	// Blank imports to trigger slot item registration via init()
 	// This ensures the global registry is populated when the app starts
-	_ "axiom/internal/slots/data"
-	_ "axiom/internal/slots/dev/ia"
-	_ "axiom/internal/slots/dev/languages"
-	_ "axiom/internal/slots/dev/tools"
-	_ "axiom/internal/slots/sandbox"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/data"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/dev/ia"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/dev/languages"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/dev/tools"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/sandbox"
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 	runtimeAdapter := runtime.NewPodmanAdapter()
 	fsAdapter := filesystem.NewFSAdapter()
 	uiAdapter := ui.NewConsoleUI()
-	systemAdapter := install.NewSystemAdapter()
+	systemAdapter := system.NewSystemAdapter()
 
 	// Create managers via DI
 	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter)

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"axiom/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 )
 
 func TestSanitize_ValidName(t *testing.T) {

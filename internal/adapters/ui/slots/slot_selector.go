@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"axiom/internal/adapters/ui"
-	"axiom/internal/adapters/ui/components"
-	"axiom/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )

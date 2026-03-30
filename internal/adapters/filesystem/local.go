@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // FSAdapter implementa IFileSystem usando operaciones estándar de Go.

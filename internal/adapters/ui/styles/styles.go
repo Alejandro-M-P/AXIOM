@@ -3,7 +3,7 @@ package styles
 import (
 	_ "embed"
 
-	"axiom/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
 	"github.com/charmbracelet/lipgloss"
 )
 

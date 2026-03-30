@@ -3,8 +3,8 @@ package build_test
 import (
 	"testing"
 
-	"axiom/internal/build"
-	"axiom/tests/mocks"
+	"github.com/Alejandro-M-P/AXIOM/internal/build"
+	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestNewManager(t *testing.T) {

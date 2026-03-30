@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"axiom/internal/slots/base"
+	"github.com/Alejandro-M-P/AXIOM/internal/slots/base"
 )
 
 func TestOSDetector_Detect(t *testing.T) {

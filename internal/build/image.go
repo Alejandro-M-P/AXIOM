@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"axiom/internal/domain"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // BuildContext holds all the context needed for a build operation.

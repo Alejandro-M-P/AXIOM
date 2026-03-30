@@ -1,4 +1,4 @@
-package install
+package system
 
 import (
 	"fmt"
@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"axiom/internal/adapters/system/gpu"
-	"axiom/internal/domain"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system/gpu"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // SystemAdapter implementa ports.ISystem

@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"axiom/internal/adapters/ui/styles"
-	"axiom/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )

@@ -3,8 +3,8 @@ package mocks
 import (
 	"sync"
 
-	"axiom/internal/domain"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // Compile-time checks

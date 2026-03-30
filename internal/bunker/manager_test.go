@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"axiom/internal/ports"
-	"axiom/tests/mocks"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestNewManager(t *testing.T) {

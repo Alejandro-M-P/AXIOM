@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // Compile-time check that MockFileSystem implements ports.IFileSystem

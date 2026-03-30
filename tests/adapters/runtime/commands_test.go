@@ -3,7 +3,7 @@ package runtime_test
 import (
 	"testing"
 
-	"axiom/internal/adapters/runtime"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
 )
 
 // ============================================================================

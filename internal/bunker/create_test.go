@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"axiom/tests/mocks"
+	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestCreateValidation_EmptyName(t *testing.T) {

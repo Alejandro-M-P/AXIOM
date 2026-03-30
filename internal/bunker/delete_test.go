@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"axiom/internal/domain"
-	"axiom/tests/mocks"
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestDeleteSuccess(t *testing.T) {

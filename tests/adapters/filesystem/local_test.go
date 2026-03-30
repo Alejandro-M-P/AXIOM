@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"axiom/internal/adapters/filesystem"
-	"axiom/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 func TestLocalAdapterImplementsIFileSystem(t *testing.T) {
