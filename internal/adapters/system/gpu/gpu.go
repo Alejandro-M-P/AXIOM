@@ -1,6 +1,7 @@
 package gpu
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -312,7 +314,9 @@ func runCommand(name string, args ...string) (string, error) {
 		return "", err
 	}
 
-	out, err := exec.Command(path, args...).Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, path, args...).Output()
 	if err != nil {
 		return "", err
 	}

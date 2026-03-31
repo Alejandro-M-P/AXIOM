@@ -140,9 +140,3 @@ func CreateWrapper(axiomPath string) error {
 
 	return os.WriteFile(target, []byte(content), 0755)
 }
-
-func IsInstalled(axiomPath string) bool {
-	envPath := filepath.Join(axiomPath, ".env")
-	_, err := os.Stat(envPath)
-	return !os.IsNotExist(err)
-}
