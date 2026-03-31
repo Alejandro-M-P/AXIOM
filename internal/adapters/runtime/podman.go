@@ -31,9 +31,8 @@ var _ ports.IBunkerRuntime = (*PodmanAdapter)(nil)
 func (a *PodmanAdapter) CreateBunker(ctx context.Context, name, image, home, flags string) error {
 	args := a.cmds.CreateBunker(name, image, home, flags)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to create bunker: %w\n%s", err, string(output))
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("runtime.create_failed: %w", err)
 	}
 	return nil
 }
@@ -41,9 +40,8 @@ func (a *PodmanAdapter) CreateBunker(ctx context.Context, name, image, home, fla
 func (a *PodmanAdapter) StartBunker(ctx context.Context, name string) error {
 	args := a.cmds.StartBunker(name)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to start bunker: %w\n%s", err, string(output))
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("runtime.start_failed: %w", err)
 	}
 	return nil
 }
@@ -51,9 +49,8 @@ func (a *PodmanAdapter) StartBunker(ctx context.Context, name string) error {
 func (a *PodmanAdapter) StopBunker(ctx context.Context, name string) error {
 	args := a.cmds.StopBunker(name)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to stop bunker: %w\n%s", err, string(output))
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("runtime.stop_failed: %w", err)
 	}
 	return nil
 }
@@ -61,9 +58,8 @@ func (a *PodmanAdapter) StopBunker(ctx context.Context, name string) error {
 func (a *PodmanAdapter) RemoveBunker(ctx context.Context, name string, force bool) error {
 	args := a.cmds.RemoveBunker(name, force)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to remove bunker: %w\n%s", err, string(output))
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("runtime.remove_failed: %w", err)
 	}
 	return nil
 }
@@ -73,7 +69,7 @@ func (a *PodmanAdapter) ListBunkers(ctx context.Context) ([]domain.Bunker, error
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list bunkers: %w", err)
+		return nil, fmt.Errorf("runtime.list_failed: %w", err)
 	}
 
 	var containers []struct {
@@ -85,7 +81,7 @@ func (a *PodmanAdapter) ListBunkers(ctx context.Context) ([]domain.Bunker, error
 	}
 
 	if err := json.Unmarshal(output, &containers); err != nil {
-		return nil, fmt.Errorf("failed to parse bunkers: %w", err)
+		return nil, fmt.Errorf("runtime.parse_failed: %w", err)
 	}
 
 	result := make([]domain.Bunker, 0, len(containers))
@@ -128,9 +124,8 @@ func (a *PodmanAdapter) ImageExists(ctx context.Context, image string) (bool, er
 func (a *PodmanAdapter) RemoveImage(ctx context.Context, image string, force bool) error {
 	args := a.cmds.RemoveImage(image, force)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to remove image: %w\n%s", err, string(output))
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("runtime.remove_image_failed: %w", err)
 	}
 	return nil
 }
@@ -138,9 +133,8 @@ func (a *PodmanAdapter) RemoveImage(ctx context.Context, image string, force boo
 func (a *PodmanAdapter) CommitImage(ctx context.Context, containerName, imageName, author, message string) error {
 	args := a.cmds.CommitImage(containerName, imageName, author, message)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to commit image: %w\n%s", err, string(output))
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("runtime.commit_failed: %w", err)
 	}
 	return nil
 }
@@ -150,7 +144,7 @@ func (a *PodmanAdapter) ContainerState(ctx context.Context, name string) (string
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("failed to get container state: %w", err)
+		return "", fmt.Errorf("runtime.state_failed: %w", err)
 	}
 	return string(output), nil
 }
@@ -162,7 +156,7 @@ func (a *PodmanAdapter) StartContainer(ctx context.Context, name string) error {
 
 func (a *PodmanAdapter) EnterBunker(ctx context.Context, name, rcPath string) error {
 	args := a.cmds.EnterBunker(name, rcPath)
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -172,9 +166,8 @@ func (a *PodmanAdapter) EnterBunker(ctx context.Context, name, rcPath string) er
 func (a *PodmanAdapter) ExecuteInBunker(ctx context.Context, name string, args ...string) error {
 	cmdArgs := a.cmds.ExecuteInBunker(name, args...)
 	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to execute in bunker: %w\n%s", err, string(output))
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("runtime.execute_failed: %w", err)
 	}
 	return nil
 }

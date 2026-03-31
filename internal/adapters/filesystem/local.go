@@ -104,6 +104,3 @@ func (f *FSAdapter) EnsureFileExists(path string, perm os.FileMode) error {
 
 // VerifyInterface verifica que el adapter implementa la interfaz correctamente.
 var _ ports.IFileSystem = (*FSAdapter)(nil)
-
-// LocalFSAdapter is the same as FSAdapter for package consistency
-type LocalFSAdapter = FSAdapter
