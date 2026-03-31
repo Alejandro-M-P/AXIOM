@@ -15,9 +15,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// missingTextPlaceholder is shown when a translation key is not found
-const missingTextPlaceholder = "[Texto no disponible]"
-
 // GetTextLocalized returns a localized string from i18n or returns the key if not found.
 // Handles keys like "fields.name", "labels.status", "logs.gpu.forced_by_env", etc.
 func GetTextLocalized(key string) string {
@@ -206,9 +203,11 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 			return text
 		}
 	}
-	// Log missing key for debugging (using fmt.Fprintln to stderr)
-	fmt.Fprintf(os.Stderr, "[i18n] Missing translation key: %s\n", key)
-	return missingTextPlaceholder
+	// Fallback to missing translation placeholder
+	if text, ok := i18n.Errors["ui"]["missing_translation"]; ok {
+		return text
+	}
+	return "[?]"
 }
 
 func (c *ConsoleUI) ClearScreen() {
@@ -302,9 +301,11 @@ func getPromptText(key string) string {
 			return text
 		}
 	}
-	// Log missing key for debugging (using fmt.Fprintln to stderr)
-	fmt.Fprintf(os.Stderr, "[i18n] Missing prompt key: %s\n", key)
-	return missingTextPlaceholder
+	// Fallback to missing translation placeholder
+	if text, ok := i18n.Errors["ui"]["missing_translation"]; ok {
+		return text
+	}
+	return "[?]"
 }
 
 func (c *ConsoleUI) ShowHelp() {
@@ -335,15 +336,13 @@ func (c *ConsoleUI) ShowHelp() {
 
 // RunInitWizard executes the initialization wizard
 func (c *ConsoleUI) RunInitWizard(ctx context.Context) error {
-	// Placeholder - actual implementation would run the TUI wizard
-	fmt.Println("Init wizard not yet implemented")
+	c.ShowLog("logs.ui.init_not_implemented")
 	return nil
 }
 
 // RunInitWizardResult executes the initialization wizard and returns whether it completed successfully.
 func (c *ConsoleUI) RunInitWizardResult(ctx context.Context) (bool, error) {
-	// Placeholder - actual implementation would run the TUI wizard and return result
-	fmt.Println("Init wizard not yet implemented")
+	c.ShowLog("logs.ui.init_not_implemented")
 	return false, nil
 }
 
@@ -353,14 +352,14 @@ func (c *ConsoleUI) RunInitWizardWithParams(ctx context.Context, axiomPath strin
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {
-		return false, fmt.Errorf("init wizard failed: %w", err)
+		return false, fmt.Errorf("errors.ui.wizard_failed: %w", err)
 	}
 	// Check if the wizard completed successfully
 	// If the step is StepFinalizing, the user saved the configuration
 	// If it's any other step, the user cancelled
 	resultModel := finalModel.(Model)
 	if resultModel.Step() != StepFinalizing {
-		return false, errors.New("init cancelled by user")
+		return false, errors.New("errors.ui.init_cancelled")
 	}
 	return true, nil
 }
@@ -377,7 +376,7 @@ func RunFullscreen(model tea.Model) (tea.Model, error) {
 
 	finalModel, err := p.Run()
 	if err != nil {
-		return nil, fmt.Errorf("failed to run fullscreen TUI: %w", err)
+		return nil, fmt.Errorf("errors.ui.tui_failed: %w", err)
 	}
 
 	return finalModel, nil
@@ -392,7 +391,7 @@ func RunFullscreenSimple(model tea.Model) (tea.Model, error) {
 
 	finalModel, err := p.Run()
 	if err != nil {
-		return nil, fmt.Errorf("failed to run fullscreen TUI: %w", err)
+		return nil, fmt.Errorf("errors.ui.tui_failed: %w", err)
 	}
 
 	return finalModel, nil

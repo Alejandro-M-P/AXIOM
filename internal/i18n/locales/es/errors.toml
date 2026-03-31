@@ -8,6 +8,12 @@ read = "No se pudo leer config.toml: %w"
 [ui]
 no_tty = "No hay terminal disponible: usa --yes o set AXIOM_AUTO_CONFIRM=true"
 auto_confirm_enabled = "Modo auto-confirm activado (sin terminal)"
+missing_translation = "[Texto no disponible]"
+missing_key = "Clave de traducción faltante: %s"
+wizard_failed = "Error en el wizard de inicialización: %w"
+tui_failed = "Error al ejecutar interfaz TUI: %w"
+init_not_implemented = "Wizard de inicialización aún no implementado"
+init_cancelled = "Inicialización cancelada por el usuario"
 
 [router]
 failed_load_config = "Error al cargar la configuración: %s"

@@ -17,3 +17,6 @@ step_progress = "Paso %d/%d: %s"
 selection_saved = "Selección guardada en: %s"
 warn_load_failed = "Error al cargar selección de slots, usando selección vacía:"
 item_not_found = "Elemento seleccionado no encontrado: %s"
+
+[ui]
+init_not_implemented = "Wizard de inicialización aún no implementado"

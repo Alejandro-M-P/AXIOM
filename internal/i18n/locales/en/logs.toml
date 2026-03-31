@@ -17,3 +17,6 @@ step_progress = "Step %d/%d: %s"
 selection_saved = "Selection saved to: %s"
 warn_load_failed = "Failed to load slot selection, using empty selection:"
 item_not_found = "Selected item not found: %s"
+
+[ui]
+init_not_implemented = "Init wizard not yet implemented"
