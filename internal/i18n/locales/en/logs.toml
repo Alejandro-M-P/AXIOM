@@ -2,7 +2,7 @@
 bunker_deleted = "- Bunker '%s' deleted (Reason: %s)"
 
 [gpu]
-forced_by_env = "Forced by .env"
+forced_by_env = "Forced by config.toml"
 unknown = "Unknown"
 
 [build]

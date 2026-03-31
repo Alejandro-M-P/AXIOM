@@ -3,7 +3,7 @@ dependency_missing = "❌ Falta dependencia: %s"
 [bunker]
 image_not_found = "No se encontró la imagen %s"
 [env]
-read = "No se pudo leer .env: %w"
+read = "No se pudo leer config.toml: %w"
 
 [ui]
 no_tty = "No hay terminal disponible: usa --yes o set AXIOM_AUTO_CONFIRM=true"

@@ -10,7 +10,7 @@ option_es = "Español"
 
 [init_confirm]
 title = "ADVERTENCIA"
-description = "¿Sobreescribir archivo .env existente?"
+description = "¿Sobreescribir archivo config.toml existente?"
 option_yes = "SÍ, CONTINUAR"
 option_no = "NO, SALIR"
 

@@ -90,7 +90,7 @@ func BuildContainerFlags(cfg domain.EnvConfig) string {
 	return fmt.Sprintf(
 		"--volume %s:/ai_config:z --volume %s:/run/axiom/env:ro,z --device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render",
 		cfg.AIConfigDir(),
-		filepath.Join(cfg.AxiomPath, ".env"),
+		filepath.Join(cfg.AxiomPath, "config.toml"),
 	)
 }
 

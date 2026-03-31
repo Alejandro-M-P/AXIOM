@@ -285,9 +285,9 @@ func resolveImageName(input string, available []string) string {
 
 // handleInit ejecuta el wizard de inicialización TUI
 func (r *Router) handleInit() error {
-	// Verificar si existe archivo .env
-	envPath := filepath.Join(r.axiomPath, ".env")
-	envExists := r.fs.Exists(envPath)
+	// Verificar si existe archivo config.toml
+	configPath := filepath.Join(r.axiomPath, "config.toml")
+	configExists := r.fs.Exists(configPath)
 
 	// Determinar idioma desde LANG o default "es"
 	lang := os.Getenv("LANG")
@@ -303,7 +303,7 @@ func (r *Router) handleInit() error {
 	}
 
 	// Ejecutar el wizard TUI a través del presenter
-	completed, err := r.bm.GetUI().RunInitWizardWithParams(context.Background(), r.axiomPath, envExists, lang)
+	completed, err := r.bm.GetUI().RunInitWizardWithParams(context.Background(), r.axiomPath, configExists, lang)
 	if err != nil {
 		return fmt.Errorf("errors.router.init_wizard_failed: %w", err)
 	}

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
+
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
@@ -225,80 +227,64 @@ func ensureTutorFile(path string) error {
 	return file.Close()
 }
 
-// LoadEnvFile parsea el archivo .env y retorna una configuración.
-func LoadEnvFile(fs interface{}, path string) (EnvConfig, error) {
-	fileSystem, ok := fs.(ports.IFileSystem)
-	if !ok {
-		return EnvConfig{}, fmt.Errorf("invalid filesystem interface")
-	}
+// LoadConfig lee el archivo config.toml y retorna una configuración.
+func LoadConfig(fs ports.IFileSystem, axiomPath string) (domain.EnvConfig, error) {
+	path := filepath.Join(axiomPath, "config.toml")
 
-	data, err := fileSystem.ReadFile(path)
+	data, err := fs.ReadFile(path)
 	if err != nil {
 		// Si el archivo no existe, retornamos config vacía (no es error)
-		return EnvConfig{}, nil
+		return domain.EnvConfig{}, nil
 	}
 
-	cfg := EnvConfig{}
-	lines := strings.Split(string(data), "\n")
+	var cfg struct {
+		AxiomPath  string `toml:"axiom_path"`
+		GitUser    string `toml:"git_user"`
+		GitEmail   string `toml:"git_email"`
+		GitToken   string `toml:"git_token"`
+		AuthMode   string `toml:"auth_mode"`
+		BaseDir    string `toml:"base_dir"`
+		OllamaHost string `toml:"ollama_host"`
+		ModelsDir  string `toml:"models_dir"`
+		GpuType    string `toml:"gpu_type"`
+		GfxVersion string `toml:"gfx_version"`
+		RocmMode   string `toml:"rocm_mode"`
+		Language   string `toml:"language"`
+	}
 
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		// Ignorar líneas vacías y comentarios
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return domain.EnvConfig{}, err
+	}
 
-		// Parsear formato KEY="value" o KEY=value
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-
-		// Remover comillas si existen
-		if len(value) >= 2 && strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
-			value = value[1 : len(value)-1]
-		}
-
-		// Mapear las variables de entorno a los campos de EnvConfig
-		switch key {
-		case "AXIOM_PATH":
-			cfg.AxiomPath = value
-		case "AXIOM_BASE_DIR":
-			cfg.BaseDir = value
-		case "AXIOM_GIT_USER":
-			cfg.GitUser = value
-		case "AXIOM_GIT_EMAIL":
-			cfg.GitEmail = value
-		case "AXIOM_GIT_TOKEN":
-			cfg.GitToken = value
-		case "AXIOM_AUTH_MODE":
-			cfg.AuthMode = value
-		case "AXIOM_GPU_TYPE":
-			cfg.GPUType = value
-		case "AXIOM_GFX_VAL":
-			cfg.GFXVal = value
-		case "AXIOM_ROCM_MODE":
-			cfg.ROCMMode = value
-		}
+	result := domain.EnvConfig{
+		AxiomPath:  cfg.AxiomPath,
+		GitUser:    cfg.GitUser,
+		GitEmail:   cfg.GitEmail,
+		GitToken:   cfg.GitToken,
+		AuthMode:   cfg.AuthMode,
+		BaseDir:    cfg.BaseDir,
+		OllamaHost: cfg.OllamaHost,
+		ModelsDir:  cfg.ModelsDir,
+		GPUType:    cfg.GpuType,
+		GFXVal:     cfg.GfxVersion,
+		ROCMMode:   cfg.RocmMode,
+		Language:   cfg.Language,
 	}
 
 	// Convertir BaseDir a ruta absoluta
-	if cfg.BaseDir == "" || cfg.BaseDir == "." {
+	if result.BaseDir == "" || result.BaseDir == "." {
 		cwd, err := os.Getwd()
 		if err != nil {
-			return cfg, fmt.Errorf("failed to get current working directory: %w", err)
+			return result, fmt.Errorf("failed to get current working directory: %w", err)
 		}
-		cfg.BaseDir = cwd
+		result.BaseDir = cwd
 	} else {
-		absPath, err := filepath.Abs(cfg.BaseDir)
+		absPath, err := filepath.Abs(result.BaseDir)
 		if err != nil {
-			return cfg, fmt.Errorf("failed to resolve absolute path: %w", err)
+			return result, fmt.Errorf("failed to resolve absolute path: %w", err)
 		}
-		cfg.BaseDir = absPath
+		result.BaseDir = absPath
 	}
 
-	return cfg, nil
+	return result, nil
 }

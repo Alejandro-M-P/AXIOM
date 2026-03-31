@@ -373,7 +373,7 @@ func (m Model) View() string {
 	case StepLanguage:
 		body = m.renderBox("LANGUAGE / IDIOMA", "Select your language / Selecciona tu idioma:", "English", "Español")
 	case StepConfirm:
-		body = m.renderBox("WARNING", "Overwrite existing .env file?", "YES, CONTINUE", "NO, EXIT")
+		body = m.renderBox("WARNING", "Overwrite existing config.toml file?", "YES, CONTINUE", "NO, EXIT")
 	case StepGitUser:
 		body = m.renderInput("GITHUB USER", "Enter your username:", "e.g.: user")
 	case StepGitEmail:

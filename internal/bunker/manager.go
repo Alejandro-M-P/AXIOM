@@ -4,7 +4,6 @@ package bunker
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
@@ -35,9 +34,9 @@ func NewManager(rootDir string, runtime ports.IBunkerRuntime, fs ports.IFileSyst
 	}
 }
 
-// LoadConfig carga la configuración desde el archivo .env
+// LoadConfig carga la configuración desde el archivo config.toml
 func (m *Manager) LoadConfig() (domain.EnvConfig, error) {
-	return LoadEnvFile(m.fs, fmt.Sprintf("%s/.env", m.rootDir))
+	return LoadConfig(m.fs, m.rootDir)
 }
 
 // CreateBunker crea o reusa un búnker y entra directamente dentro de él.

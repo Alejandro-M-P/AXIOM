@@ -202,7 +202,7 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 	parts := []string{
 		fmt.Sprintf("--volume %s:/%s:z", projectDir, name),
 		fmt.Sprintf("--volume %s:/ai_config:z", cfg.AIConfigDir()),
-		fmt.Sprintf("--volume %s:/run/axiom/env:ro,z", filepath.Join(cfg.AxiomPath, ".env")),
+		fmt.Sprintf("--volume %s:/run/axiom/env:ro,z", filepath.Join(cfg.AxiomPath, "config.toml")),
 		"--device /dev/kfd",
 		"--device /dev/dri",
 		"--security-opt label=disable",

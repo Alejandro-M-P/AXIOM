@@ -1,93 +1,122 @@
 package system
 
 import (
-	"fmt"
+	"bytes"
 	"os"
 	"path/filepath"
+
+	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/BurntSushi/toml"
 )
 
 // Config guarda los datos que recolectamos en el formulario TUI.
-// Los campos deben coincidir con lo que capturamos en pkg/ui/form.go.
+// Se persiste como config.toml en la raíz del proyecto AXIOM.
 type Config struct {
+	// --- RUTAS ---
+	AxiomPath string `toml:"axiom_path"`
+
 	// --- IDENTIDAD Y AUTENTICACIÓN ---
-	GitUser  string
-	GitEmail string
-	GitToken string
-	AuthMode string // "ssh" o "https"
+	GitUser  string `toml:"git_user"`
+	GitEmail string `toml:"git_email"`
+	GitToken string `toml:"git_token"`
+	AuthMode string `toml:"auth_mode"` // "ssh" o "https"
 
 	// --- DIRECTORIOS CORE ---
-	BaseDir   string
-	ModelsDir string
+	BaseDir    string `toml:"base_dir"`
+	OllamaHost string `toml:"ollama_host"`
+	ModelsDir  string `toml:"models_dir"`
 
 	// --- HARDWARE ---
-	GfxVersion string // Valor GFX para AMD (ej: gfx1100)
-	GpuType    string // amd, nvidia o intel
-	RocmMode   string // host o image
+	GfxVersion string `toml:"gfx_version"` // Valor GFX para AMD (ej: gfx1100)
+	GpuType    string `toml:"gpu_type"`    // amd, nvidia o intel
+	RocmMode   string `toml:"rocm_mode"`   // host o image
 
 	// --- FUTURO: ECOSISTEMA Y TUI (WIP) ---
-	Language    string // "es" o "en" para soportar la Política "Cero Strings"
-	Theme       string // Tema de la TUI ("default", "dracula", "nord")
-	CatalogPath string // Ruta al catalog.toml (permite usar catálogos custom/remotos)
-	LogLevel    string // "debug", "info", "warn", "error"
+	Language    string `toml:"language"`     // "es" o "en"
+	Theme       string `toml:"theme"`        // Tema de la TUI
+	CatalogPath string `toml:"catalog_path"` // Ruta al catalog.toml
+	LogLevel    string `toml:"log_level"`    // "debug", "info", "warn", "error"
 }
 
-// Save escribe el archivo .env con permisos 600 (Seguridad AXIOM).
-// Este archivo será el cerebro que lea el comando 'axiom build'.
-// NOTA FUTURA: Migrar a 'config.toml' para soportar arrays y tablas (ID-BUG-Pendiente).
-func (c Config) Save(axiomPath string) error {
-	envPath := filepath.Join(axiomPath, ".env")
-
-	// Usamos un template estrictamente ordenado para evitar desfases en el archivo.
-	content := fmt.Sprintf(`# ─── RUTAS AXIOM ─────────────────────────────────
-AXIOM_PATH="%s"
-
-# ─── IDENTIDAD GIT ───────────────────────────────
-AXIOM_GIT_USER="%s"
-AXIOM_GIT_EMAIL="%s"
-AXIOM_GIT_TOKEN="%s"
-AXIOM_AUTH_MODE="%s"
-
-# ─── DIRECTORIOS DE TRABAJO ──────────────────────
-AXIOM_BASE_DIR="%s"
-AXIOM_OLLAMA_HOST="http://localhost:11434"
-AXIOM_MODELS_DIR="%s"
-
-# ─── HARDWARE & DRIVERS ─────────────────────────
-AXIOM_GPU_TYPE="%s"
-AXIOM_GFX_VAL="%s"
-AXIOM_ROCM_MODE="%s"
-
-# ─── UI & ECOSISTEMA (BETA) ─────────────────────
-AXIOM_UI_LANGUAGE="%s"
-AXIOM_UI_THEME="%s"
-AXIOM_CATALOG_PATH="%s"
-AXIOM_LOG_LEVEL="%s"
-`,
-		axiomPath,    // 1. AXIOM_PATH
-		c.GitUser,    // 2. AXIOM_GIT_USER
-		c.GitEmail,   // 3. AXIOM_GIT_EMAIL
-		c.GitToken,   // 4. AXIOM_GIT_TOKEN
-		c.AuthMode,   // 5. AXIOM_AUTH_MODE
-		c.BaseDir,    // 6. AXIOM_BASE_DIR
-		c.ModelsDir,  // 7. AXIOM_MODELS_DIR
-		c.GpuType,    // 8. AXIOM_GPU_TYPE
-		c.GfxVersion, // 9. AXIOM_GFX_VAL
-		c.RocmMode,   // 10. AXIOM_ROCM_MODE
-		// Valores futuros (con defaults si están vacíos)
-		defaultString(c.Language, "es"),
-		defaultString(c.Theme, "default"),
-		defaultString(c.CatalogPath, filepath.Join(axiomPath, "catalog.toml")),
-		defaultString(c.LogLevel, "info"),
-	)
-
-	// El permiso 0600 (rw-------) es obligatorio para proteger el GIT_TOKEN.
-	return os.WriteFile(envPath, []byte(content), 0600)
-}
-
-// defaultString devuelve un valor por defecto si la cadena está vacía.
-func defaultString(val, def string) string {
-	if val == "" {
-		return def
+// ToEnvConfig convierte Config del adapter a EnvConfig del dominio.
+func (c Config) ToEnvConfig() domain.EnvConfig {
+	return domain.EnvConfig{
+		AxiomPath:  c.AxiomPath,
+		GitUser:    c.GitUser,
+		GitEmail:   c.GitEmail,
+		GitToken:   c.GitToken,
+		AuthMode:   c.AuthMode,
+		BaseDir:    c.BaseDir,
+		OllamaHost: c.OllamaHost,
+		ModelsDir:  c.ModelsDir,
+		GPUType:    c.GpuType,
+		GFXVal:     c.GfxVersion,
+		ROCMMode:   c.RocmMode,
+		Language:   c.Language,
 	}
-	return val
+}
+
+// ConfigPath retorna la ruta del archivo de configuración.
+func ConfigPath(axiomPath string) string {
+	return filepath.Join(axiomPath, "config.toml")
+}
+
+// Save escribe el archivo config.toml con permisos 600 (Seguridad AXIOM).
+func (c Config) Save(axiomPath string) error {
+	path := ConfigPath(axiomPath)
+
+	// Aplicar defaults antes de serializar
+	cfg := c
+	if cfg.Language == "" {
+		cfg.Language = "es"
+	}
+	if cfg.Theme == "" {
+		cfg.Theme = "default"
+	}
+	if cfg.CatalogPath == "" {
+		cfg.CatalogPath = filepath.Join(axiomPath, "catalog.toml")
+	}
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = "info"
+	}
+	if cfg.OllamaHost == "" {
+		cfg.OllamaHost = "http://localhost:11434"
+	}
+
+	var buf bytes.Buffer
+	encoder := toml.NewEncoder(&buf)
+	if err := encoder.Encode(cfg); err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, buf.Bytes(), 0600)
+}
+
+// LoadConfig lee el archivo config.toml y retorna un Config.
+func LoadConfig(fs interface{}, axiomPath string) (Config, error) {
+	path := ConfigPath(axiomPath)
+
+	fileSystem, ok := fs.(interface {
+		ReadFile(path string) ([]byte, error)
+		Exists(path string) bool
+	})
+	if !ok {
+		return Config{}, nil
+	}
+
+	if !fileSystem.Exists(path) {
+		return Config{}, nil
+	}
+
+	data, err := fileSystem.ReadFile(path)
+	if err != nil {
+		return Config{}, err
+	}
+
+	var cfg Config
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return Config{}, err
+	}
+
+	return cfg, nil
 }

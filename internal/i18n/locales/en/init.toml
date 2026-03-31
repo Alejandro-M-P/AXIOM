@@ -10,7 +10,7 @@ option_es = "Español"
 
 [init_confirm]
 title = "WARNING"
-description = "Overwrite existing .env file?"
+description = "Overwrite existing config.toml file?"
 option_yes = "YES, CONTINUE"
 option_no = "NO, EXIT"
 
