@@ -36,8 +36,8 @@ func TestBuildContextCreation(t *testing.T) {
 		t.Errorf("ContainerName = %s, want test-container", buildCtx.ContainerName)
 	}
 
-	if buildCtx.ImageName != "localhost/axiom-nvidia:latest" {
-		t.Errorf("ImageName = %s, want localhost/axiom-nvidia:latest", buildCtx.ImageName)
+	if buildCtx.ImageName != "localhost/axiom-dev:latest" {
+		t.Errorf("ImageName = %s, want localhost/axiom-dev:latest", buildCtx.ImageName)
 	}
 
 	expectedDir := filepath.Join(cfg.BaseDir, ".entorno", "test-container")

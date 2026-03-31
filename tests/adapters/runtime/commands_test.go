@@ -495,7 +495,7 @@ func TestPodmanRemoveImageCommand(t *testing.T) {
 
 func TestPodmanEnterBunkerCommand(t *testing.T) {
 	t.Run("returns correct command structure", func(t *testing.T) {
-		cmd := runtime.Podman.EnterBunker("test-bunker")
+		cmd := runtime.Podman.EnterBunker("test-bunker", "/home/user/.bashrc")
 		if len(cmd) == 0 {
 			t.Fatal("expected non-empty command slice")
 		}
@@ -505,7 +505,7 @@ func TestPodmanEnterBunkerCommand(t *testing.T) {
 	})
 
 	t.Run("includes bunker name", func(t *testing.T) {
-		cmd := runtime.Podman.EnterBunker("my-bunker")
+		cmd := runtime.Podman.EnterBunker("my-bunker", "/home/user/.bashrc")
 		found := false
 		for _, arg := range cmd {
 			if arg == "my-bunker" {
@@ -519,7 +519,7 @@ func TestPodmanEnterBunkerCommand(t *testing.T) {
 	})
 
 	t.Run("uses bash login shell", func(t *testing.T) {
-		cmd := runtime.Podman.EnterBunker("bunker")
+		cmd := runtime.Podman.EnterBunker("bunker", "/home/user/.bashrc")
 		found := false
 		for _, arg := range cmd {
 			if arg == "bash" {
@@ -533,7 +533,7 @@ func TestPodmanEnterBunkerCommand(t *testing.T) {
 	})
 
 	t.Run("uses --rcfile flag", func(t *testing.T) {
-		cmd := runtime.Podman.EnterBunker("bunker")
+		cmd := runtime.Podman.EnterBunker("bunker", "/home/user/.bashrc")
 		found := false
 		for _, arg := range cmd {
 			if arg == "--rcfile" {
@@ -547,7 +547,7 @@ func TestPodmanEnterBunkerCommand(t *testing.T) {
 	})
 
 	t.Run("uses -i for interactive mode", func(t *testing.T) {
-		cmd := runtime.Podman.EnterBunker("bunker")
+		cmd := runtime.Podman.EnterBunker("bunker", "/home/user/.bashrc")
 		found := false
 		for _, arg := range cmd {
 			if arg == "-i" {
@@ -741,7 +741,7 @@ func TestCommandSetStructure(t *testing.T) {
 		if cmds.RemoveImage("test", false) == nil {
 			t.Error("RemoveImage should return non-nil slice")
 		}
-		if cmds.EnterBunker("test") == nil {
+		if cmds.EnterBunker("test", "/home/user/.bashrc") == nil {
 			t.Error("EnterBunker should return non-nil slice")
 		}
 		if cmds.ExecuteInBunker("test") == nil {
@@ -778,7 +778,7 @@ func TestCommandSetStructure(t *testing.T) {
 		cmds.RemoveImage = func(image string, force bool) []string {
 			return []string{"test"}
 		}
-		cmds.EnterBunker = func(name string) []string {
+		cmds.EnterBunker = func(name, rcPath string) []string {
 			return []string{"test"}
 		}
 		cmds.ExecuteInBunker = func(name string, args ...string) []string {

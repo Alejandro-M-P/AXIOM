@@ -222,6 +222,77 @@ Los textos viven en:
 
 ---
 
+## Regla 9 — El core no ejecuta, no lee, no escribe al sistema
+
+El core (`bunker/`, `slots/`, `build/`) **nunca** llama directamente a:
+- `exec.Command`, `exec.CommandContext`, `exec.LookPath`
+- `os.Getenv`, `os.Stat`, `os.ReadFile`, `os.WriteFile`
+- `fmt.Print`, `fmt.Fprintf(os.Stderr, ...)`, `log.Printf`
+
+Si necesita ejecutar un comando → usa `ICommandRunner.RunShell(ctx, cmd)`.
+Si necesita buscar un binario → usa `ISystem.GetCommandPath(name)`.
+Si necesita una variable de entorno → usa `ISystem.GetEnv(key)`.
+Si necesita mostrar algo → usa `IPresenter.ShowLog(key, args...)` o `GetText(key, args...)`.
+Si necesita reportar un error → devuelve `fmt.Errorf("clave_i18n: %w", err)`.
+
+```go
+// ✅ CORRECTO — el core usa abstracciones
+output, err := m.runner.RunShell(ctx, "curl -fsSL https://...")
+path, err := m.system.GetCommandPath("pacman")
+m.ui.ShowLog("logs.installing", packageName)
+return fmt.Errorf("errors.slots.command_failed: %w", err)
+
+// ❌ INCORRECTO — el core habla con el sistema directamente
+exec.CommandContext(ctx, "sh", "-c", cmd)
+exec.LookPath("pacman")
+os.Getenv("AXIOM_PATH")
+fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
+```
+
+**¿Dónde sí puede vivir exec.Command?**
+Solo en `internal/adapters/` y `internal/slots/base/` (infraestructura).
+En ningún otro lugar.
+
+---
+
+## Regla 10 — Cero texto hardcodeado en Go
+
+**Ningún string que el usuario pueda ver existe en el código Go.**
+Ni mensajes de error, ni labels, ni logs, ni confirmaciones, ni warnings,
+ni subtítulos, ni nombres de categorías. **Todo** va a los TOMLs de i18n.
+
+La razón: si un string está en Go, está duplicado, no se traduce, y no
+se puede cambiar sin recompilar. Si está en un TOML, se traduce, se
+modifica sin tocar código, y vive en un solo lugar.
+
+```go
+// ✅ CORRECTO — la clave i18n, el texto vive en el TOML
+m.ui.ShowLog("logs.slots.installing", item.Name)
+m.ui.GetText("slots.subcategories.tools")
+return fmt.Errorf("errors.slots.command_failed: %w", err)
+
+// ❌ INCORRECTO — string hardcodeado en Go
+m.ui.ShowLog("info", "Installing:", item.Name)
+return "Developer Tools"
+return fmt.Errorf("command failed: %w", err)
+```
+
+**¿Qué NO es texto hardcodeado?**
+- Claves i18n como `"logs.slots.installing"` → son referencias, no texto visible
+- Placeholders como `%s`, `%w`, `%d` → son formatos, no texto visible
+- IDs técnicos como `"ia"`, `"tools"`, `"data"` → son claves de negocio, no texto visible
+
+**¿Qué SÍ es texto hardcodeado?**
+- `"Installing:"`, `"Running:"`, `"Step %d/%d"` → texto visible
+- `"AI / LLM Models"`, `"Developer Tools"` → texto visible
+- `"command failed"`, `"slot selector failed"` → texto visible
+- `"Warning: %v\n"` → texto visible
+
+Los textos viven exclusivamente en:
+`internal/i18n/locales/es/` y `internal/i18n/locales/en/`
+
+---
+
 ## La tabla de qué puede hacer cada capa
 
 | | `exec` | `os.Stdout` | `fmt.Print` | `os.Getenv` | Bubbletea | Texto visible |

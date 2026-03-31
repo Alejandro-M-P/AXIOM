@@ -57,3 +57,9 @@ description = "Imagen mínima sin instalaciones"
 [rust]
 name = "Rust"
 description = "Lenguaje de programación Rust"
+
+[subcategories]
+ia = "IA / Modelos LLM"
+languages = "Lenguajes de Programación"
+tools = "Herramientas de Desarrollo"
+data = "Almacenes de Datos"

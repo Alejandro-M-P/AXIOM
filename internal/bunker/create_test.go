@@ -3,6 +3,7 @@ package bunker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -182,38 +183,41 @@ func endsWith(s, suffix string) bool {
 }
 
 func TestHostGPUVolumeFlags_RDNA(t *testing.T) {
+	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
 	// hostGPUVolumeFlags is a standalone function - testing it directly
-	result := hostGPUVolumeFlags("rdna3")
+	result := hostGPUVolumeFlags("rdna3", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice")
 	}
 
-	result = hostGPUVolumeFlags("rdna4")
+	result = hostGPUVolumeFlags("rdna4", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice")
 	}
 
-	result = hostGPUVolumeFlags("amd")
+	result = hostGPUVolumeFlags("amd", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice")
 	}
 
-	result = hostGPUVolumeFlags("generic")
+	result = hostGPUVolumeFlags("generic", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice")
 	}
 }
 
 func TestHostGPUVolumeFlags_Nvidia(t *testing.T) {
-	result := hostGPUVolumeFlags("nvidia")
+	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
+	result := hostGPUVolumeFlags("nvidia", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice for nvidia")
 	}
 }
 
 func TestHostGPUVolumeFlags_Intel(t *testing.T) {
+	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
 	// Intel GPU volumes only added if paths exist
-	result := hostGPUVolumeFlags("intel")
+	result := hostGPUVolumeFlags("intel", noopResolver)
 	// Result may be nil if Intel OpenCL paths don't exist on this system
 	if result != nil {
 		t.Logf("Intel GPU flags returned: %v", result)
@@ -221,8 +225,9 @@ func TestHostGPUVolumeFlags_Intel(t *testing.T) {
 }
 
 func TestHostGPUVolumeFlags_Empty(t *testing.T) {
+	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
 	// Empty GPU type doesn't match any case, so returns nil
-	result := hostGPUVolumeFlags("")
+	result := hostGPUVolumeFlags("", noopResolver)
 	if result != nil {
 		t.Logf("Empty GPU type flags returned: %v", result)
 	}

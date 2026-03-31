@@ -29,6 +29,9 @@ type ISystem interface {
 
 	// PrepareSSHAgent prepara el agent SSH con la clave por defecto.
 	PrepareSSHAgent(ctx context.Context) error
+
+	// GetCommandPath retorna la ruta absoluta de un comando en el PATH.
+	GetCommandPath(name string) (string, error)
 }
 
 // IDependencyChecker verifica la disponibilidad de herramientas del sistema.

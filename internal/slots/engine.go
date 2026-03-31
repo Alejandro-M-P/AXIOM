@@ -5,13 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/internal/slots/base"
 )
 
 // ErrCircularDependency indicates that a circular dependency was detected.
-var ErrCircularDependency = errors.New("circular dependency detected")
+var ErrCircularDependency = errors.New("engine.circular_dependency")
 
 // IInstallerEngine defines the interface for executing slot item installations.
 // It handles dependency resolution and step execution.
@@ -35,27 +35,30 @@ type InstallerEngine struct {
 	registry      ISlotRegistry
 	baseInstaller *base.BaseInstaller
 	analyzer      *base.SlotCommandAnalyzer
+	runner        ports.ICommandRunner
 }
 
 // NewInstallerEngine creates a new InstallerEngine instance.
-func NewInstallerEngine(registry ISlotRegistry) *InstallerEngine {
+func NewInstallerEngine(registry ISlotRegistry, runner ports.ICommandRunner) *InstallerEngine {
 	return &InstallerEngine{
 		registry: registry,
+		runner:   runner,
 	}
 }
 
 // NewInstallerEngineWithBase creates a new InstallerEngine with base tools support.
 // This enables automatic installation of package managers and base tools.
-func NewInstallerEngineWithBase(registry ISlotRegistry, preferencesPath string) (*InstallerEngine, error) {
+func NewInstallerEngineWithBase(registry ISlotRegistry, preferencesPath string, runner ports.ICommandRunner) (*InstallerEngine, error) {
 	installer, err := base.NewBaseInstaller(preferencesPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create base installer: %w", err)
+		return nil, fmt.Errorf("engine.base_tools_failed: %w", err)
 	}
 
 	return &InstallerEngine{
 		registry:      registry,
 		baseInstaller: installer,
 		analyzer:      base.NewSlotCommandAnalyzer(installer),
+		runner:        runner,
 	}, nil
 }
 
@@ -83,7 +86,7 @@ func (e *InstallerEngine) Execute(items []SlotItem, progress Executor) error {
 		// Call progress callback if provided
 		if progress != nil {
 			if err := progress(ctx); err != nil {
-				return fmt.Errorf("installation cancelled for %s: %w", item.ID, err)
+				return fmt.Errorf("engine.cancelled: %s: %w", item.ID, err)
 			}
 		}
 		return e.executeInstall(ctx, item)
@@ -104,13 +107,12 @@ func (e *InstallerEngine) executeInstall(ctx context.Context, item *SlotItem) er
 		// Ensure base tools are installed before executing
 		if e.analyzer != nil {
 			if err := e.analyzer.AnalyzeAndInstallRequirements(ctx, item.InstallCmd); err != nil {
-				return fmt.Errorf("failed to install base tools for %s: %w", item.ID, err)
+				return fmt.Errorf("engine.base_tools_failed: %s: %w", item.ID, err)
 			}
 		}
 
-		cmd := exec.CommandContext(ctx, "sh", "-c", item.InstallCmd)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("install command failed for %s: %w\nOutput: %s", item.ID, err, string(output))
+		if _, err := e.runner.RunShell(ctx, item.InstallCmd); err != nil {
+			return fmt.Errorf("engine.install_failed: %s: %w", item.ID, err)
 		}
 		return nil
 	}
@@ -120,13 +122,12 @@ func (e *InstallerEngine) executeInstall(ctx context.Context, item *SlotItem) er
 		// Ensure base tools are installed before each step
 		if e.analyzer != nil {
 			if err := e.analyzer.AnalyzeAndInstallRequirements(ctx, step); err != nil {
-				return fmt.Errorf("failed to install base tools for %s: %w", item.ID, err)
+				return fmt.Errorf("engine.base_tools_failed: %s: %w", item.ID, err)
 			}
 		}
 
-		cmd := exec.CommandContext(ctx, "sh", "-c", step)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("install step failed for %s: %w\nOutput: %s", item.ID, err, string(output))
+		if _, err := e.runner.RunShell(ctx, step); err != nil {
+			return fmt.Errorf("engine.step_failed: %s: %w", item.ID, err)
 		}
 	}
 
@@ -160,7 +161,7 @@ func (e *InstallerEngine) ResolveDependencies(items []SlotItem) ([]SlotItem, err
 			// Item might be a dependency not in selection, try to get from registry
 			registeredItem, err := e.registry.GetByID(id)
 			if err != nil {
-				return fmt.Errorf("unknown dependency: %s", id)
+				return fmt.Errorf("engine.unknown_dependency: %s", id)
 			}
 			item = registeredItem
 			itemMap[id] = item
@@ -221,7 +222,7 @@ func (e *InstallerEngine) ExecuteWithContext(ctx context.Context, items []SlotIt
 	for i := range orderedItems {
 		item := &orderedItems[i]
 		if err := itemExec(ctx, item); err != nil {
-			return fmt.Errorf("failed to install %s: %w", item.ID, err)
+			return fmt.Errorf("engine.install_failed: %s: %w", item.ID, err)
 		}
 	}
 

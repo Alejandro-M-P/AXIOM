@@ -103,8 +103,8 @@ func TestResolveBuildGPU_Found(t *testing.T) {
 		t.Errorf("GPUType = %s, want nvidia", gpuInfo.Type)
 	}
 
-	if gpuInfo.Name != "Forzada por .env" {
-		t.Errorf("Name = %s, want 'Forzada por .env'", gpuInfo.Name)
+	if gpuInfo.Name != "gpu.forced_by_env" {
+		t.Errorf("Name = %s, want 'gpu.forced_by_env'", gpuInfo.Name)
 	}
 }
 

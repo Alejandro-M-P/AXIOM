@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -24,6 +23,7 @@ type SlotManager struct {
 	engine     IInstallerEngine
 	ui         ports.IPresenter
 	fs         ports.IFileSystem
+	runner     ports.ICommandRunner
 	configPath string
 	uiRunner   UISelectorRunner
 }
@@ -64,12 +64,14 @@ func NewSlotManager(
 	engine IInstallerEngine,
 	ui ports.IPresenter,
 	fs ports.IFileSystem,
+	runner ports.ICommandRunner,
 ) *SlotManager {
 	return &SlotManager{
 		registry:   registry,
 		engine:     engine,
 		ui:         ui,
 		fs:         fs,
+		runner:     runner,
 		configPath: DefaultConfigPath,
 	}
 }
@@ -80,6 +82,7 @@ func NewSlotManagerWithConfig(
 	engine IInstallerEngine,
 	ui ports.IPresenter,
 	fs ports.IFileSystem,
+	runner ports.ICommandRunner,
 	configPath string,
 ) *SlotManager {
 	return &SlotManager{
@@ -87,6 +90,7 @@ func NewSlotManagerWithConfig(
 		engine:     engine,
 		ui:         ui,
 		fs:         fs,
+		runner:     runner,
 		configPath: configPath,
 	}
 }
@@ -135,7 +139,7 @@ func (m *SlotManager) Select(category SlotCategory) ([]SlotItem, error) {
 	selections, err := m.LoadSelection()
 	if err != nil {
 		// Log warning but continue with empty selection
-		m.ui.ShowLog("warn", "Failed to load slot selection, using empty selection:", err.Error())
+		m.ui.ShowLog("logs.slots.warn_load_failed")
 		selections = []SlotSelection{}
 	}
 
@@ -159,7 +163,7 @@ func (m *SlotManager) Select(category SlotCategory) ([]SlotItem, error) {
 	for _, id := range selection.Selected {
 		item, err := m.registry.GetByID(id)
 		if err != nil {
-			m.ui.ShowLog("warn", "Selected item not found:", id)
+			m.ui.ShowLog("logs.slots.item_not_found", id)
 			continue
 		}
 		selectedItems = append(selectedItems, *item)
@@ -222,7 +226,7 @@ func (m *SlotManager) ExecuteWithContext(ctx context.Context, selected []SlotIte
 	}
 
 	return m.engine.ExecuteWithContext(ctx, selected, func(ctx context.Context, item *SlotItem) error {
-		m.ui.ShowLog("info", "Installing:", item.Name)
+		m.ui.ShowLog("logs.slots.installing", item.Name)
 		// Execute installation commands from TOML
 		return m.executeInstall(ctx, item)
 	})
@@ -237,13 +241,13 @@ func (m *SlotManager) executeInstall(ctx context.Context, item *SlotItem) error 
 
 	// Single command mode
 	if item.InstallCmd != "" {
-		m.ui.ShowLog("info", fmt.Sprintf("Running: %s", item.InstallCmd))
+		m.ui.ShowLog("logs.slots.running_cmd", item.InstallCmd)
 		return m.runCommand(ctx, item.InstallCmd)
 	}
 
 	// Multi-step mode
 	for i, step := range item.InstallSteps {
-		m.ui.ShowLog("info", fmt.Sprintf("Step %d/%d: %s", i+1, len(item.InstallSteps), step))
+		m.ui.ShowLog("logs.slots.step_progress", i+1, len(item.InstallSteps), step)
 		if err := m.runCommand(ctx, step); err != nil {
 			return err
 		}
@@ -254,11 +258,11 @@ func (m *SlotManager) executeInstall(ctx context.Context, item *SlotItem) error 
 
 // runCommand executes a shell command with context support.
 func (m *SlotManager) runCommand(ctx context.Context, cmd string) error {
-	command := exec.CommandContext(ctx, "sh", "-c", cmd)
-	output, err := command.CombinedOutput()
+	output, err := m.runner.RunShell(ctx, cmd)
 	if err != nil {
-		return fmt.Errorf("command failed: %w\nOutput: %s", err, string(output))
+		return fmt.Errorf("errors.slots.command_failed: %w", err)
 	}
+	_ = output // output is captured but not used in error message to avoid leaking sensitive data
 	return nil
 }
 
@@ -267,21 +271,21 @@ func (m *SlotManager) SaveSelection(selections []SlotSelection) error {
 	// Ensure directory exists
 	dir := filepath.Dir(m.configPath)
 	if err := m.fs.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
+		return fmt.Errorf("errors.slots.config_dir_failed: %w", err)
 	}
 
 	// Marshal to TOML
 	data, err := marshalTOML(selections)
 	if err != nil {
-		return fmt.Errorf("failed to marshal selection: %w", err)
+		return fmt.Errorf("errors.slots.marshal_failed: %w", err)
 	}
 
 	// Write to file
 	if err := m.fs.WriteFile(m.configPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
+		return fmt.Errorf("errors.slots.write_failed: %w", err)
 	}
 
-	m.ui.ShowLog("info", "Selection saved to:", m.configPath)
+	m.ui.ShowLog("logs.slots.selection_saved", m.configPath)
 	return nil
 }
 
@@ -295,7 +299,7 @@ func (m *SlotManager) LoadSelection() ([]SlotSelection, error) {
 	// Read file
 	data, err := m.fs.ReadFile(m.configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		return nil, fmt.Errorf("errors.slots.read_failed: %w", err)
 	}
 
 	// Unmarshal from TOML
@@ -324,7 +328,7 @@ func (m *SlotManager) SetUISelectorRunner(runner UISelectorRunner) {
 // Returns ([]string, bool, error) where bool indicates if user confirmed selection.
 func (m *SlotManager) RunSlotSelector(category string, items []SlotItem, preselected []string) ([]string, bool, error) {
 	if m.uiRunner == nil {
-		return nil, false, fmt.Errorf("UISelectorRunner not set: cannot run slot selector UI")
+		return nil, false, fmt.Errorf("errors.slots.runner_not_set")
 	}
 
 	// Convert SlotItem to ItemGroup for UI
@@ -333,7 +337,7 @@ func (m *SlotManager) RunSlotSelector(category string, items []SlotItem, presele
 	// Run the selector
 	selectedIDs, err := m.uiRunner.RunSlotSelector(groups)
 	if err != nil {
-		return nil, false, fmt.Errorf("slot selector failed: %w", err)
+		return nil, false, fmt.Errorf("errors.slots.selector_failed: %w", err)
 	}
 
 	if selectedIDs == nil {
@@ -362,7 +366,7 @@ func (m *SlotManager) buildItemGroupsForUI(items []SlotItem) []ItemGroup {
 	var result []ItemGroup
 	for _, subcategory := range order {
 		if items, ok := groupsMap[subcategory]; ok {
-			title := getSubcategoryTitle(subcategory)
+			title := m.ui.GetText("slots.subcategories." + subcategory)
 			result = append(result, ItemGroup{Title: title, Items: items})
 		}
 	}
@@ -377,28 +381,16 @@ func (m *SlotManager) buildItemGroupsForUI(items []SlotItem) []ItemGroup {
 			}
 		}
 		if !found {
-			title := getSubcategoryTitle(subcategory)
+			title := m.ui.GetText("slots.subcategories." + subcategory)
+			if title == "slots.subcategories."+subcategory {
+				// Fallback: no i18n key found, use raw subcategory name
+				title = subcategory
+			}
 			result = append(result, ItemGroup{Title: title, Items: items})
 		}
 	}
 
 	return result
-}
-
-// getSubcategoryTitle returns a human-readable title for a subcategory.
-func getSubcategoryTitle(subcategory string) string {
-	switch subcategory {
-	case "ia":
-		return "AI / LLM Models"
-	case "languages":
-		return "Programming Languages"
-	case "tools":
-		return "Developer Tools"
-	case "data":
-		return "Data Stores"
-	default:
-		return subcategory
-	}
 }
 
 // marshalTOML marshals slot selections to TOML format.
@@ -426,7 +418,7 @@ func marshalTOML(selections []SlotSelection) ([]byte, error) {
 
 	wrapper := selectionsWrapper{Selections: data}
 	if err := encoder.Encode(wrapper); err != nil {
-		return nil, fmt.Errorf("failed to encode TOML: %w", err)
+		return nil, fmt.Errorf("errors.slots.marshal_failed: %w", err)
 	}
 
 	return result.Bytes(), nil
@@ -449,7 +441,7 @@ func unmarshalTOML(data []byte) ([]SlotSelection, error) {
 
 	wrapper := selectionsWrapper{}
 	if err := toml.Unmarshal(data, &wrapper); err != nil {
-		return nil, fmt.Errorf("failed to decode TOML: %w", err)
+		return nil, fmt.Errorf("errors.slots.read_failed: %w", err)
 	}
 
 	dataList := wrapper.Selections
@@ -475,7 +467,7 @@ func EnsureConfigDir(fs ports.IFileSystem, baseDir string) error {
 		return err
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("config path exists but is not a directory: %s", configDir)
+		return fmt.Errorf("errors.slots.config_not_a_dir: %s", configDir)
 	}
 	return nil
 }

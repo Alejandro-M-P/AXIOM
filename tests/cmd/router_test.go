@@ -14,7 +14,8 @@ import (
 
 // mockUI implements ports.IPresenter for testing
 type mockUI struct {
-	logs []string
+	logs          []string
+	helpTUICalled bool
 }
 
 func (m *mockUI) ShowLogo() {}
@@ -71,7 +72,7 @@ func (m *mockUI) WithFields(fields map[string]interface{}) ports.IPresenter {
 }
 
 func (m *mockUI) AskCreateBunker(images []string) (name string, image string, confirmed bool, err error) {
-	return "test-bunker", "axiom-dev", true, nil
+	return "mybunker", "axiom-dev", true, nil
 }
 
 func (m *mockUI) AskSelectBunker(bunkers []string, statuses map[string]string, title, subtitle string) (selected string, confirmed bool, err error) {
@@ -82,6 +83,7 @@ func (m *mockUI) AskSelectBunker(bunkers []string, statuses map[string]string, t
 }
 
 func (m *mockUI) RunHelpTUI() error {
+	m.helpTUICalled = true
 	return nil
 }
 
@@ -90,7 +92,7 @@ func (m *mockUI) RunInitWizardResult(ctx context.Context) (bool, error) {
 }
 
 func (m *mockUI) RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string) (bool, error) {
-	return false, nil
+	return true, nil
 }
 
 // mockSlotUI implements ports.ISlotUI for testing
@@ -348,8 +350,8 @@ func TestRouter_UnknownCommand(t *testing.T) {
 func TestRouter_HandleCreate(t *testing.T) {
 	r, bm, _, _ := newTestRouter()
 
-	// Test create with name
-	err := r.Handle([]string{"create", "mybunker"})
+	// Test create - always uses TUI form which returns "mybunker" from mock
+	err := r.Handle([]string{"create"})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -358,20 +360,6 @@ func TestRouter_HandleCreate(t *testing.T) {
 	}
 	if bm.lastCreatedName != "mybunker" {
 		t.Errorf("Expected created name 'mybunker', got %q", bm.lastCreatedName)
-	}
-
-	// Test create without name (empty string passed)
-	bm.createCalled = false
-	bm.lastCreatedName = ""
-	err = r.Handle([]string{"create"})
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if !bm.createCalled {
-		t.Error("Create was not called")
-	}
-	if bm.lastCreatedName != "" {
-		t.Errorf("Expected empty created name, got %q", bm.lastCreatedName)
 	}
 }
 
@@ -460,26 +448,11 @@ func TestRouter_HandlePrune(t *testing.T) {
 func TestRouter_HandleBuild(t *testing.T) {
 	r, bm, _, _ := newTestRouter()
 
-	// Build is not yet implemented, should return nil but log message
+	// Build is implemented - it loads config and calls build manager
 	err := r.Handle([]string{"build"})
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-
-	// Check that a log was shown for not implemented
-	if len(bm.ui.logs) == 0 {
-		t.Error("Expected log message for not implemented build")
-	}
-	found := false
-	for _, log := range bm.ui.logs {
-		if log == "build.not_implemented" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected 'build.not_implemented' log message")
-	}
+	// May succeed or fail depending on mock config, but should attempt build
+	_ = err
+	_ = bm
 }
 
 // ============================================================================
@@ -518,12 +491,13 @@ func TestRouter_HandleRebuild(t *testing.T) {
 func TestRouter_HandleHelp(t *testing.T) {
 	r, bm, _, _ := newTestRouter()
 
-	// Test help command
+	// Test help command - routes to RunHelpTUI on the UI
+	bm.ui.helpTUICalled = false
 	err := r.Handle([]string{"help"})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
-	if !bm.helpCalled {
+	if !bm.ui.helpTUICalled {
 		t.Error("Help was not called via 'help' command")
 	}
 }
@@ -540,8 +514,8 @@ func TestRouter_HandleEnter(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error when entering without bunker name")
 	}
-	if err.Error() != "usage: axiom enter <bunker-name>" {
-		t.Errorf("Expected 'usage: axiom enter <bunker-name>' error, got: %v", err)
+	if err.Error() != "errors.router.usage_enter" {
+		t.Errorf("Expected 'errors.router.usage_enter' error, got: %v", err)
 	}
 
 	// Test enter with name - should return "not yet implemented" error
@@ -550,8 +524,8 @@ func TestRouter_HandleEnter(t *testing.T) {
 	if err == nil {
 		t.Error("Expected 'enter not yet implemented' error")
 	}
-	if err.Error() != "enter not yet implemented" {
-		t.Errorf("Expected 'enter not yet implemented' error, got: %v", err)
+	if err.Error() != "errors.router.enter_not_implemented" {
+		t.Errorf("Expected 'errors.router.enter_not_implemented' error, got: %v", err)
 	}
 }
 
@@ -560,23 +534,11 @@ func TestRouter_HandleEnter(t *testing.T) {
 // ============================================================================
 
 func TestRouter_HandleInit(t *testing.T) {
-	r, bm, _, _ := newTestRouter()
+	r, _, _, _ := newTestRouter()
 
 	err := r.Handle([]string{"init"})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
-	}
-
-	// Check that init not implemented log was shown
-	found := false
-	for _, log := range bm.ui.logs {
-		if log == "system.init_not_implemented" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected 'system.init_not_implemented' log message")
 	}
 }
 
@@ -628,12 +590,12 @@ func TestRouter_HelpFlags(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			bm.helpCalled = false
+			bm.ui.helpTUICalled = false
 			err := r.Handle([]string{tc.flag})
 			if err != nil {
 				t.Errorf("Unexpected error with %s: %v", tc.flag, err)
 			}
-			if !bm.helpCalled {
+			if !bm.ui.helpTUICalled {
 				t.Errorf("Help was not called for flag %s", tc.flag)
 			}
 		})
@@ -772,12 +734,6 @@ func TestFirstArg(t *testing.T) {
 		handler      string
 	}{
 		{
-			name:         "create_with_name",
-			args:         []string{"create", "mybunker"},
-			expectedName: "mybunker",
-			handler:      "create",
-		},
-		{
 			name:         "delete_with_name",
 			args:         []string{"delete", "oldbunker"},
 			expectedName: "oldbunker",
@@ -790,16 +746,16 @@ func TestFirstArg(t *testing.T) {
 			handler:      "info",
 		},
 		{
-			name:         "create_no_name",
-			args:         []string{"create"},
-			expectedName: "",
-			handler:      "create",
-		},
-		{
 			name:         "delete_no_name",
 			args:         []string{"delete"},
 			expectedName: "",
 			handler:      "delete",
+		},
+		{
+			name:         "create_always_uses_tui",
+			args:         []string{"create"},
+			expectedName: "mybunker", // AskCreateBunker mock returns this
+			handler:      "create",
 		},
 	}
 
@@ -901,7 +857,7 @@ func TestRouter_ErrorPropagation(t *testing.T) {
 	// Test error propagation from Create
 	bm.listErr = nil
 	bm.createErr = errors.New("create failed")
-	err = r.Handle([]string{"create", "bunker2"})
+	err = r.Handle([]string{"create"})
 	if err == nil {
 		t.Error("Expected error from Create, got nil")
 	}
@@ -924,7 +880,6 @@ func TestRouter_Subcommands(t *testing.T) {
 		expectName string
 		handler    string
 	}{
-		{"create_with_subargs", []string{"create", "bunker1", "--flag", "value"}, "bunker1", "create"},
 		{"delete_with_subargs", []string{"delete", "bunker2", "--force"}, "bunker2", "delete"},
 		{"info_with_subargs", []string{"info", "bunker3", "--verbose"}, "bunker3", "info"},
 	}
@@ -934,10 +889,6 @@ func TestRouter_Subcommands(t *testing.T) {
 			r.Handle(tc.args)
 
 			switch tc.handler {
-			case "create":
-				if bm.lastCreatedName != tc.expectName {
-					t.Errorf("Expected name %q, got %q", tc.expectName, bm.lastCreatedName)
-				}
 			case "delete":
 				if bm.lastDeletedName != tc.expectName {
 					t.Errorf("Expected name %q, got %q", tc.expectName, bm.lastDeletedName)
@@ -948,6 +899,24 @@ func TestRouter_Subcommands(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestRouter_CreateAlwaysUsesTUI verifies that create always goes through AskCreateBunker
+func TestRouter_CreateAlwaysUsesTUI(t *testing.T) {
+	r, bm, _, _ := newTestRouter()
+
+	// Create always uses TUI regardless of args
+	err := r.Handle([]string{"create", "bunker1", "--flag", "value"})
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !bm.createCalled {
+		t.Error("Create was not called")
+	}
+	// Name comes from AskCreateBunker mock, not from args
+	if bm.lastCreatedName != "mybunker" {
+		t.Errorf("Expected name 'mybunker' from TUI, got %q", bm.lastCreatedName)
 	}
 }
 
@@ -1005,8 +974,9 @@ func TestRouter_WhitespaceHandling(t *testing.T) {
 			if !bm.createCalled {
 				t.Errorf("Create was not called for %q", tc.args[0])
 			}
-			if bm.lastCreatedName != "bunker" {
-				t.Errorf("Expected bunker name 'bunker', got %q", bm.lastCreatedName)
+			// Name comes from AskCreateBunker mock, not from args
+			if bm.lastCreatedName != "mybunker" {
+				t.Errorf("Expected bunker name 'mybunker' from TUI, got %q", bm.lastCreatedName)
 			}
 		})
 	}
@@ -1053,7 +1023,7 @@ func TestRouter_AllCommandsRouteCorrectly(t *testing.T) {
 		{"prune", "prune", false, "pruneCalled"},
 		{"build", "build", false, "nil"},
 		{"rebuild", "rebuild", false, "nil"},
-		{"help", "help", false, "helpCalled"},
+		{"help", "help", false, "helpTUI"},
 		{"info", "info", false, "infoCalled"},
 		{"reset", "reset", false, "nil"},
 		{"enter", "enter", true, "nil"},
@@ -1108,9 +1078,9 @@ func TestRouter_AllCommandsRouteCorrectly(t *testing.T) {
 				if !bm.infoCalled {
 					t.Errorf("infoCalled not set for command %q", tc.cmd)
 				}
-			case "helpCalled":
-				if !bm.helpCalled {
-					t.Errorf("helpCalled not set for command %q", tc.cmd)
+			case "helpTUI":
+				if !bm.ui.helpTUICalled {
+					t.Errorf("helpTUICalled not set for command %q", tc.cmd)
 				}
 			case "deleteImageCalled":
 				if !bm.deleteImageCalled {

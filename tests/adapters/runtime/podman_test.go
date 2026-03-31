@@ -95,8 +95,8 @@ func (m *mockCommandSet) makeRemoveImage(image string, force bool) []string {
 	return cmd
 }
 
-func (m *mockCommandSet) makeEnterBunker(name string) []string {
-	cmd := []string{"distrobox-enter", name, "--", "bash", "--rcfile", "/dev/null", "-i"}
+func (m *mockCommandSet) makeEnterBunker(name, rcPath string) []string {
+	cmd := []string{"distrobox-enter", name, "--", "bash", "--rcfile", rcPath, "-i"}
 	m.commands = append(m.commands, cmd)
 	return cmd
 }
@@ -425,7 +425,7 @@ func TestEnterBunker_SetsStdinStdout(t *testing.T) {
 
 		// EnterBunker is meant for interactive use
 		// In test environment, this will likely fail/timeout
-		err := adapter.EnterBunker(ctx, "test-bunker")
+		err := adapter.EnterBunker(ctx, "test-bunker", "/home/user/.bashrc")
 		if err == nil {
 			t.Log("Note: EnterBunker succeeded (unexpected in test env)")
 		} else {
@@ -543,7 +543,7 @@ func TestPodmanAdapter_MethodsWithMock(t *testing.T) {
 		adapter := runtime.NewPodmanAdapter()
 		ctx := context.Background()
 
-		err := adapter.EnterBunker(ctx, "name")
+		err := adapter.EnterBunker(ctx, "name", "/home/user/.bashrc")
 		_ = err
 	})
 
@@ -1081,7 +1081,7 @@ func TestPodmanAdapterImplementsAllMethods(t *testing.T) {
 	t.Run("EnterBunker method exists", func(t *testing.T) {
 		adapter := runtime.NewPodmanAdapter()
 		ctx := context.Background()
-		err := adapter.EnterBunker(ctx, "n")
+		err := adapter.EnterBunker(ctx, "n", "/home/user/.bashrc")
 		_ = err
 	})
 

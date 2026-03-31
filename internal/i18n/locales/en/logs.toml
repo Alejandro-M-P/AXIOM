@@ -9,3 +9,11 @@ unknown = "Unknown"
 image_check_failed = "Failed to check image existence: %s"
 no_items_selected = "No items selected for %s slot"
 installing_item = "Installing: %s"
+
+[slots]
+installing = "Installing: %s"
+running_cmd = "Running: %s"
+step_progress = "Step %d/%d: %s"
+selection_saved = "Selection saved to: %s"
+warn_load_failed = "Failed to load slot selection, using empty selection:"
+item_not_found = "Selected item not found: %s"

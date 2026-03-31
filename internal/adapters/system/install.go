@@ -92,6 +92,12 @@ func (s *SystemAdapter) PrepareSSHAgent(ctx context.Context) error {
 	return exec.CommandContext(ctx2, "ssh-add", keyPath).Run()
 }
 
+// GetCommandPath retorna la ruta absoluta de un comando en el PATH.
+// Implementa ports.IDependencyChecker.
+func (s *SystemAdapter) GetCommandPath(name string) (string, error) {
+	return exec.LookPath(name)
+}
+
 var _ ports.ISystem = (*SystemAdapter)(nil)
 
 // CheckDeps verifica las dependencias críticas del sistema

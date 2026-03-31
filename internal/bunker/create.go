@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -212,7 +211,7 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 	}
 
 	if cfg.ROCMMode == "host" {
-		parts = append(parts, hostGPUVolumeFlags(gpuType)...)
+		parts = append(parts, hostGPUVolumeFlags(gpuType, m.system.GetCommandPath)...)
 	}
 	if sshFlag := sshVolumeFlag(sshSocket); sshFlag != "" {
 		parts = append(parts, sshFlag)
@@ -222,7 +221,7 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 }
 
 // hostGPUVolumeFlags retorna los flags de volumen para GPU en modo host.
-func hostGPUVolumeFlags(gpuType string) []string {
+func hostGPUVolumeFlags(gpuType string, getCmdPath func(string) (string, error)) []string {
 	var flags []string
 	addPath := func(path string) {
 		realPath, err := filepath.EvalSymlinks(path)
@@ -242,7 +241,7 @@ func hostGPUVolumeFlags(gpuType string) []string {
 			}
 		}
 		for _, binary := range []string{"rocminfo", "rocm-smi"} {
-			if resolved, err := exec.LookPath(binary); err == nil {
+			if resolved, err := getCmdPath(binary); err == nil {
 				addPath(resolved)
 			}
 		}

@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
@@ -82,6 +83,11 @@ func (m *MockSystem) PrepareSSHAgent(ctx context.Context) error {
 	defer m.mu.Unlock()
 	m.PrepareSSHAgentCalls++
 	return m.PrepareSSHAgentErr
+}
+
+// GetCommandPath retorna la ruta de un comando (mock).
+func (m *MockSystem) GetCommandPath(name string) (string, error) {
+	return "", fmt.Errorf("not implemented in mock")
 }
 
 // MockDependencyChecker implements ports.IDependencyChecker for testing.

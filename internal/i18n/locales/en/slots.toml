@@ -57,3 +57,9 @@ description = "Minimal image without installations"
 [rust]
 name = "Rust"
 description = "Rust programming language"
+
+[subcategories]
+ia = "AI / LLM Models"
+languages = "Programming Languages"
+tools = "Developer Tools"
+data = "Data Stores"

@@ -38,7 +38,7 @@ type tomlSlot struct {
 func LoadSlotsFromEmbeddedTOML(tomlDir string) ([]SlotItem, error) {
 	entries, err := embeddedTOMLs.ReadDir(tomlDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read embedded directory %s: %w", tomlDir, err)
+		return nil, fmt.Errorf("errors.slots.load_failed: %s: %w", tomlDir, err)
 	}
 
 	var items []SlotItem
@@ -50,12 +50,12 @@ func LoadSlotsFromEmbeddedTOML(tomlDir string) ([]SlotItem, error) {
 		filePath := filepath.Join(tomlDir, entry.Name())
 		content, err := embeddedTOMLs.ReadFile(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read embedded file %s: %w", filePath, err)
+			return nil, fmt.Errorf("errors.slots.load_failed: %s: %w", filePath, err)
 		}
 
 		var slot tomlSlot
 		if err := toml.Unmarshal(content, &slot); err != nil {
-			return nil, fmt.Errorf("failed to parse embedded TOML %s: %w", filePath, err)
+			return nil, fmt.Errorf("errors.slots.load_failed: %s: %w", filePath, err)
 		}
 
 		item := SlotItem{
@@ -95,7 +95,7 @@ func LoadSlotsFromTOML(basePath string) ([]SlotItem, error) {
 		// Parse the TOML file
 		slot, err := parseTOML(path)
 		if err != nil {
-			return fmt.Errorf("failed to parse %s: %w", path, err)
+			return fmt.Errorf("errors.slots.load_failed: %s: %w", path, err)
 		}
 
 		// Convert to SlotItem
@@ -135,7 +135,8 @@ func parseTOML(path string) (*tomlSlot, error) {
 // If items are already registered (via init() functions), it skips loading.
 // Otherwise, it first tries to load from embedded files (for production builds),
 // then falls back to filesystem loading (for development).
-func LoadAndRegisterSlots() error {
+// The axiomPath parameter is the root directory of the AXIOM project.
+func LoadAndRegisterSlots(axiomPath string) error {
 	// Check if items are already registered (from init() functions)
 	if ItemCount() > 0 {
 		return nil
@@ -173,24 +174,18 @@ func LoadAndRegisterSlots() error {
 	}
 
 	// Fallback to filesystem loading for development
-	return loadFromFilesystem()
+	return loadFromFilesystem(axiomPath)
 }
 
 // loadFromFilesystem loads slot items from TOML files on the filesystem.
 // This is used as a fallback when embedded files are not available.
-func loadFromFilesystem() error {
-	// Get AXIOM root from environment or use relative path
-	rootDir := os.Getenv("AXIOM_PATH")
-	if rootDir == "" {
-		// Try to find project root from current directory
-		rootDir = findProjectRoot()
-	}
-
-	basePath := filepath.Join(rootDir, "internal", "slots")
+// The axiomPath parameter is the root directory of the AXIOM project.
+func loadFromFilesystem(axiomPath string) error {
+	basePath := filepath.Join(axiomPath, "internal", "slots")
 
 	// Verify the base path exists
 	if _, err := os.Stat(basePath); os.IsNotExist(err) {
-		return fmt.Errorf("slots directory not found: %s", basePath)
+		return fmt.Errorf("errors.slots.slots_not_found: %s", basePath)
 	}
 
 	// Walk through all subdirectories looking for "tomls" folders
@@ -203,9 +198,8 @@ func loadFromFilesystem() error {
 		if info.IsDir() && strings.HasSuffix(path, "tomls") {
 			items, err := LoadSlotsFromTOML(path)
 			if err != nil {
-				// Log warning but continue
-				fmt.Fprintf(os.Stderr, "Warning: failed to load slots from %s: %v\n", path, err)
-				return nil
+				// Return error instead of printing to stderr (Regla 2 — el core es mudo)
+				return fmt.Errorf("errors.slots.load_failed: %s: %w", path, err)
 			}
 
 			// Register each item

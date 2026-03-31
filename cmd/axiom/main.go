@@ -48,20 +48,24 @@ func main() {
 	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter, systemAdapter)
 
 	// Load slots from TOML files (in addition to init() registered slots)
-	if err := slots.LoadAndRegisterSlots(); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to load slots from TOML: %v\n", err)
+	if err := slots.LoadAndRegisterSlots(rootDir); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
 
 	// Verify registry has items after loading
 	if err := slots.ValidateNotEmpty(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: slot registry validation failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
+	// Create shell runner for command execution
+	shellRunner := system.NewShellRunner()
+
 	// Create slot manager with registry and engine
 	slotRegistry := slots.GetRegistry()
-	slotEngine := slots.NewInstallerEngine(slotRegistry)
-	slotManager := slots.NewSlotManager(slotRegistry, slotEngine, uiAdapter, fsAdapter)
+	slotEngine := slots.NewInstallerEngine(slotRegistry, shellRunner)
+	slotManager := slots.NewSlotManager(slotRegistry, slotEngine, uiAdapter, fsAdapter, shellRunner)
 
 	// Create build slot adapter and wire it up
 	buildSlotAdapter := newBuildSlotAdapter(slotManager, uiAdapter)

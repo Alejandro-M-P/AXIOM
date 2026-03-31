@@ -9,3 +9,11 @@ unknown = "Desconocida"
 image_check_failed = "Error al verificar existencia de imagen: %s"
 no_items_selected = "Sin elementos seleccionados para slot %s"
 installing_item = "Instalando: %s"
+
+[slots]
+installing = "Instalando: %s"
+running_cmd = "Ejecutando: %s"
+step_progress = "Paso %d/%d: %s"
+selection_saved = "Selección guardada en: %s"
+warn_load_failed = "Error al cargar selección de slots, usando selección vacía:"
+item_not_found = "Elemento seleccionado no encontrado: %s"
