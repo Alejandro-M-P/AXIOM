@@ -133,6 +133,34 @@ lint-arch:
 	@! grep -rn '"podman"\|"distrobox"\|"distrobox-create"\|"distrobox-enter"' \
 	  internal/ --include="*.go" | grep -v "commands\.go" | grep -v "_test.go" \
 	  | grep . && echo "✅ Regla 5: strings de sistema solo en commands.go" || (echo "❌ Regla 5: strings de sistema dispersos" && exit 1)
+	@# Regla 8/10: fmt.Errorf con texto visible (no clave i18n) en TODO internal/
+	@! grep -rn 'fmt\.Errorf("' internal/ --include="*.go" \
+	  | grep -v "_test.go" \
+	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
+	  | grep ' ' \
+	  | grep . && echo "❌ Regla 8/10: fmt.Errorf con texto visible en Go" || (echo "❌ Regla 8/10: fmt.Errorf con texto visible en Go" && exit 1)
+	@# Regla 8/10: errors.New con texto visible
+	@! grep -rn 'errors\.New("' internal/ --include="*.go" \
+	  | grep -v "_test.go" \
+	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
+	  | grep ' ' \
+	  | grep . && echo "❌ Regla 8/10: errors.New con texto visible en Go" || (echo "❌ Regla 8/10: errors.New con texto visible en Go" && exit 1)
+	@# Regla 8/10: fmt.Sprintf con texto visible (no clave i18n)
+	@! grep -rn 'fmt\.Sprintf("' internal/ --include="*.go" \
+	  | grep -v "_test.go" \
+	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
+	  | grep -v '"%s"' \
+	  | grep -v '"%d"' \
+	  | grep -v '"%v"' \
+	  | grep -v '"%w"' \
+	  | grep -v '"%T"' \
+	  | grep ' ' \
+	  | grep . && echo "❌ Regla 8/10: fmt.Sprintf con texto visible en Go" || (echo "❌ Regla 8/10: fmt.Sprintf con texto visible en Go" && exit 1)
+	@# Regla 8/10: panic con texto visible
+	@! grep -rn 'panic("' internal/ --include="*.go" \
+	  | grep -v "_test.go" \
+	  | grep ' ' \
+	  | grep . && echo "❌ Regla 8/10: panic con texto visible en Go" || (echo "❌ Regla 8/10: panic con texto visible en Go" && exit 1)
 	@echo ""
 	@echo "✅ Arquitectura limpia"
 

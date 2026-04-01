@@ -92,3 +92,7 @@ var Podman = CommandSet{
 		return append(result, args...)
 	},
 }
+
+// RequiredDeps lists the system dependencies that must be installed
+// for AXIOM to function correctly.
+var RequiredDeps = []string{"distrobox", "podman", "jq"}

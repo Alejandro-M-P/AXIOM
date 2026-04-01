@@ -460,7 +460,7 @@ func (m Model) finalizeAction() tea.Cmd {
 		// Guardamos el idioma seleccionado en el entorno actual para que otras fases lo lean
 		os.Setenv("AXIOM_LANG", m.language)
 
-		_ = system.CheckDeps()
+		_ = system.NewSystemAdapter().CheckDeps()
 		_ = system.PrepareFS(m.axiomPath, m.config.BaseDir)
 		_ = m.config.Save(m.axiomPath)
 		_ = system.CreateWrapper(m.axiomPath)

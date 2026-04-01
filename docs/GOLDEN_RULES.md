@@ -63,6 +63,7 @@ En ningún otro lugar.
 
 ## Regla 2 — El core es mudo
 
+
 Los paquetes `internal/bunker/`, `internal/build/` e `internal/slots/`
 **nunca escriben en pantalla directamente**. Ni logs, ni errores, ni mensajes.
 Ni siquiera warnings.

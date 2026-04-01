@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system/gpu"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
@@ -34,8 +35,7 @@ func (s *SystemAdapter) DetectGPU() domain.GPUInfo {
 }
 
 func (s *SystemAdapter) CheckDeps() error {
-	deps := []string{"distrobox", "podman", "jq"}
-	for _, dep := range deps {
+	for _, dep := range runtime.RequiredDeps {
 		if _, err := exec.LookPath(dep); err != nil {
 			return fmt.Errorf("errors.system.dependency_missing: %s", dep)
 		}
@@ -99,17 +99,6 @@ func (s *SystemAdapter) GetCommandPath(name string) (string, error) {
 }
 
 var _ ports.ISystem = (*SystemAdapter)(nil)
-
-// CheckDeps verifica las dependencias críticas del sistema
-func CheckDeps() error {
-	deps := []string{"distrobox", "podman", "jq"}
-	for _, dep := range deps {
-		if _, err := exec.LookPath(dep); err != nil {
-			return fmt.Errorf("errors.system.dependency_missing: %s", dep)
-		}
-	}
-	return nil
-}
 
 // PrepareFS crea la estructura de carpetas necesaria para los búnkeres
 func PrepareFS(axiomPath, baseDir string) error {
