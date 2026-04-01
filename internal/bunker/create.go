@@ -118,7 +118,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	if err := m.fs.MkdirAll(filepath.Join(cfg.AIConfigDir(), "models"), 0700); err != nil {
 		return err
 	}
-	if err := ensureTutorFile(cfg.TutorPath()); err != nil {
+	if err := ensureTutorFile(m.fs, cfg.TutorPath()); err != nil {
 		return err
 	}
 
@@ -211,7 +211,7 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 	}
 
 	if cfg.ROCMMode == "host" {
-		parts = append(parts, hostGPUVolumeFlags(gpuType, m.system.GetCommandPath)...)
+		parts = append(parts, hostGPUVolumeFlags(m.fs, gpuType, m.system.GetCommandPath)...)
 	}
 	if sshFlag := sshVolumeFlag(sshSocket); sshFlag != "" {
 		parts = append(parts, sshFlag)
@@ -221,7 +221,7 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 }
 
 // hostGPUVolumeFlags retorna los flags de volumen para GPU en modo host.
-func hostGPUVolumeFlags(gpuType string, getCmdPath func(string) (string, error)) []string {
+func hostGPUVolumeFlags(fs ports.IFileSystem, gpuType string, getCmdPath func(string) (string, error)) []string {
 	var flags []string
 	addPath := func(path string) {
 		realPath, err := filepath.EvalSymlinks(path)
@@ -236,7 +236,7 @@ func hostGPUVolumeFlags(gpuType string, getCmdPath func(string) (string, error))
 	switch strings.ToLower(strings.TrimSpace(gpuType)) {
 	case "rdna3", "rdna4", "amd", "generic":
 		for _, path := range []string{"/usr/lib/rocm", "/usr/lib64/rocm", "/opt/rocm"} {
-			if info, err := os.Stat(path); err == nil && info.IsDir() {
+			if info, err := fs.Stat(path); err == nil && info.IsDir() {
 				addPath(path)
 			}
 		}
@@ -248,13 +248,13 @@ func hostGPUVolumeFlags(gpuType string, getCmdPath func(string) (string, error))
 	case "nvidia":
 		flags = append(flags, "--device=nvidia.com/gpu=all")
 		for _, path := range []string{"/usr/lib/x86_64-linux-gnu/libcuda.so.1", "/usr/local/cuda"} {
-			if _, err := os.Stat(path); err == nil {
+			if _, err := fs.Stat(path); err == nil {
 				addPath(path)
 			}
 		}
 	case "intel":
 		for _, path := range []string{"/usr/lib/intel-opencl", "/usr/lib/x86_64-linux-gnu/intel-opencl"} {
-			if info, err := os.Stat(path); err == nil && info.IsDir() {
+			if info, err := fs.Stat(path); err == nil && info.IsDir() {
 				addPath(path)
 			}
 		}

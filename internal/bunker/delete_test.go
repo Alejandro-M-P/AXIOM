@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
@@ -253,7 +254,8 @@ func TestRemoveProjectPath_Directory(t *testing.T) {
 		t.Fatalf("failed to create temp dir: %s", err)
 	}
 
-	err := removeProjectPath(projectDir)
+	fs := filesystem.NewFSAdapter()
+	err := removeProjectPath(fs, projectDir)
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -264,7 +266,8 @@ func TestRemoveProjectPath_Directory(t *testing.T) {
 }
 
 func TestRemoveProjectPath_NotExist(t *testing.T) {
-	err := removeProjectPath("/nonexistent/path")
+	fs := filesystem.NewFSAdapter()
+	err := removeProjectPath(fs, "/nonexistent/path")
 	if err != nil {
 		t.Errorf("unexpected error for non-existent path: %s", err)
 	}
@@ -280,7 +283,8 @@ func TestRemoveProjectPath_NotDirectory(t *testing.T) {
 	}
 	f.Close()
 
-	err = removeProjectPath(filePath)
+	fs := filesystem.NewFSAdapter()
+	err = removeProjectPath(fs, filePath)
 	if err == nil {
 		t.Error("expected error for non-directory path")
 	}
@@ -297,7 +301,8 @@ func TestRemovePathWritable_Directory(t *testing.T) {
 		t.Fatalf("failed to create temp dir: %s", err)
 	}
 
-	err := removePathWritable(path)
+	fs := filesystem.NewFSAdapter()
+	err := removePathWritable(fs, path)
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -308,7 +313,8 @@ func TestRemovePathWritable_Directory(t *testing.T) {
 }
 
 func TestRemovePathWritable_NotExist(t *testing.T) {
-	err := removePathWritable("/nonexistent/path")
+	fs := filesystem.NewFSAdapter()
+	err := removePathWritable(fs, "/nonexistent/path")
 	if err != nil {
 		t.Errorf("unexpected error for non-existent path: %s", err)
 	}

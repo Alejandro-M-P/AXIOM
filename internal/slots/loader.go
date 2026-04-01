@@ -9,6 +9,9 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 //go:embed dev/ia/tomls/*.toml
@@ -174,22 +177,23 @@ func LoadAndRegisterSlots(axiomPath string) error {
 	}
 
 	// Fallback to filesystem loading for development
-	return loadFromFilesystem(axiomPath)
+	fs := filesystem.NewFSAdapter()
+	return loadFromFilesystem(fs, axiomPath)
 }
 
 // loadFromFilesystem loads slot items from TOML files on the filesystem.
 // This is used as a fallback when embedded files are not available.
 // The axiomPath parameter is the root directory of the AXIOM project.
-func loadFromFilesystem(axiomPath string) error {
+func loadFromFilesystem(fs ports.IFileSystem, axiomPath string) error {
 	basePath := filepath.Join(axiomPath, "internal", "slots")
 
 	// Verify the base path exists
-	if _, err := os.Stat(basePath); os.IsNotExist(err) {
+	if _, err := fs.Stat(basePath); err != nil {
 		return fmt.Errorf("errors.slots.slots_not_found: %s", basePath)
 	}
 
 	// Walk through all subdirectories looking for "tomls" folders
-	err := filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
+	err := fs.WalkDir(basePath, func(path string, info os.DirEntry, err error) error {
 		if err != nil {
 			return nil // Skip errors and continue
 		}
@@ -212,26 +216,4 @@ func loadFromFilesystem(axiomPath string) error {
 	})
 
 	return err
-}
-
-// findProjectRoot attempts to find the project root directory
-// by looking for go.mod or internal/slots directory
-func findProjectRoot() string {
-	// Try current directory
-	if _, err := os.Stat("go.mod"); err == nil {
-		return "."
-	}
-
-	// Try parent directory
-	if _, err := os.Stat("../go.mod"); err == nil {
-		return ".."
-	}
-
-	// Try internal/slots relative path
-	if _, err := os.Stat("internal/slots"); err == nil {
-		return "."
-	}
-
-	// Default to current directory
-	return "."
 }

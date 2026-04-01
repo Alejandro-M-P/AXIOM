@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
@@ -195,7 +196,8 @@ func TestBunkerEnvSize_Calculation(t *testing.T) {
 		f.Close()
 	}
 
-	size := bunkerEnvSize(cfg, "test-bunker")
+	fs := filesystem.NewFSAdapter()
+	size := bunkerEnvSize(fs, cfg, "test-bunker")
 	if size == "-" {
 		t.Error("expected size to be calculated, got '-'")
 	}
@@ -206,7 +208,8 @@ func TestBunkerEnvSize_NotExist(t *testing.T) {
 		BaseDir: "/nonexistent",
 	}
 
-	size := bunkerEnvSize(cfg, "nonexistent")
+	fs := filesystem.NewFSAdapter()
+	size := bunkerEnvSize(fs, cfg, "nonexistent")
 	if size != "-" {
 		t.Errorf("expected '-' for nonexistent bunker, got '%s'", size)
 	}
@@ -256,7 +259,8 @@ func TestBunkerGitBranch_Detached(t *testing.T) {
 		t.Fatalf("failed to write HEAD: %s", err)
 	}
 
-	branch := bunkerGitBranch(cfg, "test-bunker")
+	fs := filesystem.NewFSAdapter()
+	branch := bunkerGitBranch(fs, cfg, "test-bunker")
 	if branch != "abc1234" {
 		t.Errorf("expected 'abc1234', got '%s'", branch)
 	}
@@ -267,7 +271,8 @@ func TestBunkerGitBranch_NonExistent(t *testing.T) {
 		BaseDir: "/nonexistent",
 	}
 
-	branch := bunkerGitBranch(cfg, "nonexistent")
+	fs := filesystem.NewFSAdapter()
+	branch := bunkerGitBranch(fs, cfg, "nonexistent")
 	if branch != "-" {
 		t.Errorf("expected '-' for nonexistent project, got '%s'", branch)
 	}
@@ -284,7 +289,8 @@ func TestBunkerLastEntry_Function(t *testing.T) {
 		t.Fatalf("failed to create bunker dir: %s", err)
 	}
 
-	lastEntry := bunkerLastEntry(cfg, "test-bunker")
+	fs := filesystem.NewFSAdapter()
+	lastEntry := bunkerLastEntry(fs, cfg, "test-bunker")
 	if lastEntry == "-" {
 		t.Error("expected date, got '-'")
 	}
@@ -295,7 +301,8 @@ func TestBunkerLastEntry_NotExist(t *testing.T) {
 		BaseDir: "/nonexistent",
 	}
 
-	lastEntry := bunkerLastEntry(cfg, "nonexistent")
+	fs := filesystem.NewFSAdapter()
+	lastEntry := bunkerLastEntry(fs, cfg, "nonexistent")
 	if lastEntry != "-" {
 		t.Errorf("expected '-' for nonexistent bunker, got '%s'", lastEntry)
 	}
@@ -313,7 +320,8 @@ func TestHumanPath_Function(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		result := humanPath(tc.input)
+		fs := filesystem.NewFSAdapter()
+		result := humanPath(fs, tc.input)
 		if result != tc.expected {
 			t.Errorf("humanPath(%q): expected %q, got %q", tc.input, tc.expected, result)
 		}

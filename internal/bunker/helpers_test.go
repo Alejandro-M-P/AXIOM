@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestSanitize_ValidName(t *testing.T) {
@@ -137,7 +139,8 @@ func TestHumanPath_Helper(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		result := humanPath(tc.input)
+		fs := filesystem.NewFSAdapter()
+		result := humanPath(fs, tc.input)
 		if result != tc.expected {
 			t.Errorf("humanPath(%q): expected %q, got %q", tc.input, tc.expected, result)
 		}
@@ -145,7 +148,8 @@ func TestHumanPath_Helper(t *testing.T) {
 }
 
 func TestHumanPath_HomeError(t *testing.T) {
-	result := humanPath("/some/path")
+	fs := mocks.NewMockFileSystem()
+	result := humanPath(fs, "/some/path")
 	if result != "/some/path" {
 		t.Errorf("expected unchanged path on error, got %q", result)
 	}

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
@@ -184,23 +185,24 @@ func endsWith(s, suffix string) bool {
 
 func TestHostGPUVolumeFlags_RDNA(t *testing.T) {
 	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
+	fs := filesystem.NewFSAdapter()
 	// hostGPUVolumeFlags is a standalone function - testing it directly
-	result := hostGPUVolumeFlags("rdna3", noopResolver)
+	result := hostGPUVolumeFlags(fs, "rdna3", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice")
 	}
 
-	result = hostGPUVolumeFlags("rdna4", noopResolver)
+	result = hostGPUVolumeFlags(fs, "rdna4", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice")
 	}
 
-	result = hostGPUVolumeFlags("amd", noopResolver)
+	result = hostGPUVolumeFlags(fs, "amd", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice")
 	}
 
-	result = hostGPUVolumeFlags("generic", noopResolver)
+	result = hostGPUVolumeFlags(fs, "generic", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice")
 	}
@@ -208,7 +210,8 @@ func TestHostGPUVolumeFlags_RDNA(t *testing.T) {
 
 func TestHostGPUVolumeFlags_Nvidia(t *testing.T) {
 	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
-	result := hostGPUVolumeFlags("nvidia", noopResolver)
+	fs := mocks.NewMockFileSystem()
+	result := hostGPUVolumeFlags(fs, "nvidia", noopResolver)
 	if result == nil {
 		t.Error("expected non-nil flags slice for nvidia")
 	}
@@ -216,8 +219,9 @@ func TestHostGPUVolumeFlags_Nvidia(t *testing.T) {
 
 func TestHostGPUVolumeFlags_Intel(t *testing.T) {
 	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
+	fs := mocks.NewMockFileSystem()
 	// Intel GPU volumes only added if paths exist
-	result := hostGPUVolumeFlags("intel", noopResolver)
+	result := hostGPUVolumeFlags(fs, "intel", noopResolver)
 	// Result may be nil if Intel OpenCL paths don't exist on this system
 	if result != nil {
 		t.Logf("Intel GPU flags returned: %v", result)
@@ -226,8 +230,9 @@ func TestHostGPUVolumeFlags_Intel(t *testing.T) {
 
 func TestHostGPUVolumeFlags_Empty(t *testing.T) {
 	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
+	fs := mocks.NewMockFileSystem()
 	// Empty GPU type doesn't match any case, so returns nil
-	result := hostGPUVolumeFlags("", noopResolver)
+	result := hostGPUVolumeFlags(fs, "", noopResolver)
 	if result != nil {
 		t.Logf("Empty GPU type flags returned: %v", result)
 	}
@@ -335,7 +340,8 @@ func TestEnsureTutorFile_AlreadyExists(t *testing.T) {
 	}
 	f.Close()
 
-	err = ensureTutorFile(tutorPath)
+	fs := filesystem.NewFSAdapter()
+	err = ensureTutorFile(fs, tutorPath)
 	if err != nil {
 		t.Errorf("ensureTutorFile should not return error for existing file, got: %s", err)
 	}
@@ -345,7 +351,8 @@ func TestEnsureTutorFile_NewFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	tutorPath := filepath.Join(tmpDir, "new-tutor")
 
-	err := ensureTutorFile(tutorPath)
+	fs := filesystem.NewFSAdapter()
+	err := ensureTutorFile(fs, tutorPath)
 	if err != nil {
 		t.Errorf("ensureTutorFile should not return error for new file, got: %s", err)
 	}

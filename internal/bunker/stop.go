@@ -63,7 +63,7 @@ func (m *Manager) stop(ctx context.Context) error {
 		[]ports.Field{
 			{Label: "fields.name", Value: selected},
 			{Label: "fields.status", Value: "stopped"},
-			{Label: "fields.environment", Value: humanPath(bunkerEnvPath(cfg, selected))},
+			{Label: "fields.environment", Value: humanPath(m.fs, bunkerEnvPath(cfg, selected))},
 		},
 		nil,
 	)

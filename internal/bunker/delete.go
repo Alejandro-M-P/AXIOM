@@ -3,7 +3,6 @@ package bunker
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -61,12 +60,12 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 		return err
 	}
 
-	if err := removePathWritable(envDir); err != nil {
+	if err := removePathWritable(m.fs, envDir); err != nil {
 		return err
 	}
 
 	if deleteCode {
-		if err := removeProjectPath(projectDir); err != nil {
+		if err := removeProjectPath(m.fs, projectDir); err != nil {
 			return err
 		}
 	}
@@ -173,7 +172,7 @@ func (m *Manager) listBunkerNames(ctx context.Context, cfg EnvConfig) ([]string,
 	}
 
 	envBaseDir := filepath.Join(cfg.BaseDir, ".entorno")
-	entries, readErr := os.ReadDir(envBaseDir)
+	entries, readErr := m.fs.ReadDir(envBaseDir)
 	if readErr == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() {

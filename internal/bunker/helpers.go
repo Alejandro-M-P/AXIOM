@@ -57,8 +57,8 @@ func isYes(value string) bool {
 }
 
 // humanPath convierte un path a formato legible con ~ para el home.
-func humanPath(path string) string {
-	home, err := os.UserHomeDir()
+func humanPath(fs ports.IFileSystem, path string) string {
+	home, err := fs.UserHomeDir()
 	if err != nil {
 		return path
 	}
@@ -88,26 +88,31 @@ func appendTutorLog(line string) error {
 }
 
 // removeProjectPath elimina el path del proyecto si es un directorio.
-func removeProjectPath(path string) error {
-	info, err := os.Stat(path)
+func removeProjectPath(fs ports.IFileSystem, path string) error {
+	_, err := fs.Stat(path)
 	if os.IsNotExist(err) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
+	info, err := fs.Stat(path)
+	if err != nil {
+		return err
+	}
 	if !info.IsDir() {
 		return fmt.Errorf("not_dir")
 	}
-	return removePathWritable(path)
+	return removePathWritable(fs, path)
 }
 
 // removePathWritable elimina un path haciéndolo escribible primero.
-func removePathWritable(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+func removePathWritable(fs ports.IFileSystem, path string) error {
+	_, err := fs.Stat(path)
+	if os.IsNotExist(err) {
 		return nil
 	}
-	_ = filepath.WalkDir(path, func(currentPath string, d os.DirEntry, walkErr error) error {
+	_ = fs.WalkDir(path, func(currentPath string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil
 		}
@@ -117,11 +122,11 @@ func removePathWritable(path string) error {
 		}
 		mode := info.Mode()
 		if mode&0200 == 0 {
-			_ = os.Chmod(currentPath, mode|0200)
+			_ = fs.Chmod(currentPath, mode|0200)
 		}
 		return nil
 	})
-	return os.RemoveAll(path)
+	return fs.RemoveAll(path)
 }
 
 // baseImageName retorna el nombre de la imagen base según el tipo de GPU.
@@ -144,13 +149,13 @@ func resolveBuildGPU(cfg EnvConfig) GPUInfo {
 }
 
 // bunkerEnvSize calcula el tamaño del directorio de entorno.
-func bunkerEnvSize(cfg EnvConfig, name string) string {
+func bunkerEnvSize(fs ports.IFileSystem, cfg EnvConfig, name string) string {
 	path := cfg.BuildWorkspaceDir(name)
-	if _, err := os.Stat(path); err != nil {
+	if _, err := fs.Stat(path); err != nil {
 		return "-"
 	}
 	var size int64
-	err := filepath.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
+	err := fs.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -169,10 +174,10 @@ func bunkerEnvSize(cfg EnvConfig, name string) string {
 }
 
 // bunkerGitBranch obtiene la rama git del proyecto.
-func bunkerGitBranch(cfg EnvConfig, name string) string {
+func bunkerGitBranch(fs ports.IFileSystem, cfg EnvConfig, name string) string {
 	projectPath := filepath.Join(cfg.BaseDir, name)
 	headPath := filepath.Join(projectPath, ".git", "HEAD")
-	content, err := os.ReadFile(headPath)
+	content, err := fs.ReadFile(headPath)
 	if err != nil {
 		return "-"
 	}
@@ -187,9 +192,9 @@ func bunkerGitBranch(cfg EnvConfig, name string) string {
 }
 
 // bunkerLastEntry obtiene la última fecha de modificación del entorno.
-func bunkerLastEntry(cfg EnvConfig, name string) string {
+func bunkerLastEntry(fs ports.IFileSystem, cfg EnvConfig, name string) string {
 	path := cfg.BuildWorkspaceDir(name)
-	info, err := os.Stat(path)
+	info, err := fs.Stat(path)
 	if err != nil {
 		return "-"
 	}
@@ -216,11 +221,11 @@ func sshVolumeFlag(socketPath string) string {
 }
 
 // ensureTutorFile asegura que el archivo tutor exista.
-func ensureTutorFile(path string) error {
-	if _, err := os.Stat(path); err == nil {
+func ensureTutorFile(fs ports.IFileSystem, path string) error {
+	if _, err := fs.Stat(path); err == nil {
 		return nil
 	}
-	file, err := os.Create(path)
+	file, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}

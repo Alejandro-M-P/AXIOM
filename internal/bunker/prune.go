@@ -3,7 +3,6 @@ package bunker
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sync"
 
@@ -23,7 +22,7 @@ func (m *Manager) prune(ctx context.Context) error {
 	}
 
 	envBaseDir := filepath.Join(cfg.BaseDir, ".entorno")
-	entries, err := os.ReadDir(envBaseDir)
+	entries, err := m.fs.ReadDir(envBaseDir)
 	if err != nil {
 		return nil
 	}
@@ -84,7 +83,7 @@ func (m *Manager) prune(ctx context.Context) error {
 		go func(name string) {
 			defer wg.Done()
 			m.ui.ShowLog("prune.deleting_item", name)
-			_ = removePathWritable(filepath.Join(envBaseDir, name))
+			_ = removePathWritable(m.fs, filepath.Join(envBaseDir, name))
 		}(h)
 	}
 	wg.Wait()
