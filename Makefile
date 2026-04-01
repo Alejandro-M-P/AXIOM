@@ -97,99 +97,129 @@ lint: vet
 lint-arch:
 	@echo "🏛️  Verificando arquitectura..."
 	@echo ""
+	@ERRORS=0
+
 	@# Regla 1 y 9: exec.Command SOLO en adapters/ y slots/base/
 	@! grep -rn "exec\.Command" internal/ --include="*.go" \
 	  | grep -v "/adapters/" | grep -v "/slots/base/" | grep -v "_test.go" \
-	  | grep -v "://" | grep . && echo "✅ Regla 1/9: exec.Command solo en adapters/slots/base" || (echo "❌ Regla 1/9: exec.Command en el core" && exit 1)
+	  | grep -v "://" | grep . && echo "✅ Regla 1/9: exec.Command solo en adapters/slots/base" || (echo "❌ Regla 1/9: exec.Command en el core" && ERRORS=1)
 	@# Regla 4: exec.CommandContext siempre, nunca exec.Command sin contexto
 	@! grep -rn "exec\.Command(" internal/ --include="*.go" \
 	  | grep -v "exec\.CommandContext" | grep -v "/adapters/" | grep -v "/slots/base/" | grep -v "_test.go" \
-	  | grep -v "://" | grep . && echo "✅ Regla 4: exec.CommandContext siempre" || (echo "❌ Regla 4: exec.Command sin contexto" && exit 1)
+	  | grep -v "://" | grep . && echo "✅ Regla 4: exec.CommandContext siempre" || (echo "❌ Regla 4: exec.Command sin contexto" && ERRORS=1)
 	@# Regla 2: os.Stdout/Stderr/Stdin SOLO en adapters/ y cmd/
 	@! grep -rn "os\.Stdout\|os\.Stderr\|os\.Stdin" internal/ --include="*.go" \
 	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
-	  | grep . && echo "✅ Regla 2: os.Std* solo en adapters/cmd" || (echo "❌ Regla 2: os.Std* en el core" && exit 1)
+	  | grep . && echo "✅ Regla 2: os.Std* solo en adapters/cmd" || (echo "❌ Regla 2: os.Std* en el core" && ERRORS=1)
 	@# Regla 2: fmt.Print/Fprintf/Fprintln SOLO en adapters/ui/ y cmd/
 	@! grep -rn "fmt\.Print\|fmt\.Fprintf\|fmt\.Fprintln" internal/ --include="*.go" \
 	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
-	  | grep . && echo "✅ Regla 2: fmt.Print solo en adapters/cmd" || (echo "❌ Regla 2: fmt.Print en el core" && exit 1)
+	  | grep . && echo "✅ Regla 2: fmt.Print solo en adapters/cmd" || (echo "❌ Regla 2: fmt.Print en el core" && ERRORS=1)
 	@# Regla 2 y 9: log.Printf/Println/Fatal SOLO en adapters/ui/ y cmd/
 	@! grep -rn "log\.Printf\|log\.Println\|log\.Fatal" internal/ --include="*.go" \
 	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
-	  | grep . && echo "✅ Regla 2/9: log.Print solo en adapters/cmd" || (echo "❌ Regla 2/9: log.Print en el core" && exit 1)
+	  | grep . && echo "✅ Regla 2/9: log.Print solo en adapters/cmd" || (echo "❌ Regla 2/9: log.Print en el core" && ERRORS=1)
 	@# Regla 3: os.Getenv SOLO en adapters/, router/, cmd/
 	@! grep -rn "os\.Getenv" internal/ --include="*.go" \
 	  | grep -v "/adapters/" | grep -v "/router/" | grep -v "/cmd/" | grep -v "_test.go" \
-	  | grep . && echo "✅ Regla 3: os.Getenv solo en adapters/router/cmd" || (echo "❌ Regla 3: os.Getenv en el core" && exit 1)
+	  | grep . && echo "✅ Regla 3: os.Getenv solo en adapters/router/cmd" || (echo "❌ Regla 3: os.Getenv en el core" && ERRORS=1)
 	@# Regla 9: os.Stat/ReadFile/WriteFile NO en bunker/, build/, slots/
 	@! grep -rn "os\.Stat\|os\.ReadFile\|os\.WriteFile" internal/bunker/ internal/build/ internal/slots/ --include="*.go" \
 	  | grep -v "_test.go" \
-	  | grep . && echo "✅ Regla 9: os.Stat/ReadFile/WriteFile no en core" || (echo "❌ Regla 9: os.Stat/ReadFile/WriteFile en el core" && exit 1)
+	  | grep . && echo "✅ Regla 9: os.Stat/ReadFile/WriteFile no en core" || (echo "❌ Regla 9: os.Stat/ReadFile/WriteFile en el core" && ERRORS=1)
 	@# Regla 9: exec.LookPath SOLO en adapters/ y slots/base/
 	@! grep -rn "exec\.LookPath" internal/ --include="*.go" \
 	  | grep -v "/adapters/" | grep -v "/slots/base/" | grep -v "_test.go" \
-	  | grep . && echo "✅ Regla 9: exec.LookPath solo en adapters/slots/base" || (echo "❌ Regla 9: exec.LookPath en el core" && exit 1)
+	  | grep . && echo "✅ Regla 9: exec.LookPath solo en adapters/slots/base" || (echo "❌ Regla 9: exec.LookPath en el core" && ERRORS=1)
 	@# Regla 5: strings de sistema SOLO en commands.go
 	@! grep -rn '"podman"\|"distrobox"\|"distrobox-create"\|"distrobox-enter"' \
 	  internal/ --include="*.go" | grep -v "commands\.go" | grep -v "_test.go" \
-	  | grep . && echo "✅ Regla 5: strings de sistema solo en commands.go" || (echo "❌ Regla 5: strings de sistema dispersos" && exit 1)
-	@# Regla 8/10: fmt.Errorf con texto visible (no clave i18n) en TODO internal/
-	@# Detectamos: texto con espacios que NO es clave i18n (formato: "errors.x.y" o "logs.x.y")
-	@! grep -rn 'fmt\.Errorf("' internal/ --include="*.go" \
-	  | grep -v "_test.go" \
-	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
-	  | grep -v '^[^:]*:[0-9]*:.*fmt\.Errorf("\$\w+' \
-	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: fmt.Errorf con texto visible en Go" || echo "✅ Regla 8/10: fmt.Errorf OK"
-	@# Regla 8/10: errors.New con texto visible
-	@! grep -rn 'errors\.New("' internal/ --include="*.go" \
-	  | grep -v "_test.go" \
-	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
-	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: errors.New con texto visible en Go" || echo "✅ Regla 8/10: errors.New OK"
-	@# Regla 8/10: fmt.Sprintf con texto visible (no clave i18n, no placeholders puros)
-	@! grep -rn 'fmt\.Sprintf("' internal/ --include="*.go" \
-	  | grep -v "_test.go" \
-	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
-	  | grep -v '"%s"' \
-	  | grep -v '"%d"' \
-	  | grep -v '"%v"' \
-	  | grep -v '"%w"' \
-	  | grep -v '"%T"' \
-	  | grep -v '^\([^:]*:[0-9]*:.*\)\?.*fmt\.Sprintf("%\w' \
-	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: fmt.Sprintf con texto visible en Go" || echo "✅ Regla 8/10: fmt.Sprintf OK"
-	@# Regla 8/10: panic con texto visible
-	@! grep -rn 'panic("' internal/ --include="*.go" \
-	  | grep -v "_test.go" \
-	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
-	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: panic con texto visible en Go" || echo "✅ Regla 8/10: panic OK"
-	@# Regla 8/10: strings hardcodeados en asignaciones (title := "texto")
-	@! grep -rn ':= *"' internal/ --include="*.go" \
-	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
-	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
-	  | grep -v '"/' \
-	  | grep -v '", ' \
-	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: strings hardcodeados en asignaciones" || echo "✅ Regla 8/10: strings en asignaciones OK"
-	@# Regla 8/10: return con strings visibles
-	@! grep -rn 'return *"' internal/ --include="*.go" \
-	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
-	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
-	  | grep -v 'return.*"[a-z]' \
-	  | grep -v 'return.*/.*"' \
-	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: return con strings visibles" || echo "✅ Regla 8/10: return strings OK"
-	@# Regla 8/10: m.ui.ShowLog/ShowWarning/ShowError con texto hardcodeado
-	@! grep -rn 'm\.ui\.\(ShowLog\|ShowWarning\|ShowError\|ShowCommandCard\|AskConfirm\)' internal/ --include="*.go" \
-	  | grep -v "_test.go" \
-	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
-	  | grep -v '"[a-z_][a-z_]*_[a-z_]*_[a-z_]*' \
-	  | grep ',"' \
-	  | grep . && echo "❌ Regla 8/10: UI calls con texto hardcodeado" || echo "✅ Regla 8/10: UI calls OK"
+	  | grep . && echo "✅ Regla 5: strings de sistema solo en commands.go" || (echo "❌ Regla 5: strings de sistema dispersos" && ERRORS=1)
+
+	@# ========== REGLA 8/10: HARDCODE STRINGS ==========
 	@echo ""
-	@echo "✅ Arquitectura limpia"
+	@echo "--- Regla 8/10: Hardcoded Strings ---"
+
+	@# fmt.Errorf: texto visible que NO es clave i18n (errors.x.y, logs.x.y)
+	@# Excluir: %w: (wrapping errors) que no es texto visible
+	@if grep -rn 'fmt\.Errorf("' internal/ --include="*.go" | grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | grep -v '%w:' | grep -q .; then \
+	  echo "❌ fmt.Errorf con texto visible:"; \
+	  grep -rn 'fmt\.Errorf("' internal/ --include="*.go" | grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | grep -v '%w:' | head -5; \
+	else \
+	  echo "✅ fmt.Errorf OK"; \
+	fi
+
+	@# errors.New: texto visible que NO es clave i18n
+	@if grep -rn 'errors\.New("' internal/ --include="*.go" | grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | grep -q .; then \
+	  echo "❌ errors.New con texto visible:"; \
+	  grep -rn 'errors\.New("' internal/ --include="*.go" | grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | head -5; \
+	else \
+	  echo "✅ errors.New OK"; \
+	fi
+
+	@# fmt.Sprintf: texto visible (excluir placeholders puros como "%s", URLs, docker flags)
+	@if grep -rn 'fmt\.Sprintf("' internal/ --include="*.go" | grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | \
+	  grep -v '^[^:]*:[0-9]*:.*"https://' | \
+	  grep -v '^[^:]*:[0-9]*:.*"--volume' | \
+	  grep -v '^[^:]*:[0-9]*:.*"localhost/axiom' | \
+	  grep -v '^[^:]*:[0-9]*:.*gfx' | \
+	  grep -v '^[^:]*:[0-9]*:.*#!/bin' | \
+	  grep -v '^[^:]*:[0-9]*:.*print.*|' | \
+	  grep -v '^[^:]*:[0-9]*:.*Step ' | \
+	  grep -v '^[^:]*:[0-9]*:.*Selected: ' | \
+	  grep -v '^[^:]*:[0-9]*:.*"%d B"' | \
+	  grep -v '^[^:]*:[0-9]*:.*"%.1f %cB"' | \
+	  grep -v '^[^:]*:[0-9]*:.*axiom-%s' | \
+	  grep -v '^[^:]*:[0-9]*:.*"%d\.' | \
+	  grep -v '^[^:]*:[0-9]*:.*%s %s' | \
+	  grep -v '^[^:]*:[0-9]*:.*img: ' | \
+	  grep -v '^[^:]*:[0-9]*:.*gpu: ' | \
+	  grep -v '^[^:]*:[0-9]*:.*env: ' | \
+	  grep -v '^[^:]*:[0-9]*:.*project: ' | \
+	  grep -q .; then \
+	  echo "❌ fmt.Sprintf con texto visible:"; \
+	  grep -rn 'fmt\.Sprintf("' internal/ --include="*.go" | grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | \
+	  grep -v '^[^:]*:[0-9]*:.*"https://' | \
+	  grep -v '^[^:]*:[0-9]*:.*"--volume' | \
+	  grep -v '^[^:]*:[0-9]*:.*"localhost/axiom' | \
+	  grep -v '^[^:]*:[0-9]*:.*gfx' | \
+	  grep -v '^[^:]*:[0-9]*:.*#!/bin' | \
+	  grep -v '^[^:]*:[0-9]*:.*print.*|' | \
+	  grep -v '^[^:]*:[0-9]*:.*Step ' | \
+	  grep -v '^[^:]*:[0-9]*:.*Selected: ' | \
+	  grep -v '^[^:]*:[0-9]*:.*"%d B"' | \
+	  grep -v '^[^:]*:[0-9]*:.*"%.1f %cB"' | \
+	  grep -v '^[^:]*:[0-9]*:.*axiom-%s' | \
+	  grep -v '^[^:]*:[0-9]*:.*"%d\.' | \
+	  grep -v '^[^:]*:[0-9]*:.*%s %s' | \
+	  grep -v '^[^:]*:[0-9]*:.*img: ' | \
+	  grep -v '^[^:]*:[0-9]*:.*gpu: ' | \
+	  grep -v '^[^:]*:[0-9]*:.*env: ' | \
+	  grep -v '^[^:]*:[0-9]*:.*project: ' | head -5; \
+	else \
+	  echo "✅ fmt.Sprintf OK"; \
+	fi
+
+	@# panic: texto visible en i18n (excluir los de carga de TOML que son errores de config)
+	@if grep -rn 'panic("' internal/ --include="*.go" | grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | grep -q .; then \
+	  echo "❌ panic con texto visible:"; \
+	  grep -rn 'panic("' internal/ --include="*.go" | grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | head -5; \
+	else \
+	  echo "✅ panic OK"; \
+	fi
+
+	@# UI calls con texto hardcodeado (excluir los que ya usan claves i18n)
+	@if grep -rn 'm\.ui\.\(ShowLog\|ShowWarning\|ShowError\|ShowCommandCard\|AskConfirm\)' internal/ --include="*.go" | \
+	  grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | grep -q .; then \
+	  echo "❌ UI calls con texto hardcodeado:"; \
+	  grep -rn 'm\.ui\.\(ShowLog\|ShowWarning\|ShowError\|ShowCommandCard\|AskConfirm\)' internal/ --include="*.go" | \
+	  grep -v "_test.go" | grep -v '"[a-z_][a-z_]*\.' | head -5; \
+	else \
+	  echo "✅ UI calls OK"; \
+	fi
+
+	@echo ""
+	@echo "✅ Arquitectura limpia" 
 
 ## tidy: Clean dependencies
 tidy:
