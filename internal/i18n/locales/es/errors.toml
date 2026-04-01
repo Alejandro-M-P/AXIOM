@@ -2,6 +2,24 @@
 dependency_missing = "❌ Falta dependencia: %s"
 [bunker]
 image_not_found = "No se encontró la imagen %s"
+no_bunkers_available = "No hay búnkeres disponibles"
+interactive_selection_not_implemented = "Selección interactiva no implementada"
+
+[build]
+failed_load_selection = "Error al cargar la selección de slots: %w"
+cancelled_no_selection = "Build cancelado: no se encontró selección de slots"
+failed_ask_confirmation = "Error al pedir confirmación: %w"
+cancelled_image_exists = "Build cancelado: la imagen ya existe"
+failed_remove_image = "Error al eliminar imagen existente: %w"
+failed_get_dev_items = "Error al obtener elementos del slot DEV: %w"
+slot_selector_failed = "Error en el selector de slots: %w"
+slot_selection_cancelled = "Selección de slots cancelada"
+failed_get_items = "Error al obtener elementos de %s: %w"
+export_failed_check_status = "export_image: error al verificar estado del contenedor: %w"
+export_container_not_found = "export_image: contenedor %s no encontrado"
+export_failed_start_container = "export_image: error al iniciar contenedor: %w"
+export_failed_commit = "export_image: error al commitear contenedor: %w"
+
 [env]
 read = "No se pudo leer config.toml: %w"
 

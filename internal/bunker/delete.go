@@ -199,14 +199,14 @@ func (m *Manager) listBunkerNames(ctx context.Context, cfg EnvConfig) ([]string,
 // Por ahora retornamos error ya que esta función requiere implementación de UI.
 func selectBunkerInteractive(title, action string, names []string) (string, error) {
 	if len(names) == 0 {
-		return "", fmt.Errorf("no hay búnkeres disponibles")
+		return "", fmt.Errorf("errors.bunker.no_bunkers_available")
 	}
 	// En una implementación real, esto invocaría la UI de selección
 	// Por ahora retornamos el primero si solo hay uno
 	if len(names) == 1 {
 		return names[0], nil
 	}
-	return "", fmt.Errorf("selección interactiva no implementada")
+	return "", fmt.Errorf("errors.bunker.interactive_selection_not_implemented")
 }
 
 // listAxiomPodmanImages lista imágenes usando comando podman directamente.

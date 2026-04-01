@@ -70,10 +70,10 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 	// Load the slot selection that was saved by the router
 	selections, err := m.slotManager.LoadSelection()
 	if err != nil {
-		return fmt.Errorf("failed to load slot selection: %w", err)
+		return fmt.Errorf("errors.build.failed_load_selection: %w", err)
 	}
 	if len(selections) == 0 {
-		return fmt.Errorf("build cancelled: no slot selection found")
+		return fmt.Errorf("errors.build.cancelled_no_selection")
 	}
 
 	// Determine slot name from selection
@@ -111,14 +111,14 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 			"build.image_exists_confirm",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to ask confirmation: %w", err)
+			return fmt.Errorf("errors.build.failed_ask_confirmation: %w", err)
 		}
 		if !confirm {
-			return fmt.Errorf("build cancelled: image exists")
+			return fmt.Errorf("errors.build.cancelled_image_exists")
 		}
 		// Delete existing image
 		if err := m.runtime.RemoveImage(ctx, imageName, true); err != nil {
-			return fmt.Errorf("failed to remove existing image: %w", err)
+			return fmt.Errorf("errors.build.failed_remove_image: %w", err)
 		}
 	}
 
@@ -226,16 +226,16 @@ func (m *Manager) runSlotSelectionUI() ([]SlotSelection, error) {
 	// In a full implementation, this would cycle through all categories
 	items, err := m.slotManager.GetSelectedItems("dev")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get DEV slot items: %w", err)
+		return nil, fmt.Errorf("errors.build.failed_get_dev_items: %w", err)
 	}
 
 	// Run the slot selector (no preselection from previous runs)
 	selectedIDs, confirmed, err := m.slotManager.RunSlotSelector("dev", items, nil)
 	if err != nil {
-		return nil, fmt.Errorf("slot selector failed: %w", err)
+		return nil, fmt.Errorf("errors.build.slot_selector_failed: %w", err)
 	}
 	if !confirmed {
-		return nil, fmt.Errorf("slot selection cancelled")
+		return nil, fmt.Errorf("errors.build.slot_selection_cancelled")
 	}
 
 	// Return as SlotSelection
@@ -264,7 +264,7 @@ func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, 
 	// Get items for this category
 	items, err := m.slotManager.GetSelectedItems(category)
 	if err != nil {
-		return fmt.Errorf("failed to get %s items: %w", category, err)
+		return fmt.Errorf("errors.build.failed_get_items: %w", err)
 	}
 
 	// Filter to only selected items
@@ -430,16 +430,16 @@ func (m *Manager) exportBuildImage(ctx context.Context, buildCtx *BuildContext) 
 	// Get container state
 	state, err := m.runtime.ContainerState(ctx, containerName)
 	if err != nil {
-		return fmt.Errorf("export_image: failed to check container status: %w", err)
+		return fmt.Errorf("errors.build.export_failed_check_status: %w", err)
 	}
 	if state == "" {
-		return fmt.Errorf("export_image: container %s not found", containerName)
+		return fmt.Errorf("errors.build.export_container_not_found: %s", containerName)
 	}
 
 	// Check if container is running, if not start it
 	if state != "running" {
 		if err := m.runtime.StartContainer(ctx, containerName); err != nil {
-			return fmt.Errorf("export_image: failed to start container: %w", err)
+			return fmt.Errorf("errors.build.export_failed_start_container: %w", err)
 		}
 	}
 
@@ -447,7 +447,7 @@ func (m *Manager) exportBuildImage(ctx context.Context, buildCtx *BuildContext) 
 	author := m.ui.GetText("build.commit.author")
 	message := m.ui.GetText("build.commit.message")
 	if err := m.runtime.CommitImage(ctx, containerName, buildCtx.ImageName, author, message); err != nil {
-		return fmt.Errorf("export_image: failed to commit container: %w", err)
+		return fmt.Errorf("errors.build.export_failed_commit: %w", err)
 	}
 
 	return nil
