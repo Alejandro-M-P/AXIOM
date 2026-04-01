@@ -359,9 +359,9 @@ func (m Model) View() string {
 	header := styles.GetLogo() + "\n\n"
 
 	if m.step == StepFinalizing {
-		body := styles.GreenStyle.Render("🛡️  AXIOM: Bunker configured successfully!") + "\n\n" +
-			"🚀 Next step: Run " + styles.GreenStyle.Render("axiom build") + "\n\n" +
-			styles.ExampleStyle.Render("(Press Enter to exit)")
+		body := styles.GreenStyle.Render("🛡️  "+i18n.GetWizardText("finalizing", "success_title")) + "\n\n" +
+			"🚀 " + i18n.GetWizardText("finalizing", "next_step") + " " + styles.GreenStyle.Render("axiom build") + "\n\n" +
+			styles.ExampleStyle.Render(i18n.GetWizardText("finalizing", "press_enter"))
 
 		// Use CenteredContainer for fullscreen centering
 		centered := components.NewCenteredContainer(m.Width, m.Height)
@@ -371,56 +371,84 @@ func (m Model) View() string {
 	var body string
 	switch m.step {
 	case StepLanguage:
-		body = m.renderBox("LANGUAGE / IDIOMA", "Select your language / Selecciona tu idioma:", "English", "Español")
+		body = m.renderBox(
+			i18n.GetWizardText("step_language", "title"),
+			i18n.GetWizardText("step_language", "question"),
+			i18n.GetWizardText("step_language", "option_english"),
+			i18n.GetWizardText("step_language", "option_spanish"),
+		)
 	case StepConfirm:
-		body = m.renderBox("WARNING", "Overwrite existing config.toml file?", "YES, CONTINUE", "NO, EXIT")
+		body = m.renderBox(
+			i18n.GetWizardText("step_confirm", "title"),
+			i18n.GetWizardText("step_confirm", "question"),
+			i18n.GetWizardText("step_confirm", "option_yes"),
+			i18n.GetWizardText("step_confirm", "option_no"),
+		)
 	case StepGitUser:
-		body = m.renderInput("GITHUB USER", "Enter your username:", "e.g.: user")
+		body = m.renderInput(
+			i18n.GetWizardText("step_git_user", "title"),
+			i18n.GetWizardText("step_git_user", "label"),
+			i18n.GetWizardText("step_git_user", "help"),
+		)
 	case StepGitEmail:
-		body = m.renderInput("GITHUB EMAIL", "Enter your email:", "e.g.: user@example.com")
+		body = m.renderInput(
+			i18n.GetWizardText("step_git_email", "title"),
+			i18n.GetWizardText("step_git_email", "label"),
+			i18n.GetWizardText("step_git_email", "help"),
+		)
 	case StepAuthMode:
-		body = m.renderBox("AUTHENTICATION", "Select connection type:", "SSH (Recommended)", "HTTPS (Token)")
+		body = m.renderBox(
+			i18n.GetWizardText("step_auth_mode", "title"),
+			i18n.GetWizardText("step_auth_mode", "question"),
+			i18n.GetWizardText("step_auth_mode", "option_ssh"),
+			i18n.GetWizardText("step_auth_mode", "option_https"),
+		)
 	case StepGitToken:
-		body = m.renderInput("GITHUB TOKEN", "Paste your PAT Token:", "Required for HTTPS")
+		body = m.renderInput(
+			i18n.GetWizardText("step_git_token", "title"),
+			i18n.GetWizardText("step_git_token", "label"),
+			i18n.GetWizardText("step_git_token", "help"),
+		)
 	case StepBaseDir:
-		body = m.renderInput("BASE DIRECTORY", "Root path:", "Enter for: "+m.config.BaseDir)
+		body = m.renderInput(
+			i18n.GetWizardText("step_base_dir", "title"),
+			i18n.GetWizardText("step_base_dir", "label"),
+			i18n.GetWizardText("step_base_dir", "help_prefix")+": "+m.config.BaseDir,
+		)
 	case StepModelsDir:
-		body = m.renderInput("OLLAMA MODELS", "Models location?", "Current: "+m.config.ModelsDir)
+		body = m.renderInput(
+			i18n.GetWizardText("step_models_dir", "title"),
+			i18n.GetWizardText("step_models_dir", "label"),
+			i18n.GetWizardText("step_models_dir", "help_prefix")+": "+m.config.ModelsDir,
+		)
 	case StepGfxVersion:
-		infoGPU := fmt.Sprintf("Detected: %s", GetTextLocalized(m.detectedGPU.Name))
-		sugerido := "Suggested: " + m.detectedGPU.GfxVal
+		infoGPU := fmt.Sprintf("%s %s", i18n.GetWizardText("step_gpu", "detected_prefix"), GetTextLocalized(m.detectedGPU.Name))
+		sugerido := i18n.GetWizardText("step_gpu", "suggested_prefix") + ": " + m.detectedGPU.GfxVal
 		if m.detectedGPU.GfxVal == "" {
-			sugerido = "GFX not required"
+			sugerido = i18n.GetWizardText("step_gpu", "gfx_not_required")
 		}
-		body = m.renderInput("GPU HARDWARE", infoGPU, sugerido+" (Enter to confirm)")
+		body = m.renderInput(
+			i18n.GetWizardText("step_gpu", "title"),
+			infoGPU,
+			sugerido+" "+i18n.GetWizardText("step_gpu", "enter_confirm"),
+		)
 	case StepRocmMode:
-		sug := "Host (Recommended AMD/Intel)"
+		sug := i18n.GetWizardText("step_rocm", "host_recommended_amd")
 		if m.detectedGPU.Type == "nvidia" {
-			sug = "Image (Recommended NVIDIA)"
+			sug = i18n.GetWizardText("step_rocm", "image_recommended_nvidia")
 		}
-		body = m.renderBox("GPU DRIVERS", "Driver handling ("+sug+"):", "Host (Lightweight)", "Image (Isolated)")
+		body = m.renderBox(
+			i18n.GetWizardText("step_rocm", "title"),
+			i18n.GetWizardText("step_rocm", "question_prefix")+sug+i18n.GetWizardText("step_rocm", "question_suffix"),
+			i18n.GetWizardText("step_rocm", "option_host"),
+			i18n.GetWizardText("step_rocm", "option_image"),
+		)
 	case StepReview:
 		body = m.renderReview()
 	}
 
-	// Get EscapeButton text from i18n
-	var escapeText string
-	if i18n.Prompts != nil && i18n.Prompts["escape_button"] != nil {
-		if text, ok := i18n.Prompts["escape_button"]["text"]; ok {
-			escapeText = text
-		}
-	}
-	if escapeText == "" {
-		// fallback based on locale
-		if i18n.GetLocale() == "en" {
-			escapeText = "Exit"
-		} else {
-			escapeText = "Salir"
-		}
-	}
-
 	// Add footer with EscapeButton
-	footer := "\n" + styles.ExampleStyle.Render("[Esc] "+escapeText+"  |  [Enter] Confirm")
+	footer := "\n" + styles.ExampleStyle.Render("[Esc] "+i18n.GetEscapeButtonText()+"  |  [Enter] Confirm")
 
 	// Use CenteredContainer for fullscreen centering
 	centered := components.NewCenteredContainer(m.Width, m.Height)
@@ -476,21 +504,24 @@ func (m Model) renderBox(titulo, pregunta, o1, o2 string) string {
 
 func (m Model) renderReview() string {
 	items := []string{
-		fmt.Sprintf("GitHub User: %s", safeValue(m.config.GitUser)),
-		fmt.Sprintf("GitHub Email: %s", safeValue(m.config.GitEmail)),
-		fmt.Sprintf("Auth Mode: %s", safeValue(strings.ToUpper(m.config.AuthMode))),
-		fmt.Sprintf("Git Token: %s", maskToken(m.config.GitToken, m.config.AuthMode)),
-		fmt.Sprintf("Base Dir: %s", safeValue(m.config.BaseDir)),
-		fmt.Sprintf("Models Dir: %s", safeValue(m.config.ModelsDir)),
-		fmt.Sprintf("GPU: %s | Tipo: %s | GFX: %s", safeValue(GetTextLocalized(m.detectedGPU.Name)), safeValue(m.config.GpuType), displayGFX(m.config.GfxVersion)),
-		fmt.Sprintf("Drivers GPU: %s", safeValue(m.config.RocmMode)),
+		fmt.Sprintf("%s %s", i18n.GetWizardText("review", "label_git_user"), safeValue(m.config.GitUser)),
+		fmt.Sprintf("%s %s", i18n.GetWizardText("review", "label_git_email"), safeValue(m.config.GitEmail)),
+		fmt.Sprintf("%s %s", i18n.GetWizardText("review", "label_auth_mode"), safeValue(strings.ToUpper(m.config.AuthMode))),
+		fmt.Sprintf("%s %s", i18n.GetWizardText("review", "label_git_token"), maskToken(m.config.GitToken, m.config.AuthMode)),
+		fmt.Sprintf("%s %s", i18n.GetWizardText("review", "label_base_dir"), safeValue(m.config.BaseDir)),
+		fmt.Sprintf("%s %s", i18n.GetWizardText("review", "label_models_dir"), safeValue(m.config.ModelsDir)),
+		fmt.Sprintf("%s %s | %s %s | %s %s",
+			i18n.GetWizardText("review", "label_gpu"), safeValue(GetTextLocalized(m.detectedGPU.Name)),
+			i18n.GetWizardText("review", "label_gpu_type"), safeValue(m.config.GpuType),
+			i18n.GetWizardText("review", "label_gpu_gfx"), displayGFX(m.config.GfxVersion)),
+		fmt.Sprintf("%s %s", i18n.GetWizardText("review", "label_gpu_drivers"), safeValue(m.config.RocmMode)),
 	}
 
 	var lines []string
-	lines = append(lines, styles.HeaderStyle.Render("FINAL SUMMARY"))
+	lines = append(lines, styles.HeaderStyle.Render(i18n.GetWizardText("review", "summary_title")))
 	lines = append(lines, "")
-	lines = append(lines, "Review the data. Press Enter on a field to edit it.")
-	lines = append(lines, styles.ExampleStyle.Render("Use Up/Down Arrows to navigate."))
+	lines = append(lines, i18n.GetWizardText("review", "instruction"))
+	lines = append(lines, styles.ExampleStyle.Render(i18n.GetWizardText("review", "navigate")))
 	lines = append(lines, "")
 
 	for i, item := range items {
@@ -502,13 +533,13 @@ func (m Model) renderReview() string {
 	}
 
 	lines = append(lines, "")
-	guardar := styles.InactiveButton.Render("SAVE AND CREATE")
-	cancelar := styles.InactiveButton.Render("CANCEL")
+	guardar := styles.InactiveButton.Render(i18n.GetWizardText("review", "btn_save"))
+	cancelar := styles.InactiveButton.Render(i18n.GetWizardText("review", "btn_cancel"))
 	if m.reviewCursor == reviewSave {
-		guardar = styles.ActiveButton.Render("SAVE AND CREATE")
+		guardar = styles.ActiveButton.Render(i18n.GetWizardText("review", "btn_save"))
 	}
 	if m.reviewCursor == reviewCancel {
-		cancelar = styles.ActiveButton.Render("CANCEL")
+		cancelar = styles.ActiveButton.Render(i18n.GetWizardText("review", "btn_cancel"))
 	}
 	lines = append(lines, guardar+"  "+cancelar)
 
@@ -517,24 +548,24 @@ func (m Model) renderReview() string {
 
 func safeValue(v string) string {
 	if strings.TrimSpace(v) == "" {
-		return "(empty)"
+		return i18n.GetWizardText("common", "empty")
 	}
 	return v
 }
 
 func displayGFX(v string) string {
 	if strings.TrimSpace(v) == "" {
-		return "Not required"
+		return i18n.GetWizardText("common", "not_required")
 	}
 	return v
 }
 
 func maskToken(token, authMode string) string {
 	if authMode != "https" {
-		return "N/A"
+		return i18n.GetWizardText("common", "not_applicable")
 	}
 	if token == "" {
-		return "(empty)"
+		return i18n.GetWizardText("common", "empty")
 	}
 	if len(token) <= 8 {
 		return strings.Repeat("*", len(token))

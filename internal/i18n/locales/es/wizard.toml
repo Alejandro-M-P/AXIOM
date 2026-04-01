@@ -1,0 +1,87 @@
+# Wizard form - Spanish locale
+
+[finalizing]
+success_title = "AXIOM: ¡Búnker configurado exitosamente!"
+next_step = "Siguiente paso: Ejecutar"
+press_enter = "(Presiona Enter para salir)"
+
+[step_language]
+title = "IDIOMA / LANGUAGE"
+question = "Selecciona tu idioma / Select your language:"
+option_english = "English"
+option_spanish = "Español"
+
+[step_confirm]
+title = "ADVERTENCIA"
+question = "¿Sobrescribir el archivo config.toml existente?"
+option_yes = "SÍ, CONTINUAR"
+option_no = "NO, SALIR"
+
+[step_git_user]
+title = "USUARIO DE GITHUB"
+label = "Ingresa tu nombre de usuario:"
+help = "ej.: usuario"
+
+[step_git_email]
+title = "EMAIL DE GITHUB"
+label = "Ingresa tu correo electrónico:"
+help = "ej.: usuario@ejemplo.com"
+
+[step_auth_mode]
+title = "AUTENTICACIÓN"
+question = "Selecciona el tipo de conexión:"
+option_ssh = "SSH (Recomendado)"
+option_https = "HTTPS (Token)"
+
+[step_git_token]
+title = "TOKEN DE GITHUB"
+label = "Pega tu Token PAT:"
+help = "Requerido para HTTPS"
+
+[step_base_dir]
+title = "DIRECTORIO BASE"
+label = "Ruta raíz:"
+help_prefix = "Enter para:"
+
+[step_models_dir]
+title = "MODELOS OLLAMA"
+label = "¿Ubicación de los modelos?"
+help_prefix = "Actual:"
+
+[step_gpu]
+title = "HARDWARE GPU"
+detected_prefix = "Detectado:"
+suggested_prefix = "Sugerido:"
+gfx_not_required = "GFX no requerido"
+enter_confirm = "(Enter para confirmar)"
+
+[step_rocm]
+title = "DRIVERS GPU"
+question_prefix = "Manejo de drivers ("
+question_suffix = "):"
+host_recommended_amd = "Host (Recomendado AMD/Intel)"
+image_recommended_nvidia = "Imagen (Recomendado NVIDIA)"
+option_host = "Host (Ligero)"
+option_image = "Imagen (Aislado)"
+
+[review]
+summary_title = "RESUMEN FINAL"
+instruction = "Revisa los datos. Presiona Enter en un campo para editarlo."
+navigate = "Usa las flechas Arriba/Abajo para navegar."
+label_git_user = "Usuario GitHub:"
+label_git_email = "Email GitHub:"
+label_auth_mode = "Modo Auth:"
+label_git_token = "Token Git:"
+label_base_dir = "Dir Base:"
+label_models_dir = "Dir Modelos:"
+label_gpu = "GPU:"
+label_gpu_type = "Tipo:"
+label_gpu_gfx = "GFX:"
+label_gpu_drivers = "Drivers GPU:"
+btn_save = "GUARDAR Y CREAR"
+btn_cancel = "CANCELAR"
+
+[common]
+empty = "(vacío)"
+not_required = "No requerido"
+not_applicable = "N/A"

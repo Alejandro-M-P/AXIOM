@@ -1,0 +1,87 @@
+# Wizard form - English locale
+
+[finalizing]
+success_title = "AXIOM: Bunker configured successfully!"
+next_step = "Next step: Run"
+press_enter = "(Press Enter to exit)"
+
+[step_language]
+title = "LANGUAGE / IDIOMA"
+question = "Select your language / Selecciona tu idioma:"
+option_english = "English"
+option_spanish = "Español"
+
+[step_confirm]
+title = "WARNING"
+question = "Overwrite existing config.toml file?"
+option_yes = "YES, CONTINUE"
+option_no = "NO, EXIT"
+
+[step_git_user]
+title = "GITHUB USER"
+label = "Enter your username:"
+help = "e.g.: user"
+
+[step_git_email]
+title = "GITHUB EMAIL"
+label = "Enter your email:"
+help = "e.g.: user@example.com"
+
+[step_auth_mode]
+title = "AUTHENTICATION"
+question = "Select connection type:"
+option_ssh = "SSH (Recommended)"
+option_https = "HTTPS (Token)"
+
+[step_git_token]
+title = "GITHUB TOKEN"
+label = "Paste your PAT Token:"
+help = "Required for HTTPS"
+
+[step_base_dir]
+title = "BASE DIRECTORY"
+label = "Root path:"
+help_prefix = "Enter for:"
+
+[step_models_dir]
+title = "OLLAMA MODELS"
+label = "Models location?"
+help_prefix = "Current:"
+
+[step_gpu]
+title = "GPU HARDWARE"
+detected_prefix = "Detected:"
+suggested_prefix = "Suggested:"
+gfx_not_required = "GFX not required"
+enter_confirm = "(Enter to confirm)"
+
+[step_rocm]
+title = "GPU DRIVERS"
+question_prefix = "Driver handling ("
+question_suffix = "):"
+host_recommended_amd = "Host (Recommended AMD/Intel)"
+image_recommended_nvidia = "Image (Recommended NVIDIA)"
+option_host = "Host (Lightweight)"
+option_image = "Image (Isolated)"
+
+[review]
+summary_title = "FINAL SUMMARY"
+instruction = "Review the data. Press Enter on a field to edit it."
+navigate = "Use Up/Down Arrows to navigate."
+label_git_user = "GitHub User:"
+label_git_email = "GitHub Email:"
+label_auth_mode = "Auth Mode:"
+label_git_token = "Git Token:"
+label_base_dir = "Base Dir:"
+label_models_dir = "Models Dir:"
+label_gpu = "GPU:"
+label_gpu_type = "Type:"
+label_gpu_gfx = "GFX:"
+label_gpu_drivers = "Drivers GPU:"
+btn_save = "SAVE AND CREATE"
+btn_cancel = "CANCEL"
+
+[common]
+empty = "(empty)"
+not_required = "Not required"
+not_applicable = "N/A"

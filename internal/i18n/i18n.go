@@ -31,6 +31,9 @@ var esInitTOML []byte
 //go:embed locales/es/slots.toml
 var esSlotsTOML []byte
 
+//go:embed locales/es/wizard.toml
+var esWizardTOML []byte
+
 // English locale files
 //
 //go:embed locales/en/commands.toml
@@ -54,6 +57,9 @@ var enInitTOML []byte
 //go:embed locales/en/slots.toml
 var enSlotsTOML []byte
 
+//go:embed locales/en/wizard.toml
+var enWizardTOML []byte
+
 // Data maps for the loaded locale
 var Commands map[string]map[string]string
 var Prompts map[string]map[string]string
@@ -62,6 +68,7 @@ var Lifecycle map[string]map[string]string
 var Errors map[string]map[string]string
 var Init map[string]map[string]string
 var Slots map[string]map[string]string
+var Wizard map[string]map[string]string
 
 // currentLocale stores the detected locale
 var currentLocale string
@@ -91,6 +98,21 @@ func GetLocale() string {
 	return currentLocale
 }
 
+// GetWizardText returns a localized string from wizard.toml.
+// section is the TOML section (e.g. "step_language"), key is the field (e.g. "title").
+// Returns the key itself as fallback if not found.
+func GetWizardText(section, key string) string {
+	if Wizard == nil {
+		return section + "." + key
+	}
+	if sectionData, ok := Wizard[section]; ok {
+		if val, ok := sectionData[key]; ok {
+			return val
+		}
+	}
+	return section + "." + key // fallback: show the key
+}
+
 // GetEscapeButtonText returns the localized text for the escape button
 func GetEscapeButtonText() string {
 	if currentLocale == "en" {
@@ -108,7 +130,7 @@ func GetEscapeButtonText() string {
 
 // loadLocale loads the TOML files for the specified locale
 func loadLocale(locale string) {
-	var commandsData, promptsData, logsData, lifecycleData, errorsData, initData, slotsData []byte
+	var commandsData, promptsData, logsData, lifecycleData, errorsData, initData, slotsData, wizardData []byte
 
 	if locale == "en" {
 		commandsData = enCommandsTOML
@@ -118,6 +140,7 @@ func loadLocale(locale string) {
 		errorsData = enErrorsTOML
 		initData = enInitTOML
 		slotsData = enSlotsTOML
+		wizardData = enWizardTOML
 	} else {
 		// Default to Spanish
 		commandsData = esCommandsTOML
@@ -127,6 +150,7 @@ func loadLocale(locale string) {
 		errorsData = esErrorsTOML
 		initData = esInitTOML
 		slotsData = esSlotsTOML
+		wizardData = esWizardTOML
 	}
 
 	if err := toml.Unmarshal(commandsData, &Commands); err != nil {
@@ -158,6 +182,11 @@ func loadLocale(locale string) {
 	if len(slotsData) > 0 {
 		if err := toml.Unmarshal(slotsData, &Slots); err != nil {
 			panic("Error en slots.toml: " + err.Error())
+		}
+	}
+	if len(wizardData) > 0 {
+		if err := toml.Unmarshal(wizardData, &Wizard); err != nil {
+			panic("Error en wizard.toml: " + err.Error())
 		}
 	}
 }
