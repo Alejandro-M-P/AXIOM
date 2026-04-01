@@ -448,7 +448,7 @@ func (m Model) View() string {
 	}
 
 	// Add footer with EscapeButton
-	footer := "\n" + styles.ExampleStyle.Render("[Esc] "+i18n.GetEscapeButtonText()+"  |  "+i18n.GetWizardText("common", "footer_confirm"))
+	footer := "\n" + styles.ExampleStyle.Render(i18n.GetWizardText("common", "footer_esc_key")+" "+i18n.GetEscapeButtonText()+"  |  "+i18n.GetWizardText("common", "footer_confirm"))
 
 	// Use CenteredContainer for fullscreen centering
 	centered := components.NewCenteredContainer(m.Width, m.Height)

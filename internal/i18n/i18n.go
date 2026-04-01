@@ -2,7 +2,6 @@ package i18n
 
 import (
 	_ "embed"
-	"os"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -74,23 +73,33 @@ var Wizard map[string]map[string]string
 var currentLocale string
 
 func init() {
-	currentLocale = detectLocale()
+	// Default to Spanish — SetLocale must be called explicitly from main.go
+	currentLocale = "es"
 	loadLocale(currentLocale)
 }
 
-// detectLocale detects system locale from LANG env var, defaults to "es"
-func detectLocale() string {
-	lang := os.Getenv("LANG")
+// SetLocale sets the locale and reloads all translation files.
+// This should be called from main.go or router after detecting the system locale.
+func SetLocale(locale string) {
+	currentLocale = normalizeLocale(locale)
+	loadLocale(currentLocale)
+}
+
+// normalizeLocale converts a LANG value like "es_ES.UTF-8" or "en_US.UTF-8" to "es" or "en".
+func normalizeLocale(lang string) string {
 	if lang == "" {
 		return "es"
 	}
-	// LANG format: es_ES.UTF-8, en_US.UTF-8, etc.
 	lang = strings.ToLower(lang)
 	if strings.HasPrefix(lang, "en") {
 		return "en"
 	}
-	// Default to Spanish for any other locale
 	return "es"
+}
+
+// detectLocale is kept for backward compatibility but delegates to normalizeLocale.
+func detectLocale(lang string) string {
+	return normalizeLocale(lang)
 }
 
 // GetLocale returns the currently loaded locale

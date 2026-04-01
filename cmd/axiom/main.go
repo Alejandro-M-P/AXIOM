@@ -14,6 +14,7 @@ import (
 	ui "github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/views"
 	"github.com/Alejandro-M-P/AXIOM/internal/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/bunker"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 
 	// Blank imports to trigger slot item registration via init()
@@ -34,6 +35,9 @@ func main() {
 		fmt.Println()
 		os.Exit(0)
 	}()
+
+	// Detect system locale and set it for i18n (Regla 3: main.go can read env vars)
+	i18n.SetLocale(os.Getenv("LANG"))
 
 	// Determine root directory
 	rootDir := resolveRootDir()

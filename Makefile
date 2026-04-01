@@ -1,4 +1,4 @@
-.PHONY: test test-unit test-race test-coverage test-verbose help
+.PHONY: test test-unit test-race test-coverage test-verbose lint-arch help
 
 # ============================================
 # AXIOM - Makefile for Development
@@ -92,6 +92,49 @@ vet:
 ## lint: Run vet and static analysis
 lint: vet
 	@echo "✅ Linting complete..."
+
+## lint-arch: Verify architecture rules (Golden Rules)
+lint-arch:
+	@echo "🏛️  Verificando arquitectura..."
+	@echo ""
+	@# Regla 1 y 9: exec.Command SOLO en adapters/ y slots/base/
+	@! grep -rn "exec\.Command" internal/ --include="*.go" \
+	  | grep -v "/adapters/" | grep -v "/slots/base/" | grep -v "_test.go" \
+	  | grep -v "://" | grep . && echo "✅ Regla 1/9: exec.Command solo en adapters/slots/base" || (echo "❌ Regla 1/9: exec.Command en el core" && exit 1)
+	@# Regla 4: exec.CommandContext siempre, nunca exec.Command sin contexto
+	@! grep -rn "exec\.Command(" internal/ --include="*.go" \
+	  | grep -v "exec\.CommandContext" | grep -v "/adapters/" | grep -v "/slots/base/" | grep -v "_test.go" \
+	  | grep -v "://" | grep . && echo "✅ Regla 4: exec.CommandContext siempre" || (echo "❌ Regla 4: exec.Command sin contexto" && exit 1)
+	@# Regla 2: os.Stdout/Stderr/Stdin SOLO en adapters/ y cmd/
+	@! grep -rn "os\.Stdout\|os\.Stderr\|os\.Stdin" internal/ --include="*.go" \
+	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
+	  | grep . && echo "✅ Regla 2: os.Std* solo en adapters/cmd" || (echo "❌ Regla 2: os.Std* en el core" && exit 1)
+	@# Regla 2: fmt.Print/Fprintf/Fprintln SOLO en adapters/ui/ y cmd/
+	@! grep -rn "fmt\.Print\|fmt\.Fprintf\|fmt\.Fprintln" internal/ --include="*.go" \
+	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
+	  | grep . && echo "✅ Regla 2: fmt.Print solo en adapters/cmd" || (echo "❌ Regla 2: fmt.Print en el core" && exit 1)
+	@# Regla 2 y 9: log.Printf/Println/Fatal SOLO en adapters/ui/ y cmd/
+	@! grep -rn "log\.Printf\|log\.Println\|log\.Fatal" internal/ --include="*.go" \
+	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
+	  | grep . && echo "✅ Regla 2/9: log.Print solo en adapters/cmd" || (echo "❌ Regla 2/9: log.Print en el core" && exit 1)
+	@# Regla 3: os.Getenv SOLO en adapters/, router/, cmd/
+	@! grep -rn "os\.Getenv" internal/ --include="*.go" \
+	  | grep -v "/adapters/" | grep -v "/router/" | grep -v "/cmd/" | grep -v "_test.go" \
+	  | grep . && echo "✅ Regla 3: os.Getenv solo en adapters/router/cmd" || (echo "❌ Regla 3: os.Getenv en el core" && exit 1)
+	@# Regla 9: os.Stat/ReadFile/WriteFile NO en bunker/, build/, slots/
+	@! grep -rn "os\.Stat\|os\.ReadFile\|os\.WriteFile" internal/bunker/ internal/build/ internal/slots/ --include="*.go" \
+	  | grep -v "_test.go" \
+	  | grep . && echo "✅ Regla 9: os.Stat/ReadFile/WriteFile no en core" || (echo "❌ Regla 9: os.Stat/ReadFile/WriteFile en el core" && exit 1)
+	@# Regla 9: exec.LookPath SOLO en adapters/ y slots/base/
+	@! grep -rn "exec\.LookPath" internal/ --include="*.go" \
+	  | grep -v "/adapters/" | grep -v "/slots/base/" | grep -v "_test.go" \
+	  | grep . && echo "✅ Regla 9: exec.LookPath solo en adapters/slots/base" || (echo "❌ Regla 9: exec.LookPath en el core" && exit 1)
+	@# Regla 5: strings de sistema SOLO en commands.go
+	@! grep -rn '"podman"\|"distrobox"\|"distrobox-create"\|"distrobox-enter"' \
+	  internal/ --include="*.go" | grep -v "commands\.go" | grep -v "_test.go" \
+	  | grep . && echo "✅ Regla 5: strings de sistema solo en commands.go" || (echo "❌ Regla 5: strings de sistema dispersos" && exit 1)
+	@echo ""
+	@echo "✅ Arquitectura limpia"
 
 ## tidy: Clean dependencies
 tidy:
