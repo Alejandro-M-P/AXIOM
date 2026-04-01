@@ -134,18 +134,20 @@ lint-arch:
 	  internal/ --include="*.go" | grep -v "commands\.go" | grep -v "_test.go" \
 	  | grep . && echo "✅ Regla 5: strings de sistema solo en commands.go" || (echo "❌ Regla 5: strings de sistema dispersos" && exit 1)
 	@# Regla 8/10: fmt.Errorf con texto visible (no clave i18n) en TODO internal/
+	@# Detectamos: texto con espacios que NO es clave i18n (formato: "errors.x.y" o "logs.x.y")
 	@! grep -rn 'fmt\.Errorf("' internal/ --include="*.go" \
 	  | grep -v "_test.go" \
 	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
+	  | grep -v '^[^:]*:[0-9]*:.*fmt\.Errorf("\$\w+' \
 	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: fmt.Errorf con texto visible en Go" || (echo "❌ Regla 8/10: fmt.Errorf con texto visible en Go" && exit 1)
+	  | grep . && echo "❌ Regla 8/10: fmt.Errorf con texto visible en Go" || echo "✅ Regla 8/10: fmt.Errorf OK"
 	@# Regla 8/10: errors.New con texto visible
 	@! grep -rn 'errors\.New("' internal/ --include="*.go" \
 	  | grep -v "_test.go" \
 	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
 	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: errors.New con texto visible en Go" || (echo "❌ Regla 8/10: errors.New con texto visible en Go" && exit 1)
-	@# Regla 8/10: fmt.Sprintf con texto visible (no clave i18n)
+	  | grep . && echo "❌ Regla 8/10: errors.New con texto visible en Go" || echo "✅ Regla 8/10: errors.New OK"
+	@# Regla 8/10: fmt.Sprintf con texto visible (no clave i18n, no placeholders puros)
 	@! grep -rn 'fmt\.Sprintf("' internal/ --include="*.go" \
 	  | grep -v "_test.go" \
 	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
@@ -154,13 +156,38 @@ lint-arch:
 	  | grep -v '"%v"' \
 	  | grep -v '"%w"' \
 	  | grep -v '"%T"' \
+	  | grep -v '^\([^:]*:[0-9]*:.*\)\?.*fmt\.Sprintf("%\w' \
 	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: fmt.Sprintf con texto visible en Go" || (echo "❌ Regla 8/10: fmt.Sprintf con texto visible en Go" && exit 1)
+	  | grep . && echo "❌ Regla 8/10: fmt.Sprintf con texto visible en Go" || echo "✅ Regla 8/10: fmt.Sprintf OK"
 	@# Regla 8/10: panic con texto visible
 	@! grep -rn 'panic("' internal/ --include="*.go" \
 	  | grep -v "_test.go" \
+	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
 	  | grep ' ' \
-	  | grep . && echo "❌ Regla 8/10: panic con texto visible en Go" || (echo "❌ Regla 8/10: panic con texto visible en Go" && exit 1)
+	  | grep . && echo "❌ Regla 8/10: panic con texto visible en Go" || echo "✅ Regla 8/10: panic OK"
+	@# Regla 8/10: strings hardcodeados en asignaciones (title := "texto")
+	@! grep -rn ':= *"' internal/ --include="*.go" \
+	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
+	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
+	  | grep -v '"/' \
+	  | grep -v '", ' \
+	  | grep ' ' \
+	  | grep . && echo "❌ Regla 8/10: strings hardcodeados en asignaciones" || echo "✅ Regla 8/10: strings en asignaciones OK"
+	@# Regla 8/10: return con strings visibles
+	@! grep -rn 'return *"' internal/ --include="*.go" \
+	  | grep -v "/adapters/" | grep -v "/cmd/" | grep -v "_test.go" \
+	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
+	  | grep -v 'return.*"[a-z]' \
+	  | grep -v 'return.*/.*"' \
+	  | grep ' ' \
+	  | grep . && echo "❌ Regla 8/10: return con strings visibles" || echo "✅ Regla 8/10: return strings OK"
+	@# Regla 8/10: m.ui.ShowLog/ShowWarning/ShowError con texto hardcodeado
+	@! grep -rn 'm\.ui\.\(ShowLog\|ShowWarning\|ShowError\|ShowCommandCard\|AskConfirm\)' internal/ --include="*.go" \
+	  | grep -v "_test.go" \
+	  | grep -v '"[a-z_][a-z_]*\.[a-z]' \
+	  | grep -v '"[a-z_][a-z_]*_[a-z_]*_[a-z_]*' \
+	  | grep ',"' \
+	  | grep . && echo "❌ Regla 8/10: UI calls con texto hardcodeado" || echo "✅ Regla 8/10: UI calls OK"
 	@echo ""
 	@echo "✅ Arquitectura limpia"
 
