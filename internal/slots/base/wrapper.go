@@ -47,7 +47,7 @@ func (a *SlotCommandAnalyzer) AnalyzeAndInstallRequirements(ctx context.Context,
 		}
 
 		if err := a.installer.EnsureTool(ctx, tool); err != nil {
-			return fmt.Errorf("failed to ensure tool '%s': %w", tool, err)
+			return fmt.Errorf("errors.slots.base.failed_install_tool: %s: %w", tool, err)
 		}
 	}
 
@@ -112,13 +112,13 @@ func ExecuteWithBaseTools(ctx context.Context, command string, execFunc func(ctx
 
 	// Ensure required tools are installed
 	if err := analyzer.AnalyzeAndInstallRequirements(ctx, command); err != nil {
-		return fmt.Errorf("failed to install required base tools: %w", err)
+		return fmt.Errorf("errors.slots.base.failed_install_base_tools: %w", err)
 	}
 
 	// Execute the command
 	cmd := execFunc(ctx, "sh", "-c", command)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("command failed: %w\nOutput: %s", err, string(output))
+		return fmt.Errorf("errors.slots.base.command_failed: %w\nOutput: %s", err, string(output))
 	}
 
 	return nil

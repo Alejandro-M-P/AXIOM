@@ -4,6 +4,15 @@ dependency_missing = "❌ Missing dependency: %s"
 image_not_found = "Image %s not found"
 no_bunkers_available = "No bunkers available"
 interactive_selection_not_implemented = "Interactive selection not implemented"
+missing_name = "Missing bunker name"
+access_denied = "Access denied"
+missing_image = "Image not found"
+timeout = "Timeout"
+unexpected = "Unexpected error"
+invalid_name = "Invalid bunker name"
+not_dir = "Path is not a directory"
+failed_cwd = "Failed to get current working directory: %w"
+failed_abs_path = "Failed to resolve absolute path: %w"
 
 [build]
 failed_load_selection = "Failed to load slot selection: %w"
@@ -20,6 +29,46 @@ export_container_not_found = "export_image: container %s not found"
 export_failed_start_container = "export_image: failed to start container: %w"
 export_failed_commit = "export_image: failed to commit container: %w"
 
+[build.gpu]
+unsupported_arch = "Unsupported architecture"
+
+[build.steps]
+failed_sync_repos = "Failed to sync repos: %w"
+failed_install_pkgs = "Failed to install packages: %w"
+failed_install_homebrew = "Failed to install Homebrew: %w"
+failed_install_opencode = "Failed to install opencode: %w"
+failed_add_brew_tap = "Failed to add Homebrew tap: %w"
+failed_install_dev_tools = "Failed to install dev tools: %w"
+failed_install_ollama = "Failed to install Ollama: %w"
+failed_clean_caches = "Failed to clean caches: %w"
+
+[build.image]
+gpu_resolution = "GPU resolution error: %w"
+
+[slots.base]
+failed_load_prefs = "Failed to load OS preferences: %w"
+unknown_os = "Cannot install base tools: unknown operating system"
+unsupported_os = "Unsupported operating system: %s"
+failed_install_base_tools = "Failed to install base tools: %w"
+tool_not_found = "Tool '%s' not found in preferences"
+unsupported_os_tool = "Unsupported operating system for tool installation: %s"
+no_install_cmd = "No install command defined for '%s' on %s"
+failed_install_tool = "Failed to install %s: %w"
+failed_install_homebrew = "Failed to install Homebrew: %w\nOutput: %s"
+command_failed = "Command failed: %w\nOutput: %s"
+
+[slots.base.os_detector]
+unknown_os = "Unknown OS: %s"
+unknown_linux = "Unknown Linux"
+os_not_recognized = "Distribution not recognized from os-release"
+
+[slots.registry]
+item_not_found = "Slot item not found: %s"
+registry_empty = "Slot registry is empty: no items registered"
+
+[slots.engine]
+unknown_dependency = "Unknown dependency: %s"
+
 [env]
 read = "Could not read config.toml: %w"
 
@@ -32,6 +81,18 @@ wizard_failed = "Init wizard failed: %w"
 tui_failed = "Failed to run TUI interface: %w"
 init_not_implemented = "Init wizard not yet implemented"
 init_cancelled = "Init cancelled by user"
+
+# UI component errors
+bunker_selector_no_bunkers = "No bunkers available"
+bunker_selector_failed = "Failed to run bunker selector: %w"
+unexpected_model = "Unexpected model type: %T"
+create_form_failed = "Failed to run create form: %w"
+slot_selector_failed = "Failed to run slot selector: %w"
+wizard_selector_failed = "Failed to run wizard selector: %w"
+confirm_dialog_failed = "Failed to run confirm dialog: %w"
+
+[slots.ui]
+invalid_items_type = "Invalid items type, expected []slots.SlotItem"
 
 [router]
 failed_load_config = "Failed to load configuration: %s"

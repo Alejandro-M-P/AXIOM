@@ -288,8 +288,8 @@ func TestRemoveProjectPath_NotDirectory(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for non-directory path")
 	}
-	if err.Error() != "not_dir" {
-		t.Errorf("expected 'not_dir' error, got '%s'", err.Error())
+	if err.Error() != "errors.bunker.not_dir" {
+		t.Errorf("expected 'errors.bunker.not_dir' error, got '%s'", err.Error())
 	}
 }
 

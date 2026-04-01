@@ -23,8 +23,8 @@ func TestCreateValidation_EmptyName(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty name, got nil")
 	}
-	if err.Error() != "missing_name" {
-		t.Errorf("expected 'missing_name' error, got '%s'", err.Error())
+	if err.Error() != "errors.bunker.missing_name" {
+		t.Errorf("expected 'errors.bunker.missing_name' error, got '%s'", err.Error())
 	}
 }
 
@@ -39,8 +39,8 @@ func TestCreateValidation_EmptyNameWithSpaces(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for whitespace-only name, got nil")
 	}
-	if err.Error() != "missing_name" {
-		t.Errorf("expected 'missing_name' error, got '%s'", err.Error())
+	if err.Error() != "errors.bunker.missing_name" {
+		t.Errorf("expected 'errors.bunker.missing_name' error, got '%s'", err.Error())
 	}
 }
 
@@ -64,8 +64,8 @@ func TestCreateValidation_InvalidChars(t *testing.T) {
 		if err == nil {
 			t.Errorf("expected error for invalid name '%s', got nil", name)
 		}
-		if err != nil && err.Error() != "invalid_name" && err.Error() != "missing_name" {
-			t.Errorf("expected 'invalid_name' or 'missing_name' error for '%s', got '%s'", name, err.Error())
+		if err != nil && err.Error() != "errors.bunker.invalid_name" && err.Error() != "errors.bunker.missing_name" {
+			t.Errorf("expected 'errors.bunker.invalid_name' or 'errors.bunker.missing_name' error for '%s', got '%s'", name, err.Error())
 		}
 	}
 }

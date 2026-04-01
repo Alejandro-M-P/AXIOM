@@ -4,6 +4,15 @@ dependency_missing = "❌ Falta dependencia: %s"
 image_not_found = "No se encontró la imagen %s"
 no_bunkers_available = "No hay búnkeres disponibles"
 interactive_selection_not_implemented = "Selección interactiva no implementada"
+missing_name = "Falta nombre del búnker"
+access_denied = "Acceso denegado"
+missing_image = "Imagen no encontrada"
+timeout = "Tiempo de espera agotado"
+unexpected = "Error inesperado"
+invalid_name = "Nombre de búnker inválido"
+not_dir = "La ruta no es un directorio"
+failed_cwd = "Error al obtener directorio de trabajo: %w"
+failed_abs_path = "Error al resolver ruta absoluta: %w"
 
 [build]
 failed_load_selection = "Error al cargar la selección de slots: %w"
@@ -20,6 +29,46 @@ export_container_not_found = "export_image: contenedor %s no encontrado"
 export_failed_start_container = "export_image: error al iniciar contenedor: %w"
 export_failed_commit = "export_image: error al commitear contenedor: %w"
 
+[build.gpu]
+unsupported_arch = "Arquitectura no soportada"
+
+[build.steps]
+failed_sync_repos = "Error al sincronizar repos: %w"
+failed_install_pkgs = "Error al instalar paquetes: %w"
+failed_install_homebrew = "Error al instalar Homebrew: %w"
+failed_install_opencode = "Error al instalar opencode: %w"
+failed_add_brew_tap = "Error al agregar tap de Homebrew: %w"
+failed_install_dev_tools = "Error al instalar herramientas de desarrollo: %w"
+failed_install_ollama = "Error al instalar Ollama: %w"
+failed_clean_caches = "Error al limpiar caché: %w"
+
+[build.image]
+gpu_resolution = "Error de resolución GPU: %w"
+
+[slots.base]
+failed_load_prefs = "Error al cargar preferencias del SO: %w"
+unknown_os = "No se puede instalar herramientas base: sistema operativo desconocido"
+unsupported_os = "Sistema operativo no soportado: %s"
+failed_install_base_tools = "Error al instalar herramientas base: %w"
+tool_not_found = "Herramienta '%s' no encontrada en preferencias"
+unsupported_os_tool = "Sistema operativo no soportado para instalación de herramientas: %s"
+no_install_cmd = "No hay comando de instalación definido para '%s' en %s"
+failed_install_tool = "Error al instalar %s: %w"
+failed_install_homebrew = "Error al instalar Homebrew: %w\nOutput: %s"
+command_failed = "Comando fallido: %w\nOutput: %s"
+
+[slots.base.os_detector]
+unknown_os = "SO desconocido: %s"
+unknown_linux = "Linux desconocido"
+os_not_recognized = "Distribución no reconocida de os-release"
+
+[slots.registry]
+item_not_found = "Elemento de slot no encontrado: %s"
+registry_empty = "El registro de slots está vacío: no hay elementos registrados"
+
+[slots.engine]
+unknown_dependency = "Dependencia desconocida: %s"
+
 [env]
 read = "No se pudo leer config.toml: %w"
 
@@ -32,6 +81,18 @@ wizard_failed = "Error en el wizard de inicialización: %w"
 tui_failed = "Error al ejecutar interfaz TUI: %w"
 init_not_implemented = "Wizard de inicialización aún no implementado"
 init_cancelled = "Inicialización cancelada por el usuario"
+
+# UI component errors
+bunker_selector_no_bunkers = "No hay búnkeres disponibles"
+bunker_selector_failed = "Error al ejecutar selector de búnkeres: %w"
+unexpected_model = "Tipo de modelo inesperado: %T"
+create_form_failed = "Error al ejecutar formulario de creación: %w"
+slot_selector_failed = "Error al ejecutar selector de slots: %w"
+wizard_selector_failed = "Error al ejecutar wizard de selección: %w"
+confirm_dialog_failed = "Error al ejecutar diálogo de confirmación: %w"
+
+[slots.ui]
+invalid_items_type = "Tipo de items inválido, se esperaba []slots.SlotItem"
 
 [router]
 failed_load_config = "Error al cargar la configuración: %s"

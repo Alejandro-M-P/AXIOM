@@ -26,7 +26,7 @@ type BuildContext struct {
 func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerName, slotName string, system ports.ISystem) (*BuildContext, error) {
 	gpuInfo, err := ResolveBuildGPU(ctx, cfg, system)
 	if err != nil {
-		return nil, fmt.Errorf("gpu_resolution: %w", err)
+		return nil, fmt.Errorf("errors.build.image.gpu_resolution: %w", err)
 	}
 
 	// Generate container name based on slot: axiom-dev, axiom-data, axiom-sandbox

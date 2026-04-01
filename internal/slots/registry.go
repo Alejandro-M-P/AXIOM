@@ -88,7 +88,7 @@ func (r *Registry) GetByCategory(category SlotCategory) []SlotItem {
 func (r *Registry) GetByID(id string) (*SlotItem, error) {
 	item, exists := r.itemsByID[id]
 	if !exists {
-		return nil, fmt.Errorf("slot item not found: %s", id)
+		return nil, fmt.Errorf("errors.slots.item_not_found: %s", id)
 	}
 	return item, nil
 }
@@ -108,7 +108,7 @@ func RegisterItem(item *SlotItem) {
 // Returns an error if the registry is empty.
 func ValidateNotEmpty() error {
 	if len(globalRegistry.itemsByID) == 0 {
-		return fmt.Errorf("slot registry is empty: no items registered")
+		return fmt.Errorf("errors.slots.selector_failed")
 	}
 	return nil
 }

@@ -222,12 +222,12 @@ func (c *ConsoleUI) AskCreateBunker(images []string) (string, string, bool, erro
 	os.Stdout.Sync()
 
 	if err != nil {
-		return "", "", false, fmt.Errorf("failed to run create form: %w", err)
+		return "", "", false, fmt.Errorf("errors.ui.create_form_failed: %w", err)
 	}
 
 	resultModel, ok := finalModel.(createFormModel)
 	if !ok {
-		return "", "", false, fmt.Errorf("unexpected model type: %T", finalModel)
+		return "", "", false, fmt.Errorf("errors.ui.unexpected_model")
 	}
 
 	if resultModel.canceled {

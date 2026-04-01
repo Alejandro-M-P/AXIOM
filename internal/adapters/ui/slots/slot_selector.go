@@ -278,12 +278,12 @@ func RunSlotSelector(groups []ItemGroup) ([]string, bool, error) {
 	cleanupTerminal()
 
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to run slot selector: %w", err)
+		return nil, false, fmt.Errorf("errors.ui.slot_selector_failed: %w", err)
 	}
 
 	resultModel, ok := finalModel.(*SlotSelectorModel)
 	if !ok {
-		return nil, false, fmt.Errorf("unexpected model type: %T", finalModel)
+		return nil, false, fmt.Errorf("errors.ui.unexpected_model")
 	}
 
 	if resultModel.canceled {

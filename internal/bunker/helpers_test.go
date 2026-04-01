@@ -51,8 +51,8 @@ func TestSanitize_InvalidChars(t *testing.T) {
 		if err == nil {
 			t.Errorf("sanitizeBunkerName(%q): expected error, got nil", input)
 		}
-		if err != nil && err.Error() != "invalid_name" {
-			t.Errorf("sanitizeBunkerName(%q): expected 'invalid_name' error, got %q", input, err.Error())
+		if err != nil && err.Error() != "errors.bunker.invalid_name" {
+			t.Errorf("sanitizeBunkerName(%q): expected 'errors.bunker.invalid_name' error, got %q", input, err.Error())
 		}
 	}
 }

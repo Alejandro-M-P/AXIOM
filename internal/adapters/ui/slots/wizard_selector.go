@@ -712,12 +712,12 @@ func RunWizard(items []slots.SlotItem, pres ports.IPresenter) ([]string, bool, e
 	cleanupTerminal()
 
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to run wizard selector: %w", err)
+		return nil, false, fmt.Errorf("errors.ui.wizard_selector_failed: %w", err)
 	}
 
 	resultModel, ok := finalModel.(*WizardModel)
 	if !ok {
-		return nil, false, fmt.Errorf("unexpected model type: %T", finalModel)
+		return nil, false, fmt.Errorf("errors.ui.unexpected_model")
 	}
 
 	if resultModel.canceled {
@@ -753,12 +753,12 @@ func RunWizardWithSlot(items []slots.SlotItem, pres ports.IPresenter) ([]string,
 	cleanupTerminal()
 
 	if err != nil {
-		return nil, "", false, fmt.Errorf("failed to run wizard selector: %w", err)
+		return nil, "", false, fmt.Errorf("errors.ui.wizard_selector_failed: %w", err)
 	}
 
 	resultModel, ok := finalModel.(*WizardModel)
 	if !ok {
-		return nil, "", false, fmt.Errorf("unexpected model type: %T", finalModel)
+		return nil, "", false, fmt.Errorf("errors.ui.unexpected_model")
 	}
 
 	if resultModel.canceled {

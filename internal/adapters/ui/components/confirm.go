@@ -182,12 +182,12 @@ func RunConfirmDialog(title, message string) (bool, error) {
 
 	finalModel, err := p.Run()
 	if err != nil {
-		return false, fmt.Errorf("failed to run confirm dialog: %w", err)
+		return false, fmt.Errorf("errors.ui.confirm_dialog_failed: %w", err)
 	}
 
 	resultModel, ok := finalModel.(*ConfirmDialog)
 	if !ok {
-		return false, fmt.Errorf("unexpected model type: %T", finalModel)
+		return false, fmt.Errorf("errors.ui.unexpected_model")
 	}
 
 	if resultModel.canceled {

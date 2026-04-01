@@ -23,7 +23,7 @@ type GPUInfo = domain.GPUInfo
 func sanitizeBunkerName(name string) (string, error) {
 	clean := filepath.Clean(strings.TrimSpace(name))
 	if clean == "." || clean == ".." || strings.Contains(clean, "/") || strings.Contains(clean, "\\") {
-		return "", fmt.Errorf("invalid_name")
+		return "", fmt.Errorf("errors.bunker.invalid_name")
 	}
 	return clean, nil
 }
@@ -101,7 +101,7 @@ func removeProjectPath(fs ports.IFileSystem, path string) error {
 		return err
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("not_dir")
+		return fmt.Errorf("errors.bunker.not_dir")
 	}
 	return removePathWritable(fs, path)
 }
@@ -280,13 +280,13 @@ func LoadConfig(fs ports.IFileSystem, axiomPath string) (domain.EnvConfig, error
 	if result.BaseDir == "" || result.BaseDir == "." {
 		cwd, err := os.Getwd()
 		if err != nil {
-			return result, fmt.Errorf("failed to get current working directory: %w", err)
+			return result, fmt.Errorf("errors.bunker.failed_cwd: %w", err)
 		}
 		result.BaseDir = cwd
 	} else {
 		absPath, err := filepath.Abs(result.BaseDir)
 		if err != nil {
-			return result, fmt.Errorf("failed to resolve absolute path: %w", err)
+			return result, fmt.Errorf("errors.bunker.failed_abs_path: %w", err)
 		}
 		result.BaseDir = absPath
 	}

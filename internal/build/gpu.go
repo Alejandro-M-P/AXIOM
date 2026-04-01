@@ -123,6 +123,6 @@ func OllamaArch() (string, error) {
 	case "arm64":
 		return "arm64", nil
 	default:
-		return "", fmt.Errorf("unsupported_arch")
+		return "", fmt.Errorf("errors.build.gpu.unsupported_arch")
 	}
 }

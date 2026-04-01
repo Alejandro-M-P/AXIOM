@@ -46,7 +46,7 @@ type BaseInstaller struct {
 func NewBaseInstaller(preferencesPath string) (*BaseInstaller, error) {
 	prefs, err := loadPreferences(preferencesPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load OS preferences: %w", err)
+		return nil, fmt.Errorf("errors.slots.base.failed_load_prefs: %w", err)
 	}
 
 	detector := NewOSDetector()
@@ -113,7 +113,7 @@ func (b *BaseInstaller) IsCommandAvailable(tool string) bool {
 // This should be called once at the beginning of the installation process
 func (b *BaseInstaller) InstallBaseTools(ctx context.Context) error {
 	if b.osType == OSUnknown {
-		return fmt.Errorf("cannot install base tools: unknown operating system")
+		return fmt.Errorf("errors.slots.base.unknown_os")
 	}
 
 	var config OSConfig
@@ -125,7 +125,7 @@ func (b *BaseInstaller) InstallBaseTools(ctx context.Context) error {
 	case OSMacOS:
 		config = b.preferences.MacOS
 	default:
-		return fmt.Errorf("unsupported operating system: %s", b.osType)
+		return fmt.Errorf("errors.slots.base.unsupported_os: %s", b.osType)
 	}
 
 	// Execute install commands for the OS
@@ -134,7 +134,7 @@ func (b *BaseInstaller) InstallBaseTools(ctx context.Context) error {
 			continue
 		}
 		if err := b.executeCommand(ctx, cmdStr); err != nil {
-			return fmt.Errorf("failed to install base tools: %w", err)
+			return fmt.Errorf("errors.slots.base.failed_install_base_tools: %w", err)
 		}
 	}
 
@@ -152,7 +152,7 @@ func (b *BaseInstaller) EnsureTool(ctx context.Context, tool string) error {
 	// Get tool definition from preferences
 	toolDef, exists := b.preferences.Tools[tool]
 	if !exists {
-		return fmt.Errorf("tool '%s' not found in preferences", tool)
+		return fmt.Errorf("errors.slots.base.tool_not_found: %s", tool)
 	}
 
 	// Get the install command for the current OS
@@ -165,11 +165,11 @@ func (b *BaseInstaller) EnsureTool(ctx context.Context, tool string) error {
 	case OSMacOS:
 		cmdStr = toolDef.MacOS
 	default:
-		return fmt.Errorf("unsupported operating system for tool installation: %s", b.osType)
+		return fmt.Errorf("errors.slots.base.unsupported_os_tool: %s", b.osType)
 	}
 
 	if cmdStr == "" {
-		return fmt.Errorf("no install command defined for tool '%s' on %s", tool, b.osType)
+		return fmt.Errorf("errors.slots.base.no_install_cmd")
 	}
 
 	// Special handling for brew installation on macOS
@@ -179,7 +179,7 @@ func (b *BaseInstaller) EnsureTool(ctx context.Context, tool string) error {
 
 	// Execute the install command
 	if err := b.executeCommand(ctx, cmdStr); err != nil {
-		return fmt.Errorf("failed to install %s: %w", tool, err)
+		return fmt.Errorf("errors.slots.base.failed_install_tool: %s: %w", tool, err)
 	}
 
 	return nil
@@ -195,7 +195,7 @@ func (b *BaseInstaller) installBrew(ctx context.Context, installCmd string) erro
 	// Execute the brew install script
 	cmd := b.execFunc(ctx, "bash", "-c", installCmd)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to install Homebrew: %w\nOutput: %s", err, string(output))
+		return fmt.Errorf("errors.slots.base.failed_install_homebrew: %w\nOutput: %s", err, string(output))
 	}
 
 	return nil
@@ -261,7 +261,7 @@ func (b *BaseInstaller) contains(slice []string, item string) bool {
 func (b *BaseInstaller) executeCommand(ctx context.Context, cmdStr string) error {
 	cmd := b.execFunc(ctx, "sh", "-c", cmdStr)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("command failed: %w\nOutput: %s", err, string(output))
+		return fmt.Errorf("errors.slots.base.command_failed: %w\nOutput: %s", err, string(output))
 	}
 	return nil
 }

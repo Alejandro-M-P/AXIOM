@@ -163,7 +163,7 @@ func (m bunkerSelectorModel) View() string {
 // Retorna el nombre seleccionado, confirmado, y error.
 func (c *ConsoleUI) AskSelectBunker(bunkers []string, statuses map[string]string, title, subtitle string) (string, bool, error) {
 	if len(bunkers) == 0 {
-		return "", false, fmt.Errorf("no hay búnkeres disponibles")
+		return "", false, fmt.Errorf("errors.ui.bunker_selector_no_bunkers")
 	}
 
 	model := newBunkerSelectorModel(bunkers, statuses, title, subtitle)
@@ -181,12 +181,12 @@ func (c *ConsoleUI) AskSelectBunker(bunkers []string, statuses map[string]string
 	os.Stdout.Sync()
 
 	if err != nil {
-		return "", false, fmt.Errorf("failed to run bunker selector: %w", err)
+		return "", false, fmt.Errorf("errors.ui.bunker_selector_failed: %w", err)
 	}
 
 	resultModel, ok := finalModel.(bunkerSelectorModel)
 	if !ok {
-		return "", false, fmt.Errorf("unexpected model type: %T", finalModel)
+		return "", false, fmt.Errorf("errors.ui.unexpected_model")
 	}
 
 	if resultModel.canceled {

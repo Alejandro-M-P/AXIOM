@@ -50,7 +50,7 @@ func (d *OSDetector) Detect() (OSType, string, error) {
 	case "linux":
 		return d.detectLinux()
 	default:
-		return OSUnknown, fmt.Sprintf("Unknown OS: %s", goos), fmt.Errorf("unsupported operating system: %s", goos)
+		return OSUnknown, fmt.Sprintf("errors.slots.base.os_detector.unknown_os: %s", goos), fmt.Errorf("errors.slots.base.unsupported_os: %s", goos)
 	}
 }
 
@@ -72,7 +72,7 @@ func (d *OSDetector) detectLinux() (OSType, string, error) {
 		return OSUbuntu, "Ubuntu/Debian", nil
 	}
 
-	return OSUnknown, "Unknown Linux", fmt.Errorf("unable to detect Linux distribution")
+	return OSUnknown, "errors.slots.base.os_detector.unknown_linux", fmt.Errorf("errors.slots.base.os_detector.unknown_linux")
 }
 
 // detectFromOSRelease reads /etc/os-release to determine the distribution
@@ -110,7 +110,7 @@ func (d *OSDetector) detectFromOSRelease() (OSType, string, error) {
 		return OSUbuntu, "Debian-based Linux", nil
 	}
 
-	return OSUnknown, "", fmt.Errorf("distribution not recognized from os-release")
+	return OSUnknown, "", fmt.Errorf("errors.slots.base.os_detector.os_not_recognized")
 }
 
 // isCommandAvailable checks if a command exists in the system PATH

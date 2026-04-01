@@ -27,7 +27,7 @@ func (m *Manager) create(ctx context.Context, name string) error {
 func (m *Manager) createWithImage(ctx context.Context, name, image string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return fmt.Errorf("missing_name")
+		return fmt.Errorf("errors.bunker.missing_name")
 	}
 
 	cleanName, err := sanitizeBunkerName(name)
@@ -71,7 +71,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	)
 
 	if err := m.system.RefreshSudo(ctx); err != nil {
-		return fmt.Errorf("access_denied")
+		return fmt.Errorf("errors.bunker.access_denied")
 	}
 
 	exists, err := m.bunkerExists(name)
@@ -106,7 +106,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 			available,
 			"warnings.missing_image.footer",
 		)
-		return fmt.Errorf("missing_image")
+		return fmt.Errorf("errors.bunker.missing_image")
 	}
 
 	if err := os.MkdirAll(projectDir, 0700); err != nil {
@@ -140,7 +140,7 @@ WaitLoop:
 	for {
 		select {
 		case <-timeout:
-			return fmt.Errorf("timeout")
+			return fmt.Errorf("errors.bunker.timeout")
 		case <-ticker.C:
 			if m.BunkerStatus(ctx, name) == "running" {
 				isReady = true
@@ -149,7 +149,7 @@ WaitLoop:
 		}
 	}
 	if !isReady {
-		return fmt.Errorf("unexpected")
+		return fmt.Errorf("errors.bunker.unexpected")
 	}
 	// Pequeña gracia de tiempo para asegurar que el entrypoint termine de poblar ~/.entorno/
 	time.Sleep(2 * time.Second)

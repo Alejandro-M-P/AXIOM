@@ -86,7 +86,7 @@ func (u *SlotSelectorUI) RunWizardWithSlotItems(items []slots.SlotItem) ([]strin
 func (u *SlotSelectorUI) RunWizardWithSlot(items any) ([]string, string, bool, error) {
 	slotItems, ok := items.([]slots.SlotItem)
 	if !ok {
-		return nil, "", false, fmt.Errorf("invalid items type, expected []slots.SlotItem")
+		return nil, "", false, fmt.Errorf("errors.slots.ui.invalid_items_type")
 	}
 	return u.RunWizardWithSlotItems(slotItems)
 }

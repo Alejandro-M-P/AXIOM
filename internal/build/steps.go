@@ -32,7 +32,7 @@ func InstallSystemBase(ctx context.Context, containerName string, cfg *BuildCont
 	// Sync repos
 	ui.ShowLog("info", ui.GetText("task.sync_repos"))
 	if err := exec(ctx, "sudo", "pacman", "-Sy", "--noconfirm"); err != nil {
-		return fmt.Errorf("failed to sync repos: %w", err)
+		return fmt.Errorf("errors.build.steps.failed_sync_repos: %w", err)
 	}
 
 	// Install packages
@@ -40,14 +40,14 @@ func InstallSystemBase(ctx context.Context, containerName string, cfg *BuildCont
 	args := []string{"sudo", "pacman", "-S", "--needed", "--noconfirm"}
 	args = append(args, packages...)
 	if err := exec(ctx, args[0], args[1:]...); err != nil {
-		return fmt.Errorf("failed to install packages: %w", err)
+		return fmt.Errorf("errors.build.steps.failed_install_pkgs: %w", err)
 	}
 
 	// Install Homebrew
 	ui.ShowLog("info", ui.GetText("task.install_homebrew"))
 	cmd := "NONINTERACTIVE=1 /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
 	if err := exec(ctx, "bash", "-c", cmd); err != nil {
-		return fmt.Errorf("failed to install homebrew: %w", err)
+		return fmt.Errorf("errors.build.steps.failed_install_homebrew: %w", err)
 	}
 
 	return nil
@@ -60,7 +60,7 @@ func InstallDeveloperTools(ctx context.Context, containerName string, cfg *Build
 	// Install opencode via npm
 	ui.ShowLog("info", ui.GetText("task.install_opencode"))
 	if err := exec(ctx, "sudo", "npm", "install", "-g", "opencode-ai"); err != nil {
-		return fmt.Errorf("failed to install opencode: %w", err)
+		return fmt.Errorf("errors.build.steps.failed_install_opencode: %w", err)
 	}
 
 	brewPath := "/home/linuxbrew/.linuxbrew/bin/brew"
@@ -68,13 +68,13 @@ func InstallDeveloperTools(ctx context.Context, containerName string, cfg *Build
 	// Add Homebrew tap
 	ui.ShowLog("info", ui.GetText("task.configure_brew_tap", "Gentleman-Programming/homebrew-tap"))
 	if err := exec(ctx, brewPath, "tap", "Gentleman-Programming/homebrew-tap"); err != nil {
-		return fmt.Errorf("failed to add homebrew tap: %w", err)
+		return fmt.Errorf("errors.build.steps.failed_add_brew_tap: %w", err)
 	}
 
 	// Install engram and gentle-ai
 	ui.ShowLog("info", ui.GetText("task.install_dev_tools", "engram gentle-ai"))
 	if err := exec(ctx, brewPath, "install", "engram", "gentle-ai"); err != nil {
-		return fmt.Errorf("failed to install dev tools: %w", err)
+		return fmt.Errorf("errors.build.steps.failed_install_dev_tools: %w", err)
 	}
 
 	return nil
@@ -87,13 +87,13 @@ func InstallModelStack(ctx context.Context, containerName string, cfg *BuildCont
 	// Install Ollama
 	ui.ShowLog("info", ui.GetText("task.install_ollama"), cfg.GPUInfo.Type)
 	if err := installOllama(ctx, cfg.GPUInfo.Type, exec); err != nil {
-		return fmt.Errorf("failed to install ollama: %w", err)
+		return fmt.Errorf("errors.build.steps.failed_install_ollama: %w", err)
 	}
 
 	// Clean build caches
 	ui.ShowLog("info", ui.GetText("task.clean_caches"))
 	if err := cleanBuildCaches(ctx, exec); err != nil {
-		return fmt.Errorf("failed to clean caches: %w", err)
+		return fmt.Errorf("errors.build.steps.failed_clean_caches: %w", err)
 	}
 
 	return nil
