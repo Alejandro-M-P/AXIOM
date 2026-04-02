@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
@@ -104,9 +103,9 @@ func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) error {
 	if exists {
 		confirm, err := m.ui.AskConfirmInCard(
 			"build",
-			[]components.CardField{
-				{Label: m.ui.GetText("build.image_exists_title"), Value: imageName},
-				{Label: m.ui.GetText("build.image_exists_warning"), Value: m.ui.GetText("build.image_exists_desc")},
+			[]ports.Field{
+				ports.NewField(m.ui.GetText("build.image_exists_title"), imageName),
+				ports.NewField(m.ui.GetText("build.image_exists_warning"), m.ui.GetText("build.image_exists_desc")),
 			},
 			nil,
 			"build.image_exists_confirm",
@@ -316,9 +315,9 @@ func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
 
 	confirm, _ := m.ui.AskConfirmInCard(
 		"rebuild",
-		[]components.CardField{
-			{Label: m.ui.GetText("rebuild.image_label"), Value: targetImage},
-			{Label: m.ui.GetText("rebuild.gpu_label"), Value: buildCtx.GPUInfo.Type},
+		[]ports.Field{
+			ports.NewField(m.ui.GetText("rebuild.image_label"), targetImage),
+			ports.NewField(m.ui.GetText("rebuild.gpu_label"), buildCtx.GPUInfo.Type),
 		},
 		nil,
 		"rebuild.confirm",
