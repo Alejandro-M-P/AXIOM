@@ -2,8 +2,6 @@ package ports
 
 import (
 	"context"
-
-	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 )
 
 // Constantes para el estado de los pasos del lifecycle.
@@ -36,9 +34,9 @@ type IBasicPresenter interface {
 
 // ICardPresenter: renderizado de tarjetas y diálogos
 type ICardPresenter interface {
-	ShowCommandCard(commandKey string, fields []components.CardField, items []string)
-	ShowWarning(title, subtitle string, fields []components.CardField, items []string, footer string)
-	AskConfirmInCard(commandKey string, fields []components.CardField, items []string, promptKey string) (bool, error)
+	ShowCommandCard(commandKey string, fields []Field, items []string)
+	ShowWarning(title, subtitle string, fields []Field, items []string, footer string)
+	AskConfirmInCard(commandKey string, fields []Field, items []string, promptKey string) (bool, error)
 }
 
 // ILifecyclePresenter: renderizado de lifecycle steps
@@ -49,8 +47,8 @@ type ILifecyclePresenter interface {
 
 // IBunkerFlowPresenter: operaciones de flow de bunkers
 type IBunkerFlowPresenter interface {
-	AskDelete(name string, fields []components.CardField) (confirm bool, reason string, deleteCode bool, err error)
-	AskReset(fields []components.CardField, items []string) (confirm bool, reason string, err error)
+	AskDelete(name string, fields []Field) (confirm bool, reason string, deleteCode bool, err error)
+	AskReset(fields []Field, items []string) (confirm bool, reason string, err error)
 	AskCreateBunker(images []string) (name string, image string, confirmed bool, err error)
 	AskSelectBunker(bunkers []string, statuses map[string]string, title, subtitle string) (selected string, confirmed bool, err error)
 }

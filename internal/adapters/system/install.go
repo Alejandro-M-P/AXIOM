@@ -118,8 +118,12 @@ func CreateWrapper(axiomPath string) error {
 	os.MkdirAll(binPath, 0700)
 
 	target := filepath.Join(binPath, "axiom")
-	// Usar el comando centralizado de commands.go
-	content := runtime.WrapperScript(axiomPath)
 
-	return os.WriteFile(target, []byte(content), 0755)
+	execPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	os.Remove(target) // Eliminar si ya existe un enlace o script viejo
+	return os.Symlink(execPath, target)
 }

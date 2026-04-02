@@ -3,16 +3,16 @@ package ui
 import (
 	"strings"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type confirmModel struct {
 	commandKey string
-	fields     []components.CardField
+	fields     []ports.Field
 	items      []string
 	question   string
 	cursor     int // 0 = Yes, 1 = No
@@ -20,7 +20,7 @@ type confirmModel struct {
 	canceled   bool
 }
 
-func newConfirmModel(commandKey string, fields []components.CardField, items []string, question string) confirmModel {
+func newConfirmModel(commandKey string, fields []ports.Field, items []string, question string) confirmModel {
 	return confirmModel{
 		commandKey: commandKey,
 		fields:     fields,
@@ -64,7 +64,7 @@ func (m confirmModel) View() string {
 
 	var details []styles.BunkerDetail
 	for _, f := range m.fields {
-		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
+		details = append(details, styles.BunkerDetail{Label: f.GetLabel(), Value: f.GetValue()})
 	}
 
 	lines := styles.BuildCardLines(cmdData["title"], cmdData["subtitle"], details, m.items, cmdData["footer"])
@@ -107,7 +107,7 @@ func renderFormButtons(cursor int) string {
 // --- FLUJO MULTIPASO PARA DELETE ---
 
 type deleteFormModel struct {
-	fields     []components.CardField
+	fields     []ports.Field
 	step       int
 	cursor     int
 	textInput  textinput.Model
@@ -117,7 +117,7 @@ type deleteFormModel struct {
 	canceled   bool
 }
 
-func newDeleteFormModel(fields []components.CardField) deleteFormModel {
+func newDeleteFormModel(fields []ports.Field) deleteFormModel {
 	ti := textinput.New()
 	ti.Prompt = " ❯ "
 	ti.Placeholder = i18n.GetWizardText("confirm", "placeholder_reason")
@@ -171,7 +171,7 @@ func (m deleteFormModel) View() string {
 	cmdData := i18n.Commands["delete"]
 	var details []styles.BunkerDetail
 	for _, f := range m.fields {
-		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
+		details = append(details, styles.BunkerDetail{Label: f.GetLabel(), Value: f.GetValue()})
 	}
 
 	lines := styles.BuildCardLines(cmdData["title"], cmdData["subtitle"], details, nil, cmdData["footer"])
@@ -196,7 +196,7 @@ func (m deleteFormModel) View() string {
 // --- FLUJO MULTIPASO PARA RESET ---
 
 type resetFormModel struct {
-	fields    []components.CardField
+	fields    []ports.Field
 	items     []string
 	step      int
 	cursor    int
@@ -206,7 +206,7 @@ type resetFormModel struct {
 	canceled  bool
 }
 
-func newResetFormModel(fields []components.CardField, items []string) resetFormModel {
+func newResetFormModel(fields []ports.Field, items []string) resetFormModel {
 	ti := textinput.New()
 	ti.Prompt = " ❯ "
 	ti.Placeholder = i18n.GetWizardText("confirm", "placeholder_reason")
@@ -255,7 +255,7 @@ func (m resetFormModel) View() string {
 	cmdData := i18n.Commands["reset"]
 	var details []styles.BunkerDetail
 	for _, f := range m.fields {
-		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
+		details = append(details, styles.BunkerDetail{Label: f.GetLabel(), Value: f.GetValue()})
 	}
 
 	lines := styles.BuildCardLines(cmdData["title"], cmdData["subtitle"], details, m.items, cmdData["footer"])
