@@ -351,7 +351,7 @@ func (m *SlotManager) RunSlotSelector(category string, items []SlotItem, presele
 func (m *SlotManager) buildItemGroupsForUI(items []SlotItem) []ItemGroup {
 	// Group items by subcategory
 	groupsMap := make(map[string][]SlotItemDisplay)
-	order := []string{"ia", "languages", "tools", "data"}
+	order := SubcategoryOrder
 
 	for _, item := range items {
 		display := SlotItemDisplay{

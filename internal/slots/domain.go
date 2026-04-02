@@ -35,6 +35,9 @@ type SlotItem struct {
 	IsBaseTool   bool         // If true, this is a base tool not shown in the wizard
 }
 
+// SubcategoryOrder defines the display order for slot subcategories in the UI.
+var SubcategoryOrder = []string{"ia", "languages", "tools", "data"}
+
 // SlotSelection represents a user's selection for a particular slot.
 // This is persisted to configuration files.
 type SlotSelection struct {

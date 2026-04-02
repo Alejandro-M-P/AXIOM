@@ -11,6 +11,7 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/text/cases"
@@ -358,7 +359,7 @@ func (b *Builder) AddItem(subcategory, id, name, description string) *Builder {
 // Build constructs the final list of ItemGroup.
 func (b *Builder) Build() []ItemGroup {
 	// Define the order of subcategories
-	order := []string{"ia", "languages", "tools", "data"}
+	order := slots.SubcategoryOrder
 
 	var result []ItemGroup
 	for _, subcategory := range order {

@@ -96,7 +96,7 @@ func (u *SlotSelectorUI) RunWizardWithSlot(items any) ([]string, string, bool, e
 func buildItemGroups(items []slots.SlotItem) []ItemGroup {
 	// Group items by subcategory
 	groupsMap := make(map[string][]SlotItemDisplay)
-	order := []string{"ia", "languages", "tools", "data"}
+	order := slots.SubcategoryOrder
 
 	for _, item := range items {
 		display := SlotItemDisplay{
