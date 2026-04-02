@@ -99,6 +99,10 @@ var Podman = CommandSet{
 // for AXIOM to function correctly.
 var RequiredDeps = []string{"distrobox", "podman", "jq"}
 
+// DeviceFlags are the GPU device flags required for container creation.
+// Centralized here so changing GPU device access requires touching one file.
+const DeviceFlags = "--device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render"
+
 // WrapperScript returns the wrapper script content for creating axiom binary in ~/.local/bin
 var WrapperScript = func(axiomPath string) string {
 	return fmt.Sprintf("#!/bin/bash\nexport AXIOM_PATH=\"%s\"\nbash \"$AXIOM_PATH/axiom.sh\" \"$@\"\n", axiomPath)

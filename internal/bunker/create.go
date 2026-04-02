@@ -227,8 +227,9 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 		strings.TrimSpace(volumeStr),
 	)
 	if err != nil {
-		// Fallback mínimo si falla
-		return "--device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render"
+		// Si falla, devolver solo los volume flags.
+		// Los device flags son responsabilidad del runtime, no del core.
+		return strings.TrimSpace(volumeStr)
 	}
 	return flags
 }
