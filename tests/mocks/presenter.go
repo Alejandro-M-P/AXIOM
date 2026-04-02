@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -37,7 +38,7 @@ type MockPresenter struct {
 // ShowCommandCardCall tracks ShowCommandCard calls.
 type ShowCommandCardCall struct {
 	CommandKey string
-	Fields     []ports.Field
+	Fields     []components.CardField
 	Items      []string
 }
 
@@ -45,7 +46,7 @@ type ShowCommandCardCall struct {
 type ShowWarningCall struct {
 	Title    string
 	Subtitle string
-	Fields   []ports.Field
+	Fields   []components.CardField
 	Items    []string
 	Footer   string
 }
@@ -65,7 +66,7 @@ type AskConfirmCall struct {
 // AskConfirmInCardCall tracks AskConfirmInCard calls.
 type AskConfirmInCardCall struct {
 	CommandKey string
-	Fields     []ports.Field
+	Fields     []components.CardField
 	Items      []string
 	PromptKey  string
 }
@@ -73,7 +74,7 @@ type AskConfirmInCardCall struct {
 // AskDeleteCall tracks AskDelete calls.
 type AskDeleteCall struct {
 	Name   string
-	Fields []ports.Field
+	Fields []components.CardField
 }
 
 // NewMockPresenter creates a MockPresenter with default values.
@@ -97,7 +98,7 @@ func (m *MockPresenter) ShowLogo() {
 }
 
 // ShowCommandCard implements ports.IPresenter.
-func (m *MockPresenter) ShowCommandCard(commandKey string, fields []ports.Field, items []string) {
+func (m *MockPresenter) ShowCommandCard(commandKey string, fields []components.CardField, items []string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.ShowCommandCardCalls = append(m.ShowCommandCardCalls, ShowCommandCardCall{
@@ -108,7 +109,7 @@ func (m *MockPresenter) ShowCommandCard(commandKey string, fields []ports.Field,
 }
 
 // ShowWarning implements ports.IPresenter.
-func (m *MockPresenter) ShowWarning(title, subtitle string, fields []ports.Field, items []string, footer string) {
+func (m *MockPresenter) ShowWarning(title, subtitle string, fields []components.CardField, items []string, footer string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.ShowWarningCalls = append(m.ShowWarningCalls, ShowWarningCall{
@@ -169,7 +170,7 @@ func (m *MockPresenter) RenderLifecycleError(title string, steps []ports.Lifecyc
 }
 
 // AskConfirmInCard implements ports.IPresenter.
-func (m *MockPresenter) AskConfirmInCard(commandKey string, fields []ports.Field, items []string, promptKey string) (bool, error) {
+func (m *MockPresenter) AskConfirmInCard(commandKey string, fields []components.CardField, items []string, promptKey string) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.AskConfirmInCardCalls = append(m.AskConfirmInCardCalls, AskConfirmInCardCall{
@@ -182,7 +183,7 @@ func (m *MockPresenter) AskConfirmInCard(commandKey string, fields []ports.Field
 }
 
 // AskDelete implements ports.IPresenter.
-func (m *MockPresenter) AskDelete(name string, fields []ports.Field) (confirm bool, reason string, deleteCode bool, err error) {
+func (m *MockPresenter) AskDelete(name string, fields []components.CardField) (confirm bool, reason string, deleteCode bool, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.AskDeleteCalls = append(m.AskDeleteCalls, AskDeleteCall{
@@ -193,7 +194,7 @@ func (m *MockPresenter) AskDelete(name string, fields []ports.Field) (confirm bo
 }
 
 // AskReset implements ports.IPresenter.
-func (m *MockPresenter) AskReset(fields []ports.Field, items []string) (confirm bool, reason string, err error) {
+func (m *MockPresenter) AskReset(fields []components.CardField, items []string) (confirm bool, reason string, err error) {
 	return true, "", nil
 }
 

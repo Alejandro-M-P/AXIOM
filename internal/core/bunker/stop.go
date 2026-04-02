@@ -3,7 +3,7 @@ package bunker
 import (
 	"context"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 )
 
 // stop maneja la detención de un búnker.
@@ -60,10 +60,10 @@ func (m *Manager) stop(ctx context.Context) error {
 	m.ui.ShowLogo()
 	m.ui.ShowCommandCard(
 		"stop",
-		[]ports.Field{
-			ports.NewField("fields.name", selected),
-			ports.NewField("fields.status", "stopped"),
-			ports.NewField("fields.environment", humanPath(m.fs, bunkerEnvPath(cfg, selected))),
+		[]components.CardField{
+			{Label: "fields.name", Value: selected},
+			{Label: "fields.status", Value: "stopped"},
+			{Label: "fields.environment", Value: humanPath(m.fs, bunkerEnvPath(cfg, selected))},
 		},
 		nil,
 	)

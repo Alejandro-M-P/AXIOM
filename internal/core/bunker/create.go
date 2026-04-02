@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // BunkerFlags contiene las flags para crear un búnker.
@@ -60,13 +60,13 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	m.ui.ShowLogo()
 	m.ui.ShowCommandCard(
 		"create",
-		[]ports.Field{
-			ports.NewField("fields.name", name),
-			ports.NewField("fields.image", imageName),
-			ports.NewField("fields.project", projectDir),
-			ports.NewField("fields.environment", envDir),
-			ports.NewField("fields.gpu", hardware.Type),
-			ports.NewField("fields.ssh", yesNo(sshMounted)),
+		[]components.CardField{
+			{Label: "fields.name", Value: name},
+			{Label: "fields.image", Value: imageName},
+			{Label: "fields.project", Value: projectDir},
+			{Label: "fields.environment", Value: envDir},
+			{Label: "fields.gpu", Value: hardware.Type},
+			{Label: "fields.ssh", Value: yesNo(sshMounted)},
 		},
 		nil,
 	)
@@ -86,9 +86,9 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 		m.ui.ShowWarning(
 			"warnings.bunker_exists.title",
 			"warnings.bunker_exists.desc",
-			[]ports.Field{
-				ports.NewField("fields.name", name),
-				ports.NewField("fields.environment", envDir),
+			[]components.CardField{
+				{Label: "fields.name", Value: name},
+				{Label: "fields.environment", Value: envDir},
 			},
 			nil,
 			"warnings.bunker_exists.footer",
@@ -101,8 +101,8 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 		m.ui.ShowWarning(
 			"warnings.missing_image.title",
 			"warnings.missing_image.desc",
-			[]ports.Field{
-				ports.NewField("fields.expected", imageName),
+			[]components.CardField{
+				{Label: "fields.expected", Value: imageName},
 			},
 			available,
 			"warnings.missing_image.footer",
@@ -182,10 +182,10 @@ WaitLoop:
 	m.ui.ShowWarning(
 		"warnings.bunker_ready.title",
 		"warnings.bunker_ready.desc",
-		[]ports.Field{
-			ports.NewField("fields.name", name),
-			ports.NewField("fields.image", imageName),
-			ports.NewField("fields.environment", envDir),
+		[]components.CardField{
+			{Label: "fields.name", Value: name},
+			{Label: "fields.image", Value: imageName},
+			{Label: "fields.environment", Value: envDir},
 		},
 		nil,
 		"warnings.bunker_ready.footer",

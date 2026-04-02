@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
@@ -41,10 +42,10 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 	envDir := config.BuildWorkspaceDir(cfg.BaseDir, name)
 	projectDir := filepath.Join(cfg.BaseDir, name)
 
-	confirm, reason, deleteCode, err := m.ui.AskDelete(name, []ports.Field{
-		ports.NewField("fields.name", name),
-		ports.NewField("fields.environment", envDir),
-		ports.NewField("fields.project", projectDir),
+	confirm, reason, deleteCode, err := m.ui.AskDelete(name, []components.CardField{
+		{Label: "fields.name", Value: name},
+		{Label: "fields.environment", Value: envDir},
+		{Label: "fields.project", Value: projectDir},
 	})
 	if err != nil {
 		return err
@@ -74,10 +75,10 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 	m.ui.ShowWarning(
 		"warnings.bunker_deleted.title",
 		"warnings.bunker_deleted.desc",
-		[]ports.Field{
-			ports.NewField("fields.name", name),
-			ports.NewField("fields.environment", envDir),
-			ports.NewField("fields.code_deleted", yesNo(deleteCode)),
+		[]components.CardField{
+			{Label: "fields.name", Value: name},
+			{Label: "fields.environment", Value: envDir},
+			{Label: "fields.code_deleted", Value: yesNo(deleteCode)},
 		},
 		nil,
 		"",
@@ -101,9 +102,9 @@ func (m *Manager) deleteImage(ctx context.Context) error {
 
 	confirm, err := m.ui.AskConfirmInCard(
 		"delete-image",
-		[]ports.Field{
-			ports.NewField("fields.target", targetImage),
-			ports.NewField("fields.gpu", hardware.Type),
+		[]components.CardField{
+			{Label: "fields.target", Value: targetImage},
+			{Label: "fields.gpu", Value: hardware.Type},
 		},
 		images,
 		"delete-image.confirm",
@@ -123,8 +124,8 @@ func (m *Manager) deleteImage(ctx context.Context) error {
 	m.ui.ShowWarning(
 		"warnings.image_deleted.title",
 		"warnings.image_deleted.desc",
-		[]ports.Field{
-			ports.NewField("fields.deleted", targetImage),
+		[]components.CardField{
+			{Label: "fields.deleted", Value: targetImage},
 		},
 		remaining,
 		"warnings.image_deleted.footer",

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/ports"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 )
 
 // prune maneja la limpieza de búnkeres huérfanos.
@@ -66,7 +66,7 @@ func (m *Manager) prune(ctx context.Context) error {
 
 	confirm, err := m.ui.AskConfirmInCard(
 		"prune",
-		[]ports.Field{ports.NewField("fields.orphans", fmt.Sprintf("%d", len(orphans)))},
+		[]components.CardField{{Label: "fields.orphans", Value: fmt.Sprintf("%d", len(orphans))}},
 		orphans,
 		"prune.confirm",
 	)
