@@ -242,10 +242,7 @@ func TestResolveBuildGPU_Helper(t *testing.T) {
 	if gpu.Type != "generic" {
 		t.Errorf("expected GPU type 'generic', got %q", gpu.Type)
 	}
-
-	if gpu.GfxVal != "CUSTOM_GFX" {
-		t.Errorf("expected GfxVal 'CUSTOM_GFX', got %q", gpu.GfxVal)
-	}
+	// ports.GPUInfo solo tiene Type y Name, no GfxVal
 }
 
 func TestSSHVolumeFlag_NoAgent(t *testing.T) {

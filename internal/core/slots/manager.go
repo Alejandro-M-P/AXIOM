@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -459,11 +458,12 @@ func unmarshalTOML(data []byte) ([]SlotSelection, error) {
 // EnsureConfigDir ensures the configuration directory exists.
 func EnsureConfigDir(fs ports.IFileSystem, baseDir string) error {
 	configDir := filepath.Join(baseDir, "configs", "slots")
+	// El core NO usa os.IsNotExist - usa el método Exists del puerto
+	if !fs.Exists(configDir) {
+		return fs.MkdirAll(configDir, 0755)
+	}
 	info, err := fs.Stat(configDir)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return fs.MkdirAll(configDir, 0755)
-		}
 		return err
 	}
 	if !info.IsDir() {

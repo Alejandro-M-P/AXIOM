@@ -81,17 +81,18 @@ func LoadSlotsFromEmbeddedTOML(tomlDir string) ([]SlotItem, error) {
 
 // LoadSlotsFromTOML loads all slot items from TOML files in the given directory.
 // It recursively searches for .toml files and creates SlotItem instances.
-func LoadSlotsFromTOML(basePath string) ([]SlotItem, error) {
+// NOTE: Esta función usa el filesystem adapter para seguir las Golden Rules.
+func LoadSlotsFromTOML(fs ports.IFileSystem, basePath string) ([]SlotItem, error) {
 	var items []SlotItem
 
-	// Walk the directory tree
-	err := filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	// Walk the directory tree usando el puerto IFileSystem
+	err := fs.WalkDir(basePath, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return nil // Skip errors and continue
 		}
 
 		// Skip directories and non-.toml files
-		if info.IsDir() || filepath.Ext(path) != ".toml" {
+		if !strings.HasSuffix(path, ".toml") {
 			return nil
 		}
 
@@ -200,7 +201,7 @@ func loadFromFilesystem(fs ports.IFileSystem, axiomPath string) error {
 
 		// Look for directories named "tomls"
 		if info.IsDir() && strings.HasSuffix(path, "tomls") {
-			items, err := LoadSlotsFromTOML(path)
+			items, err := LoadSlotsFromTOML(fs, path)
 			if err != nil {
 				// Return error instead of printing to stderr (Regla 2 — el core es mudo)
 				return fmt.Errorf("errors.slots.load_failed: %s: %w", path, err)

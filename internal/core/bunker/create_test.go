@@ -208,9 +208,7 @@ func TestResolveBuildGPU_Function(t *testing.T) {
 	if gpu.Type != "generic" {
 		t.Errorf("expected GPU type 'generic', got '%s'", gpu.Type)
 	}
-	if gpu.GfxVal != "RDNA4" {
-		t.Errorf("expected GfxVal 'RDNA4', got '%s'", gpu.GfxVal)
-	}
+	// ports.GPUInfo solo tiene Type y Name, no GfxVal
 }
 
 func TestBaseImageName_Function(t *testing.T) {

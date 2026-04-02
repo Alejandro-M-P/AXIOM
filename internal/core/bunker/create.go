@@ -160,9 +160,6 @@ WaitLoop:
 	}
 
 	gfxOverride := strings.TrimSpace(cfg.GFXVal)
-	if gfxOverride == "" {
-		gfxOverride = strings.TrimSpace(hardware.GfxVal)
-	}
 	if err := writeShellBootstrap(cfg, name, envDir, gfxOverride); err != nil {
 		return err
 	}

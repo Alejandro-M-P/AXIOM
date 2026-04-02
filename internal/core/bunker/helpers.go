@@ -17,8 +17,9 @@ import (
 // EnvConfig is an alias to config.EnvConfig for convenience within the bunker package.
 type EnvConfig = config.EnvConfig
 
-// GPUInfo is an alias to config.GPUInfo for convenience within the bunker package.
-type GPUInfo = config.GPUInfo
+// GPUInfo is an alias to ports.GPUInfo for the bunker package.
+// Using ports.GPUInfo ensures core is decoupled from config.
+type GPUInfo = ports.GPUInfo
 
 // sanitizeBunkerName valida y limpia el nombre de un búnker.
 func sanitizeBunkerName(name string) (string, error) {
@@ -143,9 +144,8 @@ func baseImageName(gpuType string) string {
 // Placeholder - en producción se usaría gpu.Detect() del paquete adapters.
 func resolveBuildGPU(cfg EnvConfig) GPUInfo {
 	return GPUInfo{
-		Type:   "generic",
-		GfxVal: cfg.GFXVal,
-		Name:   "Detected",
+		Type: "generic",
+		Name: "Detected",
 	}
 }
 
@@ -278,12 +278,10 @@ func LoadConfig(fs ports.IFileSystem, axiomPath string) (config.EnvConfig, error
 	}
 
 	// Convertir BaseDir a ruta absoluta
+	// El core NO usa os.Getwd() - usa el directorio del archivo de config como fallback
 	if result.BaseDir == "" || result.BaseDir == "." {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return result, fmt.Errorf("errors.bunker.failed_cwd: %w", err)
-		}
-		result.BaseDir = cwd
+		// Si no hay BaseDir, usamos el directorio donde está el config
+		result.BaseDir = filepath.Dir(axiomPath)
 	} else {
 		absPath, err := filepath.Abs(result.BaseDir)
 		if err != nil {

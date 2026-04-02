@@ -143,7 +143,7 @@ func TestStop_VerifyBunkerStatus(t *testing.T) {
 	for _, call := range ui.ShowCommandCardCalls {
 		if call.CommandKey == "stop" {
 			for _, field := range call.Fields {
-				if field.GetLabel() == "fields.status" && field.GetValue() == "stopped" {
+				if field.Label == "fields.status" && field.Value == "stopped" {
 					found = true
 				}
 			}

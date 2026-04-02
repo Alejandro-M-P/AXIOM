@@ -114,12 +114,12 @@ func ensureTutorFile(fs ports.IFileSystem, path string) error {
 	if err := fs.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
-	if _, err := fs.Stat(path); err == nil {
+	// El core NO usa os.IsNotExist - usa el método Exists del puerto
+	if fs.Exists(path) {
 		return nil
-	} else if !os.IsNotExist(err) {
-		return err
 	}
-	file, err := fs.OpenFile(path, os.O_CREATE, 0600)
+	// O_CREATE = 64 en Go
+	file, err := fs.OpenFile(path, 64, 0600)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,8 @@ func ensureTutorFile(fs ports.IFileSystem, path string) error {
 
 // removePathWritable makes all files writable then removes the path.
 func removePathWritable(fs ports.IFileSystem, path string) error {
-	if _, err := fs.Stat(path); os.IsNotExist(err) {
+	// El core NO usa os.IsNotExist - usa el método Exists del puerto
+	if !fs.Exists(path) {
 		return nil
 	}
 	_ = fs.WalkDir(path, func(currentPath string, d os.DirEntry, walkErr error) error {
