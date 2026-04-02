@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
@@ -126,7 +127,7 @@ func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
 	if err := progress.RunStep(0, func() error {
 		return PrepareSharedDirectories(ctx, m.fs, buildCtx.Config)
 	}); err != nil {
-		progress.renderErrorWithContext(err, buildCtx.Config.AIConfigDir())
+		progress.renderErrorWithContext(err, config.AIConfigDir(buildCtx.Config.BaseDir))
 		return err
 	}
 
@@ -356,7 +357,7 @@ func (m *Manager) newBuildProgress(ctx *BuildContext, slotName string) *Progress
 
 	// Common steps: prepare dirs, recreate container, system base
 	steps = append(steps, ports.LifecycleStep{
-		Title: m.ui.GetText("step.prepare_dirs"), Detail: ctx.Config.AIConfigDir(), Status: ports.LifecyclePending})
+		Title: m.ui.GetText("step.prepare_dirs"), Detail: config.AIConfigDir(ctx.Config.BaseDir), Status: ports.LifecyclePending})
 	steps = append(steps, ports.LifecycleStep{
 		Title: m.ui.GetText("step.recreate_container"), Detail: ctx.BuildWorkspaceDir, Status: ports.LifecyclePending})
 	steps = append(steps, ports.LifecycleStep{

@@ -95,10 +95,6 @@ func (m *mockUI) RunInitWizardWithParams(ctx context.Context, axiomPath string, 
 	return true, nil
 }
 
-func (m *mockUI) GetBunkerVolumeFlags(projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (map[string]string, error) {
-	return map[string]string{}, nil
-}
-
 // mockSlotUI implements ports.ISlotUI for testing
 type mockSlotUI struct{}
 

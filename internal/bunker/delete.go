@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -37,7 +38,7 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 	}
 	name = cleanName
 
-	envDir := cfg.BuildWorkspaceDir(name)
+	envDir := config.BuildWorkspaceDir(cfg.BaseDir, name)
 	projectDir := filepath.Join(cfg.BaseDir, name)
 
 	confirm, reason, deleteCode, err := m.ui.AskDelete(name, []ports.Field{

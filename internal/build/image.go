@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
@@ -45,20 +46,20 @@ func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerNam
 		GPUInfo:           gpuInfo,
 		ImageName:         imageName,
 		SlotName:          slotName,
-		BuildWorkspaceDir: cfg.BuildWorkspaceDir(actualContainerName),
+		BuildWorkspaceDir: config.BuildWorkspaceDir(cfg.BaseDir, actualContainerName),
 		ContainerName:     actualContainerName,
 	}, nil
 }
 
 // PrepareSharedDirectories creates the necessary directories for the build.
 func PrepareSharedDirectories(ctx context.Context, fs ports.IFileSystem, cfg domain.EnvConfig) error {
-	if err := fs.MkdirAll(filepath.Join(cfg.AIConfigDir(), "models"), 0700); err != nil {
+	if err := fs.MkdirAll(filepath.Join(config.AIConfigDir(cfg.BaseDir), "models"), 0700); err != nil {
 		return err
 	}
-	if err := fs.MkdirAll(filepath.Join(cfg.AIConfigDir(), "teams"), 0700); err != nil {
+	if err := fs.MkdirAll(filepath.Join(config.AIConfigDir(cfg.BaseDir), "teams"), 0700); err != nil {
 		return err
 	}
-	if err := ensureTutorFile(fs, cfg.TutorPath()); err != nil {
+	if err := ensureTutorFile(fs, config.TutorPath(cfg.BaseDir)); err != nil {
 		return err
 	}
 	return nil
@@ -90,7 +91,7 @@ func RecreateBuildContainer(ctx context.Context, runtime ports.IBunkerRuntime, f
 func BuildContainerFlags(cfg domain.EnvConfig) string {
 	return fmt.Sprintf(
 		"--volume %s:/ai_config:z --volume %s:/run/axiom/env:ro,z --device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render",
-		cfg.AIConfigDir(),
+		config.AIConfigDir(cfg.BaseDir),
 		filepath.Join(cfg.AxiomPath, "config.toml"),
 	)
 }

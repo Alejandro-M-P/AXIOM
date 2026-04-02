@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
@@ -37,8 +38,38 @@ func (a *PodmanAdapter) CreateBunker(ctx context.Context, name, image, home, fla
 	return nil
 }
 
-// GetCreateFlags genera los flags para crear un bunker.
-// volumeFlags viene del presenter (que usa i18n) - solo añade device flags aquí.
+// GetVolumeFlags returns the volume mount flags for container creation.
+// These are technical flags (--volume ...), not user-visible text — no i18n needed.
+func (a *PodmanAdapter) GetVolumeFlags(ctx context.Context, projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (string, error) {
+	var parts []string
+
+	// Core volume mounts
+	parts = append(parts, fmt.Sprintf("--volume %s:/%s:z", projectDir, name))
+	parts = append(parts, fmt.Sprintf("--volume %s:/ai_config:z", aiConfigDir))
+	parts = append(parts, fmt.Sprintf("--volume %s:/run/axiom/env:ro,z", configPath))
+
+	// GPU mode flags
+	if gpuType != "" {
+		switch strings.ToLower(gpuType) {
+		case "rdna3", "rdna4", "amd", "generic":
+			parts = append(parts, "amd")
+		case "nvidia":
+			parts = append(parts, "nvidia")
+		case "intel":
+			parts = append(parts, "intel")
+		}
+	}
+
+	// SSH socket volume
+	if sshSocket != "" {
+		parts = append(parts, fmt.Sprintf("--volume %s:%s", sshSocket, sshSocket))
+	}
+
+	return strings.Join(parts, " "), nil
+}
+
+// GetCreateFlags generates the flags for creating a bunker.
+// volumeFlags comes from GetVolumeFlags - the runtime only adds device flags.
 func (a *PodmanAdapter) GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error) {
 	// Device flags - centralized in commands.go
 	if volumeFlags != "" {

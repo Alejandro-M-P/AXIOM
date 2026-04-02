@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
@@ -11,6 +12,7 @@ import (
 var _ interface {
 	CreateBunker(ctx context.Context, name, image, home, flags string) error
 	GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error)
+	GetVolumeFlags(ctx context.Context, projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (string, error)
 	StartBunker(ctx context.Context, name string) error
 	StopBunker(ctx context.Context, name string) error
 	RemoveBunker(ctx context.Context, name string, force bool) error
@@ -140,6 +142,11 @@ func (m *MockRuntime) CreateBunker(ctx context.Context, name, image, home, flags
 // GetCreateFlags implements ports.IBunkerRuntime.
 func (m *MockRuntime) GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error) {
 	return volumeFlags, nil
+}
+
+// GetVolumeFlags implements ports.IBunkerRuntime.
+func (m *MockRuntime) GetVolumeFlags(ctx context.Context, projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (string, error) {
+	return fmt.Sprintf("--volume %s:/%s:z --volume %s:/ai_config:z --volume %s:/run/axiom/env:ro,z", projectDir, name, aiConfigDir, configPath), nil
 }
 
 // StartBunker implements ports.IBunkerRuntime.

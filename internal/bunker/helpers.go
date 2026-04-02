@@ -9,6 +9,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
@@ -151,7 +152,7 @@ func resolveBuildGPU(cfg EnvConfig) GPUInfo {
 
 // bunkerEnvSize calcula el tamaño del directorio de entorno.
 func bunkerEnvSize(fs ports.IFileSystem, cfg EnvConfig, name string) string {
-	path := cfg.BuildWorkspaceDir(name)
+	path := config.BuildWorkspaceDir(cfg.BaseDir, name)
 	if _, err := fs.Stat(path); err != nil {
 		return "-"
 	}
@@ -194,7 +195,7 @@ func bunkerGitBranch(fs ports.IFileSystem, cfg EnvConfig, name string) string {
 
 // bunkerLastEntry obtiene la última fecha de modificación del entorno.
 func bunkerLastEntry(fs ports.IFileSystem, cfg EnvConfig, name string) string {
-	path := cfg.BuildWorkspaceDir(name)
+	path := config.BuildWorkspaceDir(cfg.BaseDir, name)
 	info, err := fs.Stat(path)
 	if err != nil {
 		return "-"
@@ -209,7 +210,7 @@ func bunkerProjectPath(cfg EnvConfig, name string) string {
 
 // bunkerEnvPath retorna el path del entorno.
 func bunkerEnvPath(cfg EnvConfig, name string) string {
-	return cfg.BuildWorkspaceDir(name)
+	return config.BuildWorkspaceDir(cfg.BaseDir, name)
 }
 
 // sshVolumeFlag retorna el flag de volumen SSH si hay un agent SSH activo.

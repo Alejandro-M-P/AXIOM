@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
@@ -182,7 +183,7 @@ func TestBunkerEnvSize_Calculation(t *testing.T) {
 		BaseDir: tmpDir,
 	}
 
-	bunkerDir := cfg.BuildWorkspaceDir("test-bunker")
+	bunkerDir := config.BuildWorkspaceDir(cfg.BaseDir, "test-bunker")
 	if err := os.MkdirAll(bunkerDir, 0755); err != nil {
 		t.Fatalf("failed to create bunker dir: %s", err)
 	}
@@ -284,7 +285,7 @@ func TestBunkerLastEntry_Function(t *testing.T) {
 		BaseDir: tmpDir,
 	}
 
-	bunkerDir := cfg.BuildWorkspaceDir("test-bunker")
+	bunkerDir := config.BuildWorkspaceDir(cfg.BaseDir, "test-bunker")
 	if err := os.MkdirAll(bunkerDir, 0755); err != nil {
 		t.Fatalf("failed to create bunker dir: %s", err)
 	}

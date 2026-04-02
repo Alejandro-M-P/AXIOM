@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/build"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
@@ -52,9 +53,9 @@ func TestPrepareSharedDirectories(t *testing.T) {
 		BaseDir: "/home/user",
 	}
 
-	modelsDir := filepath.Join(cfg.AIConfigDir(), "models")
-	teamsDir := filepath.Join(cfg.AIConfigDir(), "teams")
-	tutorPath := cfg.TutorPath()
+	modelsDir := filepath.Join(config.AIConfigDir(cfg.BaseDir), "models")
+	teamsDir := filepath.Join(config.AIConfigDir(cfg.BaseDir), "teams")
+	tutorPath := config.TutorPath(cfg.BaseDir)
 
 	// Manually test what PrepareSharedDirectories does
 	// Step 1: Create models dir
@@ -117,7 +118,7 @@ func TestBuildContainerFlags(t *testing.T) {
 		t.Fatal("BuildContainerFlags returned empty string")
 	}
 
-	expectedVolume := "--volume " + cfg.AIConfigDir() + ":/ai_config:z"
+	expectedVolume := "--volume " + config.AIConfigDir(cfg.BaseDir) + ":/ai_config:z"
 	if !contains(flags, expectedVolume) {
 		t.Errorf("Flags should contain %s, got: %s", expectedVolume, flags)
 	}

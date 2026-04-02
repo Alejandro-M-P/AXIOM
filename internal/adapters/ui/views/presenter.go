@@ -436,36 +436,3 @@ func RunFullscreenSimple(model tea.Model) (tea.Model, error) {
 }
 
 // GetBunkerVolumeFlags devuelve los flags de volumen para crear un contenedor.
-func (c *ConsoleUI) GetBunkerVolumeFlags(projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (map[string]string, error) {
-	result := make(map[string]string)
-
-	// Get templates from i18n
-	volProject := i18n.Commands["bunker"]["volume_project"]
-	volAIConfig := i18n.Commands["bunker"]["volume_ai_config"]
-	volConfig := i18n.Commands["bunker"]["volume_config"]
-	volSSH := i18n.Commands["bunker"]["volume_ssh"]
-
-	// Format volume flags with arguments
-	result["volume_project"] = fmt.Sprintf(volProject, projectDir, name)
-	result["volume_ai_config"] = fmt.Sprintf(volAIConfig, aiConfigDir)
-	result["volume_config"] = fmt.Sprintf(volConfig, configPath)
-
-	// GPU mode (for host GPU volumes)
-	if gpuType != "" {
-		switch strings.ToLower(gpuType) {
-		case "rdna3", "rdna4", "amd", "generic":
-			result["volume_gpu_mode"] = "amd"
-		case "nvidia":
-			result["volume_gpu_mode"] = "nvidia"
-		case "intel":
-			result["volume_gpu_mode"] = "intel"
-		}
-	}
-
-	// SSH socket volume
-	if sshSocket != "" {
-		result["volume_ssh"] = fmt.Sprintf(volSSH, sshSocket, sshSocket)
-	}
-
-	return result, nil
-}

@@ -16,9 +16,13 @@ type IBunkerRuntime interface {
 	// CreateBunker crea un nuevo bunker con la imagen especificada.
 	CreateBunker(ctx context.Context, name, image, home string, flags string) error
 
-	// GetCreateFlags genera los flags para crear un bunker.
-	// volumeFlags viene del presenter (que usa i18n) - el runtime solo añade device flags.
+	// GetCreateFlags generates the flags for creating a bunker.
+	// volumeFlags comes from GetVolumeFlags - the runtime only adds device flags.
 	GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error)
+
+	// GetVolumeFlags returns the volume mount flags for container creation.
+	// These are technical flags (--volume ...), not user-visible text.
+	GetVolumeFlags(ctx context.Context, projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (string, error)
 
 	// StartBunker inicia un bunker existente.
 	StartBunker(ctx context.Context, name string) error

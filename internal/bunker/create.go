@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -42,7 +43,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	}
 
 	projectDir := filepath.Join(cfg.BaseDir, name)
-	envDir := cfg.BuildWorkspaceDir(name)
+	envDir := config.BuildWorkspaceDir(cfg.BaseDir, name)
 	rcPath := filepath.Join(envDir, ".bashrc")
 	hardware := resolveBuildGPU(cfg)
 
@@ -115,10 +116,10 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	if err := m.fs.MkdirAll(envDir, 0700); err != nil {
 		return err
 	}
-	if err := m.fs.MkdirAll(filepath.Join(cfg.AIConfigDir(), "models"), 0700); err != nil {
+	if err := m.fs.MkdirAll(filepath.Join(config.AIConfigDir(cfg.BaseDir), "models"), 0700); err != nil {
 		return err
 	}
-	if err := ensureTutorFile(m.fs, cfg.TutorPath()); err != nil {
+	if err := ensureTutorFile(m.fs, config.TutorPath(cfg.BaseDir)); err != nil {
 		return err
 	}
 
@@ -168,7 +169,7 @@ WaitLoop:
 	if err := writeStarshipConfig(envDir); err != nil {
 		return err
 	}
-	if err := copyTutorToAgents(cfg.TutorPath(), envDir); err != nil {
+	if err := copyTutorToAgents(config.TutorPath(cfg.BaseDir), envDir); err != nil {
 		return err
 	}
 	if err := writeOpencodeConfig(envDir); err != nil {
@@ -199,23 +200,18 @@ func (m *Manager) bunkerExists(name string) (bool, error) {
 
 // createContainerFlags genera los flags para crear el contenedor.
 func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir, sshSocket string) string {
-	// 1. Obtener volume flags del presenter (usa i18n)
-	volFlags, err := m.ui.GetBunkerVolumeFlags(
+	// 1. Obtener volume flags del runtime (infraestructura, no presentación)
+	volumeStr, err := m.runtime.GetVolumeFlags(
+		context.Background(),
 		projectDir,
 		name,
-		cfg.AIConfigDir(),
+		config.AIConfigDir(cfg.BaseDir),
 		cfg.AxiomPath+"/config.toml",
 		gpuType,
 		sshSocket,
 	)
-	volumeStr := ""
-	if err == nil && len(volFlags) > 0 {
-		// Unir todos los volume flags
-		for _, v := range volFlags {
-			if v != "" {
-				volumeStr += v + " "
-			}
-		}
+	if err != nil {
+		volumeStr = ""
 	}
 
 	// 2. Pasar al runtime que añade los device flags
