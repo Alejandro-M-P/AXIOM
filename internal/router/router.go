@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
-	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 )
 
 // Command constants.

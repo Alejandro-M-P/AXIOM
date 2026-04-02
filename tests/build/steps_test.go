@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )

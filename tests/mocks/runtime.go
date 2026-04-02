@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/domain"
 )
 
 // Compile-time check that MockRuntime implements ports.IBunkerRuntime

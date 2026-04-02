@@ -12,18 +12,18 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system"
 	slotui "github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/slots"
 	ui "github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/views"
-	"github.com/Alejandro-M-P/AXIOM/internal/build"
-	"github.com/Alejandro-M-P/AXIOM/internal/bunker"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/bunker"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
-	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 
 	// Blank imports to trigger slot item registration via init()
 	// This ensures the global registry is populated when the app starts
-	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/data"
-	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/dev/ia"
-	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/dev/languages"
-	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/dev/tools"
-	_ "github.com/Alejandro-M-P/AXIOM/internal/slots/sandbox"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/data"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/dev/ia"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/dev/languages"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/dev/tools"
+	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/sandbox"
 )
 
 func main() {

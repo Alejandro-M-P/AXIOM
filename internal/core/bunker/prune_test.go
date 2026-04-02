@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/domain"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 

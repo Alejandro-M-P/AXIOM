@@ -4,8 +4,8 @@ package slots
 import (
 	"fmt"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
-	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 )
 
 // SlotSelectorUI provides the TUI for slot selection.

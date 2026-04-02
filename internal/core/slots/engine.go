@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/core/slots/base"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
-	"github.com/Alejandro-M-P/AXIOM/internal/slots/base"
 )
 
 // ErrCircularDependency indicates that a circular dependency was detected.

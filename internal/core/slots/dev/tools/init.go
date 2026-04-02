@@ -2,7 +2,7 @@
 package tools
 
 import (
-	"github.com/Alejandro-M-P/AXIOM/internal/slots"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 )
 
 func init() {

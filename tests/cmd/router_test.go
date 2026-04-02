@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/internal/router"
-	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 

@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
-	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )

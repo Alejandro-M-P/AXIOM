@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/slots"
-	"github.com/Alejandro-M-P/AXIOM/internal/build"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
+	slotmanager "github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
-	slotmanager "github.com/Alejandro-M-P/AXIOM/internal/slots"
 )
 
 // buildSlotAdapter implements build.SlotManagerInterface for the build manager.

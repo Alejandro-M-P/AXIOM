@@ -3,7 +3,7 @@ package build_test
 import (
 	"testing"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/build"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
