@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -33,11 +34,11 @@ func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerNam
 	// If containerName is provided (non-empty), use it; otherwise generate from slot
 	actualContainerName := containerName
 	if actualContainerName == "" {
-		actualContainerName = fmt.Sprintf("axiom-%s", slotName)
+		actualContainerName = i18n.GetLifecycleText("build.image", "container_name", slotName)
 	}
 
 	// Use slot name for image name: axiom-dev, axiom-data, axiom-sandbox
-	imageName := fmt.Sprintf("localhost/axiom-%s:latest", slotName)
+	imageName := i18n.GetLifecycleText("build.image", "image_name", slotName)
 
 	return &BuildContext{
 		Config:            cfg,

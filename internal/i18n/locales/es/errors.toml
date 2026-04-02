@@ -138,3 +138,13 @@ remove_image_failed = "Error al eliminar imagen: %w"
 commit_failed = "Error al commitear imagen: %w"
 state_failed = "Error al obtener estado del contenedor: %w"
 execute_failed = "Error al ejecutar en búnker: %w"
+
+[i18n]
+loading_commands = "Error en commands.toml: %s"
+loading_prompts = "Error en prompts.toml: %s"
+loading_logs = "Error en logs.toml: %s"
+loading_lifecycle = "Error en lifecycle.toml: %s"
+loading_errors = "Error en errors.toml: %s"
+loading_init = "Error en init.toml: %s"
+loading_slots = "Error en slots.toml: %s"
+loading_wizard = "Error en wizard.toml: %s"

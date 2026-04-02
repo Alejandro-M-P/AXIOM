@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -45,7 +46,7 @@ func InstallSystemBase(ctx context.Context, containerName string, cfg *BuildCont
 
 	// Install Homebrew
 	ui.ShowLog("info", ui.GetText("task.install_homebrew"))
-	cmd := "NONINTERACTIVE=1 /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+	cmd := i18n.GetLifecycleText("build.steps", "homebrew_install_cmd")
 	if err := exec(ctx, "bash", "-c", cmd); err != nil {
 		return fmt.Errorf("errors.build.steps.failed_install_homebrew: %w", err)
 	}
@@ -106,7 +107,7 @@ func installOllama(ctx context.Context, gpuType string, exec func(context.Contex
 		return err
 	}
 
-	mainURL := fmt.Sprintf("https://ollama.com/download/ollama-linux-%s.tar.zst", arch)
+	mainURL := i18n.GetLifecycleText("build.steps", "ollama_url", arch)
 	if err := exec(ctx, "curl", "-fsSL", mainURL, "-o", "/tmp/ollama.tar.zst"); err != nil {
 		return err
 	}
@@ -115,7 +116,7 @@ func installOllama(ctx context.Context, gpuType string, exec func(context.Contex
 	}
 
 	if strings.HasPrefix(gpuType, "rdna") || gpuType == "amd" {
-		rocmURL := fmt.Sprintf("https://ollama.com/download/ollama-linux-%s-rocm.tar.zst", arch)
+		rocmURL := i18n.GetLifecycleText("build.steps", "ollama_rocm_url", arch)
 		if err := exec(ctx, "curl", "-fsSL", rocmURL, "-o", "/tmp/ollama-rocm.tar.zst"); err != nil {
 			return err
 		}

@@ -87,3 +87,10 @@ not_required = "Not required"
 not_applicable = "N/A"
 footer_confirm = "[Enter] Confirm"
 footer_esc_key = "[Esc]"
+help_press_esc = "Press Esc to exit"
+slots_total = "Total: %d slots | Press Esc to exit"
+slots_item_format = "%s%s  [%s]"
+
+[help]
+# Format: %s (prefix) + %s (command name) + %s (description)
+item_format = "%s%s  -  %s"

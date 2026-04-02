@@ -102,3 +102,21 @@ cmd_7 = "axiom info:Shows the detailed sheet of a bunker."
 cmd_8 = "axiom prune:Cleans orphan environments without a container."
 cmd_9 = "axiom rebuild:Rebuilds the base image."
 cmd_10 = "axiom reset:Deletes ALL bunkers and images."
+
+[bunker]
+# Volume flags for container creation
+volume_project = "--volume %s:/%s:z"
+volume_ai_config = "--volume %s:/ai_config:z"
+volume_config = "--volume %s:/run/axiom/env:ro,z"
+volume_gpu_ro = "--volume %s:%s:ro"
+volume_ssh = "--volume %s:%s"
+
+# Byte formatting
+bytes_format = "%d B"
+bytes_format_decimal = "%.1f %cB"
+
+# Base image name
+image_name = "localhost/axiom-%s:latest"
+
+# Bunker status
+status_stopped = "stopped"

@@ -7,6 +7,7 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -145,7 +146,7 @@ func (m helpTUIModel) View() string {
 			cmdStyle = lipgloss.NewStyle().Foreground(t.Primary).Bold(true)
 		}
 
-		line := fmt.Sprintf("%s%s  -  %s", prefix, cmdStyle.Render(cmd.name), descStyle.Render(cmd.description))
+		line := fmt.Sprintf(i18n.Wizard["help"]["item_format"], prefix, cmdStyle.Render(cmd.name), descStyle.Render(cmd.description))
 		content.WriteString(line + "\n")
 		content.WriteString(usageStyle.Render("    "+cmd.usage) + "\n\n")
 	}
@@ -154,7 +155,7 @@ func (m helpTUIModel) View() string {
 	footerStyle := lipgloss.NewStyle().Foreground(t.Muted)
 	content.WriteString(footerStyle.Render("\n" + strings.Repeat("─", contentWidth-4)))
 	content.WriteString("\n")
-	content.WriteString(footerStyle.Render("Press Esc to exit"))
+	content.WriteString(footerStyle.Render(i18n.Wizard["common"]["help_press_esc"]))
 
 	return styles.GetLogo() + "\n" + windowStyle.Render(content.String())
 }

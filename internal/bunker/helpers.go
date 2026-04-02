@@ -10,6 +10,7 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -32,14 +33,14 @@ func sanitizeBunkerName(name string) (string, error) {
 func formatBytes(bytes int64) string {
 	const unit = 1024
 	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
+		return fmt.Sprintf(i18n.Commands["bunker"]["bytes_format"], bytes)
 	}
 	div, exp := int64(unit), 0
 	for n := bytes / unit; n >= unit; n /= unit {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+	return fmt.Sprintf(i18n.Commands["bunker"]["bytes_format_decimal"], float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
 // yesNo convierte un booleano a string de sí/no internacionalizado.
@@ -135,7 +136,7 @@ func baseImageName(gpuType string) string {
 	if gpuType == "" {
 		gpuType = "generic"
 	}
-	return fmt.Sprintf("localhost/axiom-%s:latest", gpuType)
+	return fmt.Sprintf(i18n.Commands["bunker"]["image_name"], gpuType)
 }
 
 // resolveBuildGPU detecta la GPU para builds.
@@ -217,7 +218,7 @@ func sshVolumeFlag(socketPath string) string {
 	if socketPath == "" {
 		return ""
 	}
-	return fmt.Sprintf("--volume %s:%s", socketPath, socketPath)
+	return fmt.Sprintf(i18n.Commands["bunker"]["volume_ssh"], socketPath, socketPath)
 }
 
 // ensureTutorFile asegura que el archivo tutor exista.

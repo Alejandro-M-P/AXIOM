@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	bubbleprogress "github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -23,25 +24,25 @@ type LifecycleStep struct {
 
 var (
 	LifecycleShellStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(Cyan).
-		Padding(1, 2).
-		Margin(1, 2).
-		Width(84)
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(Cyan).
+				Padding(1, 2).
+				Margin(1, 2).
+				Width(84)
 
 	LifecycleTitleStyle = lipgloss.NewStyle().
-		Foreground(White).
-		Background(Dark).
-		Padding(0, 1).
-		Bold(true)
+				Foreground(White).
+				Background(Dark).
+				Padding(0, 1).
+				Bold(true)
 
 	LifecycleSubtitleStyle = lipgloss.NewStyle().
-		Foreground(Gray).
-		Italic(true)
+				Foreground(Gray).
+				Italic(true)
 
 	LifecycleSectionStyle = lipgloss.NewStyle().
-		Foreground(White).
-		Bold(true)
+				Foreground(White).
+				Bold(true)
 
 	LifecycleStepPendingStyle = lipgloss.NewStyle().Foreground(Gray)
 	LifecycleStepRunningStyle = lipgloss.NewStyle().Foreground(Cyan).Bold(true)
@@ -69,7 +70,7 @@ func RenderLifecycleWithTasks(title, subtitle string, steps []LifecycleStep, tas
 	lines = append(lines, "")
 
 	for i, step := range steps {
-		label := fmt.Sprintf("%d. %s", i+1, step.Title)
+		label := fmt.Sprintf(i18n.Lifecycle["format"]["numbered_step"], i+1, step.Title)
 		if strings.TrimSpace(step.Detail) != "" {
 			label += "  " + step.Detail
 		}
@@ -83,7 +84,7 @@ func RenderLifecycleWithTasks(title, subtitle string, steps []LifecycleStep, tas
 		lines = append(lines, renderProgressBar(taskDone, len(taskSteps)))
 		lines = append(lines, LifecycleMetaStyle.Render(fmt.Sprintf("Instalacion: %d/%d", taskDone, len(taskSteps))))
 		for i, step := range taskSteps {
-			label := fmt.Sprintf("%d. %s", i+1, step.Title)
+			label := fmt.Sprintf(i18n.Lifecycle["format"]["numbered_step"], i+1, step.Title)
 			if strings.TrimSpace(step.Detail) != "" {
 				label += "  " + step.Detail
 			}

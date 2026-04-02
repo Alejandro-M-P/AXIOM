@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -199,10 +200,15 @@ func (m *Manager) bunkerExists(name string) (bool, error) {
 
 // createContainerFlags genera los flags para crear el contenedor.
 func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir, sshSocket string) string {
+	// Obtener templates de i18n para volume flags
+	volProject := i18n.Commands["bunker"]["volume_project"]
+	volAIConfig := i18n.Commands["bunker"]["volume_ai_config"]
+	volConfig := i18n.Commands["bunker"]["volume_config"]
+
 	parts := []string{
-		fmt.Sprintf("--volume %s:/%s:z", projectDir, name),
-		fmt.Sprintf("--volume %s:/ai_config:z", cfg.AIConfigDir()),
-		fmt.Sprintf("--volume %s:/run/axiom/env:ro,z", filepath.Join(cfg.AxiomPath, "config.toml")),
+		fmt.Sprintf(volProject, projectDir, name),
+		fmt.Sprintf(volAIConfig, cfg.AIConfigDir()),
+		fmt.Sprintf(volConfig, filepath.Join(cfg.AxiomPath, "config.toml")),
 		"--device /dev/kfd",
 		"--device /dev/dri",
 		"--security-opt label=disable",
@@ -222,14 +228,17 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 
 // hostGPUVolumeFlags retorna los flags de volumen para GPU en modo host.
 func hostGPUVolumeFlags(fs ports.IFileSystem, gpuType string, getCmdPath func(string) (string, error)) []string {
+	// Obtener template de i18n para volume flags GPU
+	volGPU := i18n.Commands["bunker"]["volume_gpu_ro"]
+
 	var flags []string
 	addPath := func(path string) {
 		realPath, err := filepath.EvalSymlinks(path)
 		if err == nil && realPath != path {
-			flags = append(flags, fmt.Sprintf("--volume %s:%s:ro", realPath, path))
-			flags = append(flags, fmt.Sprintf("--volume %s:%s:ro", realPath, realPath))
+			flags = append(flags, fmt.Sprintf(volGPU, realPath, path))
+			flags = append(flags, fmt.Sprintf(volGPU, realPath, realPath))
 		} else {
-			flags = append(flags, fmt.Sprintf("--volume %s:%s:ro", path, path))
+			flags = append(flags, fmt.Sprintf(volGPU, path, path))
 		}
 	}
 

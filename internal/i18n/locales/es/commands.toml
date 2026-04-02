@@ -102,3 +102,21 @@ cmd_7 = "axiom info:Muestra la ficha detallada de un búnker."
 cmd_8 = "axiom prune:Limpia entornos huérfanos sin contenedor."
 cmd_9 = "axiom rebuild:Reconstruye la imagen base."
 cmd_10 = "axiom reset:Elimina TODOS los búnkeres e imágenes."
+
+[bunker]
+# Volume flags para creación de contenedores
+volume_project = "--volume %s:/%s:z"
+volume_ai_config = "--volume %s:/ai_config:z"
+volume_config = "--volume %s:/run/axiom/env:ro,z"
+volume_gpu_ro = "--volume %s:%s:ro"
+volume_ssh = "--volume %s:%s"
+
+# Formateo de bytes
+bytes_format = "%d B"
+bytes_format_decimal = "%.1f %cB"
+
+# Nombre de imagen base
+image_name = "localhost/axiom-%s:latest"
+
+# Estado del búnker
+status_stopped = "stopped"

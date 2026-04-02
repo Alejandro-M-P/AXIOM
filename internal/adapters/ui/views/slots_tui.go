@@ -7,6 +7,7 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -138,7 +139,7 @@ func (m slotsTUIModel) View() string {
 			slotStyle = lipgloss.NewStyle().Foreground(t.Primary).Bold(true)
 		}
 
-		line := fmt.Sprintf("%s%s  [%s]", prefix, slotStyle.Render(slot.name), catStyle.Render(slot.category))
+		line := fmt.Sprintf(i18n.Wizard["common"]["slots_item_format"], prefix, slotStyle.Render(slot.name), catStyle.Render(slot.category))
 		content.WriteString(line + "\n")
 		content.WriteString(descStyle.Render("    "+slot.description) + "\n\n")
 	}
@@ -147,7 +148,7 @@ func (m slotsTUIModel) View() string {
 	footerStyle := lipgloss.NewStyle().Foreground(t.Muted)
 	content.WriteString(footerStyle.Render("\n" + strings.Repeat("─", contentWidth-4)))
 	content.WriteString("\n")
-	content.WriteString(footerStyle.Render(fmt.Sprintf("Total: %d slots | Press Esc to exit", len(m.slots))))
+	content.WriteString(footerStyle.Render(fmt.Sprintf(i18n.Wizard["common"]["slots_total"], len(m.slots))))
 
 	return styles.GetLogo() + "\n" + windowStyle.Render(content.String())
 }

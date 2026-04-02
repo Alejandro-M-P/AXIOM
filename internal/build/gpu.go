@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -95,7 +96,7 @@ func BaseImageName(gpuType string) string {
 	if gpuType == "" {
 		gpuType = "generic"
 	}
-	return fmt.Sprintf("localhost/axiom-%s:latest", gpuType)
+	return i18n.GetLifecycleText("build.image", "image_name", gpuType)
 }
 
 // HostGPUVolumeFlags returns the volume flags needed to expose host GPU to container.

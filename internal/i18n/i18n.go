@@ -2,6 +2,7 @@ package i18n
 
 import (
 	_ "embed"
+	"fmt"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -137,6 +138,52 @@ func GetEscapeButtonText() string {
 	return "Salir" // fallback
 }
 
+// GetLifecycleText returns a localized string from lifecycle.toml with optional format args.
+// section is the TOML section (e.g. "build.steps"), key is the field (e.g. "ollama_url").
+// Returns the key itself as fallback if not found.
+func GetLifecycleText(section, key string, args ...interface{}) string {
+	if Lifecycle == nil {
+		if len(args) > 0 {
+			return fmt.Sprintf(section+"."+key, args...)
+		}
+		return section + "." + key
+	}
+	if sectionData, ok := Lifecycle[section]; ok {
+		if val, ok := sectionData[key]; ok {
+			if len(args) > 0 {
+				return fmt.Sprintf(val, args...)
+			}
+			return val
+		}
+	}
+	if len(args) > 0 {
+		return fmt.Sprintf(section+"."+key, args...)
+	}
+	return section + "." + key // fallback: show the key
+}
+
+// GetErrorsText returns a localized string from errors.toml with optional format args.
+func GetErrorsText(section, key string, args ...interface{}) string {
+	if Errors == nil {
+		if len(args) > 0 {
+			return fmt.Sprintf(section+"."+key, args...)
+		}
+		return section + "." + key
+	}
+	if sectionData, ok := Errors[section]; ok {
+		if val, ok := sectionData[key]; ok {
+			if len(args) > 0 {
+				return fmt.Sprintf(val, args...)
+			}
+			return val
+		}
+	}
+	if len(args) > 0 {
+		return fmt.Sprintf(section+"."+key, args...)
+	}
+	return section + "." + key // fallback: show the key
+}
+
 // loadLocale loads the TOML files for the specified locale
 func loadLocale(locale string) {
 	var commandsData, promptsData, logsData, lifecycleData, errorsData, initData, slotsData, wizardData []byte
@@ -163,39 +210,39 @@ func loadLocale(locale string) {
 	}
 
 	if err := toml.Unmarshal(commandsData, &Commands); err != nil {
-		panic("Error en commands.toml: " + err.Error())
+		panic(fmt.Sprintf("Error in commands.toml: %s", err.Error()))
 	}
 	if err := toml.Unmarshal(promptsData, &Prompts); err != nil {
-		panic("Error en prompts.toml: " + err.Error())
+		panic(fmt.Sprintf("Error in prompts.toml: %s", err.Error()))
 	}
 	if len(logsData) > 0 {
 		if err := toml.Unmarshal(logsData, &Logs); err != nil {
-			panic("Error en logs.toml: " + err.Error())
+			panic(fmt.Sprintf("Error in logs.toml: %s", err.Error()))
 		}
 	}
 	if len(lifecycleData) > 0 {
 		if err := toml.Unmarshal(lifecycleData, &Lifecycle); err != nil {
-			panic("Error en lifecycle.toml: " + err.Error())
+			panic(fmt.Sprintf("Error in lifecycle.toml: %s", err.Error()))
 		}
 	}
 	if len(errorsData) > 0 {
 		if err := toml.Unmarshal(errorsData, &Errors); err != nil {
-			panic("Error en errors.toml: " + err.Error())
+			panic(fmt.Sprintf("Error in errors.toml: %s", err.Error()))
 		}
 	}
 	if len(initData) > 0 {
 		if err := toml.Unmarshal(initData, &Init); err != nil {
-			panic("Error en init.toml: " + err.Error())
+			panic(fmt.Sprintf("Error in init.toml: %s", err.Error()))
 		}
 	}
 	if len(slotsData) > 0 {
 		if err := toml.Unmarshal(slotsData, &Slots); err != nil {
-			panic("Error en slots.toml: " + err.Error())
+			panic(fmt.Sprintf("Error in slots.toml: %s", err.Error()))
 		}
 	}
 	if len(wizardData) > 0 {
 		if err := toml.Unmarshal(wizardData, &Wizard); err != nil {
-			panic("Error en wizard.toml: " + err.Error())
+			panic(fmt.Sprintf("Error in wizard.toml: %s", err.Error()))
 		}
 	}
 }

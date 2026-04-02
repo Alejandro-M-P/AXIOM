@@ -79,6 +79,15 @@ image_exists_warning = "Warning"
 image_exists_desc = "This image already exists. It will be overwritten if you continue."
 image_exists_confirm = "Overwrite existing image?"
 
+[build.steps]
+homebrew_install_cmd = "NONINTERACTIVE=1 /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+ollama_url = "https://ollama.com/download/ollama-linux-%s.tar.zst"
+ollama_rocm_url = "https://ollama.com/download/ollama-linux-%s-rocm.tar.zst"
+
+[build.image]
+container_name = "axiom-%s"
+image_name = "localhost/axiom-%s:latest"
+
 [build.commit]
 author = "axiom"
 message = "AXIOM build image"
@@ -123,3 +132,6 @@ subtitle = "Removing and rebuilding"
 step_rm_image = "Remove previous image"
 image_label = "Image"
 gpu_label = "GPU"
+
+[format]
+numbered_step = "%d. %s"
