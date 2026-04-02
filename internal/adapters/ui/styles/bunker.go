@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 )
 
 type BunkerDetail struct {
@@ -67,7 +69,7 @@ func BuildCardLines(title, subtitle string, details []BunkerDetail, items []stri
 	}
 	if len(items) > 0 {
 		lines = append(lines, "")
-		lines = append(lines, BunkerLabelStyle.Render("Elementos detectados:"))
+		lines = append(lines, BunkerLabelStyle.Render(i18n.GetSlotsText("bunker.list", "elements_detected")))
 		for _, item := range items {
 			if strings.TrimSpace(item) == "" {
 				continue
@@ -115,18 +117,18 @@ func RenderBunkerList(title, subtitle string, rows []BunkerRow, footer string) s
 	}
 	lines = append(lines, "")
 	lines = append(lines, renderBunkerListRow(
-		BunkerLabelStyle.Render(padRight("BUNKER", nameWidth)),
-		BunkerLabelStyle.Render(padRight("ESTADO", statusWidth)),
-		BunkerLabelStyle.Render(padRight("TAM", sizeWidth)),
-		BunkerLabelStyle.Render(padRight("ULTIMA", dateWidth)),
-		BunkerLabelStyle.Render(padRight("RAMA", branchWidth)),
+		BunkerLabelStyle.Render(padRight(i18n.GetSlotsText("bunker.list", "header_bunker"), nameWidth)),
+		BunkerLabelStyle.Render(padRight(i18n.GetSlotsText("bunker.list", "header_status"), statusWidth)),
+		BunkerLabelStyle.Render(padRight(i18n.GetSlotsText("bunker.list", "header_size"), sizeWidth)),
+		BunkerLabelStyle.Render(padRight(i18n.GetSlotsText("bunker.list", "header_last"), dateWidth)),
+		BunkerLabelStyle.Render(padRight(i18n.GetSlotsText("bunker.list", "header_branch"), branchWidth)),
 	))
 
 	for _, row := range rows {
-		statusText := "stopped"
+		statusText := i18n.GetSlotsText("bunker.list", "status_stopped")
 		statusStyle := lipgloss.NewStyle().Foreground(Gray)
 		if strings.TrimSpace(row.Status) == "running" {
-			statusText = "running"
+			statusText = i18n.GetSlotsText("bunker.list", "status_running")
 			statusStyle = lipgloss.NewStyle().Foreground(Green).Bold(true)
 		}
 
@@ -142,11 +144,15 @@ func RenderBunkerList(title, subtitle string, rows []BunkerRow, footer string) s
 			BunkerValueStyle.Render(padRight(branch, branchWidth)),
 		))
 
+		imgLabel := i18n.GetSlotsText("bunker.list", "label_image")
+		gpuLabel := i18n.GetSlotsText("bunker.list", "label_gpu")
+		envLabel := i18n.GetSlotsText("bunker.list", "label_env")
+		projectLabel := i18n.GetSlotsText("bunker.list", "label_project")
 		meta := []string{
-			fmt.Sprintf("img: %s", fallbackValue(row.Image, "-")),
-			fmt.Sprintf("gpu: %s", fallbackValue(row.GPU, "-")),
-			fmt.Sprintf("env: %s", truncateText(fallbackValue(row.EnvPath, "-"), 34)),
-			fmt.Sprintf("project: %s", truncateText(fallbackValue(row.ProjectPath, "-"), 34)),
+			fmt.Sprintf("%s %s", imgLabel, fallbackValue(row.Image, "-")),
+			fmt.Sprintf("%s %s", gpuLabel, fallbackValue(row.GPU, "-")),
+			fmt.Sprintf("%s %s", envLabel, truncateText(fallbackValue(row.EnvPath, "-"), 34)),
+			fmt.Sprintf("%s %s", projectLabel, truncateText(fallbackValue(row.ProjectPath, "-"), 34)),
 		}
 		lines = append(lines, BunkerSubtitleStyle.Render("  "+strings.Join(meta, "  |  ")))
 		lines = append(lines, "")

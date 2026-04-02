@@ -94,3 +94,11 @@ slots_item_format = "%s%s  [%s]"
 [help]
 # Format: %s (prefix) + %s (command name) + %s (description)
 item_format = "%s%s  -  %s"
+
+[steps]
+# Format: %d (current step) + %d (total steps)
+step_format = "Step %d of %d"
+# Format: %d (selected count) + %d (total count)
+selected_format = "Selected: %d/%d"
+# Format: %s (cursor prefix) + %s (checkbox) + %s (item name)
+item_format = "%s%s %s"

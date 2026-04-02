@@ -81,6 +81,7 @@ wizard_failed = "Init wizard failed: %w"
 tui_failed = "Failed to run TUI interface: %w"
 init_not_implemented = "Init wizard not yet implemented"
 init_cancelled = "Init cancelled by user"
+command_executed = "Executed command: axiom %s"
 
 # UI component errors
 bunker_selector_no_bunkers = "No bunkers available"

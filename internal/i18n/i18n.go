@@ -135,7 +135,7 @@ func GetEscapeButtonText() string {
 	if text, ok := Prompts["escape_button"]["text"]; ok {
 		return text
 	}
-	return "Salir" // fallback
+	return "Exit" // fallback
 }
 
 // GetLifecycleText returns a localized string from lifecycle.toml with optional format args.
@@ -171,6 +171,28 @@ func GetErrorsText(section, key string, args ...interface{}) string {
 		return section + "." + key
 	}
 	if sectionData, ok := Errors[section]; ok {
+		if val, ok := sectionData[key]; ok {
+			if len(args) > 0 {
+				return fmt.Sprintf(val, args...)
+			}
+			return val
+		}
+	}
+	if len(args) > 0 {
+		return fmt.Sprintf(section+"."+key, args...)
+	}
+	return section + "." + key // fallback: show the key
+}
+
+// GetSlotsText returns a localized string from slots.toml with optional format args.
+func GetSlotsText(section, key string, args ...interface{}) string {
+	if Slots == nil {
+		if len(args) > 0 {
+			return fmt.Sprintf(section+"."+key, args...)
+		}
+		return section + "." + key
+	}
+	if sectionData, ok := Slots[section]; ok {
 		if val, ok := sectionData[key]; ok {
 			if len(args) > 0 {
 				return fmt.Sprintf(val, args...)

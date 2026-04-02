@@ -9,6 +9,7 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -35,6 +36,7 @@ type SelectedSlots struct {
 // Embeds BaseModel for window size handling.
 type SlotSelectorModel struct {
 	ui.BaseModel   // Embed BaseModel for Width/Height from WindowSizeMsg
+	presenter      ports.IPresenter
 	groups         []ItemGroup
 	selected       map[string]bool
 	cursor         int
@@ -44,7 +46,7 @@ type SlotSelectorModel struct {
 }
 
 // NewSlotSelectorModel creates a new slot selector model.
-func NewSlotSelectorModel(groups []ItemGroup) *SlotSelectorModel {
+func NewSlotSelectorModel(groups []ItemGroup, pres ports.IPresenter) *SlotSelectorModel {
 	selected := make(map[string]bool)
 	for _, group := range groups {
 		for _, item := range group.items {
@@ -53,11 +55,12 @@ func NewSlotSelectorModel(groups []ItemGroup) *SlotSelectorModel {
 	}
 
 	return &SlotSelectorModel{
-		groups:   groups,
-		selected: selected,
-		cursor:   0,
-		done:     false,
-		canceled: false,
+		presenter: pres,
+		groups:    groups,
+		selected:  selected,
+		cursor:    0,
+		done:      false,
+		canceled:  false,
 	}
 }
 
@@ -162,8 +165,13 @@ func (m *SlotSelectorModel) View() string {
 				cursorStyle = lipgloss.NewStyle().Foreground(t.Muted)
 			}
 
-			// Item name with cursor
-			itemName := fmt.Sprintf("%s%s %s", cursorPrefix, checkboxStyle.Render(checked), cursorStyle.Render(item.Name))
+			// Item name with cursor (use i18n if presenter available)
+			var itemName string
+			if m.presenter != nil {
+				itemName = m.presenter.GetText("wizard.steps.item_format", cursorPrefix, checkboxStyle.Render(checked), cursorStyle.Render(item.Name))
+			} else {
+				itemName = fmt.Sprintf("%s%s %s", cursorPrefix, checkboxStyle.Render(checked), cursorStyle.Render(item.Name))
+			}
 
 			// Description (dimmed, on same line)
 			descStyle := lipgloss.NewStyle().
@@ -263,8 +271,15 @@ func (m *SlotSelectorModel) IsCanceled() bool {
 
 // RunSlotSelector runs the interactive slot selector TUI.
 // Returns the selected item IDs, whether the user confirmed (true) or cancelled (false), and any error.
+// NOTE: For proper i18n support, use RunSlotSelectorWithPresenter instead.
 func RunSlotSelector(groups []ItemGroup) ([]string, bool, error) {
-	model := NewSlotSelectorModel(groups)
+	return RunSlotSelectorWithPresenter(groups, nil)
+}
+
+// RunSlotSelectorWithPresenter runs the interactive slot selector TUI with presenter for i18n.
+// Returns the selected item IDs, whether the user confirmed (true) or cancelled (false), and any error.
+func RunSlotSelectorWithPresenter(groups []ItemGroup, pres ports.IPresenter) ([]string, bool, error) {
+	model := NewSlotSelectorModel(groups, pres)
 	p := tea.NewProgram(model,
 		tea.WithAltScreen(),
 		tea.WithInput(os.Stdin),

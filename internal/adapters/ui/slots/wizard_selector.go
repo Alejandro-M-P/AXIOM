@@ -453,7 +453,7 @@ func (m *WizardModel) viewItemWizard() string {
 	content.WriteString("\n")
 
 	// Step indicator as title
-	stepText := fmt.Sprintf("Step %d of %d", currentStep, totalSteps)
+	stepText := m.presenter.GetText("wizard.steps.step_format", currentStep, totalSteps)
 	content.WriteString(titleStyle.Render(stepText))
 	content.WriteString("\n\n")
 
@@ -504,7 +504,7 @@ func (m *WizardModel) viewItemWizard() string {
 		selectedCount := m.countCurrentSelections()
 		totalCount := len(m.currentItems)
 		countStyle := lipgloss.NewStyle().Foreground(greenColor)
-		countText := fmt.Sprintf("Selected: %d/%d", selectedCount, totalCount)
+		countText := m.presenter.GetText("wizard.steps.selected_format", selectedCount, totalCount)
 		content.WriteString(countStyle.Render(countText))
 		content.WriteString("\n")
 	}
