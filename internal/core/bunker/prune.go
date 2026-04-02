@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // prune maneja la limpieza de búnkeres huérfanos.
@@ -44,7 +44,7 @@ func (m *Manager) prune(ctx context.Context) error {
 
 	var orphans []string
 	for _, entry := range entries {
-		if !entry.IsDir() || entry.Name() == defaultBuildContainerName {
+		if !entry.IsDir() || entry.Name() == DefaultBuildContainerName {
 			continue
 		}
 		if !activeMap[entry.Name()] {
@@ -66,7 +66,7 @@ func (m *Manager) prune(ctx context.Context) error {
 
 	confirm, err := m.ui.AskConfirmInCard(
 		"prune",
-		[]components.CardField{{Label: "fields.orphans", Value: fmt.Sprintf("%d", len(orphans))}},
+		[]ports.Field{ports.NewField("fields.orphans", fmt.Sprintf("%d", len(orphans)))},
 		orphans,
 		"prune.confirm",
 	)

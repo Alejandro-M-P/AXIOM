@@ -3,13 +3,12 @@ package bunker
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // BunkerFlags contiene las flags para crear un búnker.
@@ -60,13 +59,13 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	m.ui.ShowLogo()
 	m.ui.ShowCommandCard(
 		"create",
-		[]components.CardField{
-			{Label: "fields.name", Value: name},
-			{Label: "fields.image", Value: imageName},
-			{Label: "fields.project", Value: projectDir},
-			{Label: "fields.environment", Value: envDir},
-			{Label: "fields.gpu", Value: hardware.Type},
-			{Label: "fields.ssh", Value: yesNo(sshMounted)},
+		[]ports.Field{
+			ports.NewField("fields.name", name),
+			ports.NewField("fields.image", imageName),
+			ports.NewField("fields.project", projectDir),
+			ports.NewField("fields.environment", envDir),
+			ports.NewField("fields.gpu", hardware.Type),
+			ports.NewField("fields.ssh", yesNo(sshMounted)),
 		},
 		nil,
 	)
@@ -86,9 +85,9 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 		m.ui.ShowWarning(
 			"warnings.bunker_exists.title",
 			"warnings.bunker_exists.desc",
-			[]components.CardField{
-				{Label: "fields.name", Value: name},
-				{Label: "fields.environment", Value: envDir},
+			[]ports.Field{
+				ports.NewField("fields.name", name),
+				ports.NewField("fields.environment", envDir),
 			},
 			nil,
 			"warnings.bunker_exists.footer",
@@ -101,8 +100,8 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 		m.ui.ShowWarning(
 			"warnings.missing_image.title",
 			"warnings.missing_image.desc",
-			[]components.CardField{
-				{Label: "fields.expected", Value: imageName},
+			[]ports.Field{
+				ports.NewField("fields.expected", imageName),
 			},
 			available,
 			"warnings.missing_image.footer",
@@ -110,7 +109,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 		return fmt.Errorf("errors.bunker.missing_image")
 	}
 
-	if err := os.MkdirAll(projectDir, 0700); err != nil {
+	if err := m.fs.MkdirAll(projectDir, DirPermission); err != nil {
 		return err
 	}
 	if err := m.fs.MkdirAll(envDir, 0700); err != nil {
@@ -132,7 +131,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	_ = m.runtime.StartBunker(ctx, name)
 
 	// Espera activa: comprobamos que el búnker esté 'running'
-	timeout := time.After(30 * time.Second)
+	timeout := time.After(BunkerReadyTimeout)
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
@@ -153,7 +152,7 @@ WaitLoop:
 		return fmt.Errorf("errors.bunker.unexpected")
 	}
 	// Pequeña gracia de tiempo para asegurar que el entrypoint termine de poblar ~/.entorno/
-	time.Sleep(2 * time.Second)
+	time.Sleep(BunkerStartSleep)
 
 	if err := m.runtime.ExecuteInBunker(ctx, name, "sudo", "pacman", "-Syu", "--noconfirm", "--needed"); err != nil {
 		return err
@@ -179,10 +178,10 @@ WaitLoop:
 	m.ui.ShowWarning(
 		"warnings.bunker_ready.title",
 		"warnings.bunker_ready.desc",
-		[]components.CardField{
-			{Label: "fields.name", Value: name},
-			{Label: "fields.image", Value: imageName},
-			{Label: "fields.environment", Value: envDir},
+		[]ports.Field{
+			ports.NewField("fields.name", name),
+			ports.NewField("fields.image", imageName),
+			ports.NewField("fields.environment", envDir),
 		},
 		nil,
 		"warnings.bunker_ready.footer",

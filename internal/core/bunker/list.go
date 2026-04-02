@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // list maneja la listados de búnkeres.
@@ -63,16 +63,16 @@ func (m *Manager) info(ctx context.Context, name string) error {
 	m.ui.ShowLogo()
 	m.ui.ShowCommandCard(
 		"info",
-		[]components.CardField{
-			{Label: "fields.name", Value: name},
-			{Label: "fields.status", Value: m.BunkerStatus(ctx, name)},
-			{Label: "fields.image", Value: imageName},
-			{Label: "fields.gpu", Value: hardware.Type},
-			{Label: "fields.environment", Value: humanPath(m.fs, bunkerEnvPath(cfg, name))},
-			{Label: "fields.project", Value: humanPath(m.fs, bunkerProjectPath(cfg, name))},
-			{Label: "fields.size", Value: bunkerEnvSize(m.fs, cfg, name)},
-			{Label: "fields.last_activity", Value: bunkerLastEntry(m.fs, cfg, name)},
-			{Label: "fields.git_branch", Value: defaultString(bunkerGitBranch(m.fs, cfg, name), "-")},
+		[]ports.Field{
+			ports.NewField("fields.name", name),
+			ports.NewField("fields.status", m.BunkerStatus(ctx, name)),
+			ports.NewField("fields.image", imageName),
+			ports.NewField("fields.gpu", hardware.Type),
+			ports.NewField("fields.environment", humanPath(m.fs, bunkerEnvPath(cfg, name))),
+			ports.NewField("fields.project", humanPath(m.fs, bunkerProjectPath(cfg, name))),
+			ports.NewField("fields.size", bunkerEnvSize(m.fs, cfg, name)),
+			ports.NewField("fields.last_activity", bunkerLastEntry(m.fs, cfg, name)),
+			ports.NewField("fields.git_branch", defaultString(bunkerGitBranch(m.fs, cfg, name), "-")),
 		},
 		nil,
 	)

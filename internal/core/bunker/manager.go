@@ -10,8 +10,6 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
-const defaultBuildContainerName = "axiom-build"
-
 // Manager orquesta todas las operaciones de búnkeres.
 // Recibe las dependencias (adapters) en su constructor, permitiendo testing y flexibilidad.
 type Manager struct {

@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
@@ -42,10 +41,10 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 	envDir := config.BuildWorkspaceDir(cfg.BaseDir, name)
 	projectDir := filepath.Join(cfg.BaseDir, name)
 
-	confirm, reason, deleteCode, err := m.ui.AskDelete(name, []components.CardField{
-		{Label: "fields.name", Value: name},
-		{Label: "fields.environment", Value: envDir},
-		{Label: "fields.project", Value: projectDir},
+	confirm, reason, deleteCode, err := m.ui.AskDelete(name, []ports.Field{
+		ports.NewField("fields.name", name),
+		ports.NewField("fields.environment", envDir),
+		ports.NewField("fields.project", projectDir),
 	})
 	if err != nil {
 		return err
@@ -75,10 +74,10 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 	m.ui.ShowWarning(
 		"warnings.bunker_deleted.title",
 		"warnings.bunker_deleted.desc",
-		[]components.CardField{
-			{Label: "fields.name", Value: name},
-			{Label: "fields.environment", Value: envDir},
-			{Label: "fields.code_deleted", Value: yesNo(deleteCode)},
+		[]ports.Field{
+			ports.NewField("fields.name", name),
+			ports.NewField("fields.environment", envDir),
+			ports.NewField("fields.code_deleted", yesNo(deleteCode)),
 		},
 		nil,
 		"",
@@ -102,9 +101,9 @@ func (m *Manager) deleteImage(ctx context.Context) error {
 
 	confirm, err := m.ui.AskConfirmInCard(
 		"delete-image",
-		[]components.CardField{
-			{Label: "fields.target", Value: targetImage},
-			{Label: "fields.gpu", Value: hardware.Type},
+		[]ports.Field{
+			ports.NewField("fields.target", targetImage),
+			ports.NewField("fields.gpu", hardware.Type),
 		},
 		images,
 		"delete-image.confirm",
@@ -124,8 +123,8 @@ func (m *Manager) deleteImage(ctx context.Context) error {
 	m.ui.ShowWarning(
 		"warnings.image_deleted.title",
 		"warnings.image_deleted.desc",
-		[]components.CardField{
-			{Label: "fields.deleted", Value: targetImage},
+		[]ports.Field{
+			ports.NewField("fields.deleted", targetImage),
 		},
 		remaining,
 		"warnings.image_deleted.footer",
@@ -162,7 +161,7 @@ func (m *Manager) listBunkerNames(ctx context.Context, cfg EnvConfig) ([]string,
 	containers, err := m.runtime.ListBunkers(ctx)
 	if err == nil {
 		for _, c := range containers {
-			if c.Name == "" || c.Name == defaultBuildContainerName {
+			if c.Name == "" || c.Name == DefaultBuildContainerName {
 				continue
 			}
 			if _, ok := seen[c.Name]; ok {
@@ -181,7 +180,7 @@ func (m *Manager) listBunkerNames(ctx context.Context, cfg EnvConfig) ([]string,
 				continue
 			}
 			name := strings.TrimSpace(entry.Name())
-			if name == "" || name == defaultBuildContainerName {
+			if name == "" || name == DefaultBuildContainerName {
 				continue
 			}
 			if _, ok := seen[name]; ok {

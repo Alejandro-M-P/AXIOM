@@ -1,6 +1,7 @@
 package bunker
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -80,7 +81,7 @@ func defaultString(value, fallback string) string {
 
 // bunkerTimestamp formatea un time.Time a string de fecha.
 func bunkerTimestamp(t time.Time) string {
-	return t.Format("2006-01-02")
+	return t.Format(DateFormat)
 }
 
 // appendTutorLog agrega una línea al log del tutor.
@@ -92,7 +93,7 @@ func appendTutorLog(line string) error {
 // removeProjectPath elimina el path del proyecto si es un directorio.
 func removeProjectPath(fs ports.IFileSystem, path string) error {
 	_, err := fs.Stat(path)
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
 	if err != nil {
@@ -111,7 +112,7 @@ func removeProjectPath(fs ports.IFileSystem, path string) error {
 // removePathWritable elimina un path haciéndolo escribible primero.
 func removePathWritable(fs ports.IFileSystem, path string) error {
 	_, err := fs.Stat(path)
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
 	_ = fs.WalkDir(path, func(currentPath string, d os.DirEntry, walkErr error) error {
@@ -226,7 +227,7 @@ func ensureTutorFile(fs ports.IFileSystem, path string) error {
 	if _, err := fs.Stat(path); err == nil {
 		return nil
 	}
-	file, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, FilePermission)
 	if err != nil {
 		return err
 	}
