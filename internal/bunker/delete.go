@@ -42,9 +42,9 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 	projectDir := filepath.Join(cfg.BaseDir, name)
 
 	confirm, reason, deleteCode, err := m.ui.AskDelete(name, []ports.Field{
-		{Label: "fields.name", Value: name},
-		{Label: "fields.environment", Value: envDir},
-		{Label: "fields.project", Value: projectDir},
+		ports.NewField("fields.name", name),
+		ports.NewField("fields.environment", envDir),
+		ports.NewField("fields.project", projectDir),
 	})
 	if err != nil {
 		return err
@@ -75,9 +75,9 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 		"warnings.bunker_deleted.title",
 		"warnings.bunker_deleted.desc",
 		[]ports.Field{
-			{Label: "fields.name", Value: name},
-			{Label: "fields.environment", Value: envDir},
-			{Label: "fields.code_deleted", Value: yesNo(deleteCode)},
+			ports.NewField("fields.name", name),
+			ports.NewField("fields.environment", envDir),
+			ports.NewField("fields.code_deleted", yesNo(deleteCode)),
 		},
 		nil,
 		"",
@@ -102,8 +102,8 @@ func (m *Manager) deleteImage(ctx context.Context) error {
 	confirm, err := m.ui.AskConfirmInCard(
 		"delete-image",
 		[]ports.Field{
-			{Label: "fields.target", Value: targetImage},
-			{Label: "fields.gpu", Value: hardware.Type},
+			ports.NewField("fields.target", targetImage),
+			ports.NewField("fields.gpu", hardware.Type),
 		},
 		images,
 		"delete-image.confirm",
@@ -124,7 +124,7 @@ func (m *Manager) deleteImage(ctx context.Context) error {
 		"warnings.image_deleted.title",
 		"warnings.image_deleted.desc",
 		[]ports.Field{
-			{Label: "fields.deleted", Value: targetImage},
+			ports.NewField("fields.deleted", targetImage),
 		},
 		remaining,
 		"warnings.image_deleted.footer",

@@ -100,8 +100,8 @@ func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []ports.Field, ite
 	var cardFields []components.CardField
 	for _, f := range fields {
 		// Get localized label
-		label := GetTextLocalized(f.Label)
-		value := f.Value
+		label := GetTextLocalized(f.GetLabel())
+		value := f.GetValue()
 		cardFields = append(cardFields, components.CardField{Label: label, Value: value})
 	}
 
@@ -263,20 +263,16 @@ func (c *ConsoleUI) RenderLifecycleError(title string, steps []ports.LifecycleSt
 	fmt.Println(styles.RenderLifecycleError(title, mapSteps(steps), taskTitle, mapSteps(taskSteps), err, where))
 }
 
-func mapSteps(steps []ports.LifecycleStep) []styles.LifecycleStep {
-	var res []styles.LifecycleStep
-	for _, s := range steps {
-		res = append(res, styles.LifecycleStep{Title: s.Title, Detail: s.Detail, Status: s.Status})
-	}
-	return res
+func mapSteps(steps []ports.LifecycleStep) []ports.LifecycleStep {
+	return steps
 }
 
 func (c *ConsoleUI) ShowWarning(title, subtitle string, fields []ports.Field, items []string, footer string) {
 	// Convert fields to CardField for fullscreen TUI
 	var cardFields []components.CardField
 	for _, f := range fields {
-		label := GetTextLocalized(f.Label)
-		cardFields = append(cardFields, components.CardField{Label: label, Value: f.Value})
+		label := GetTextLocalized(f.GetLabel())
+		cardFields = append(cardFields, components.CardField{Label: label, Value: f.GetValue()})
 	}
 
 	// Get localized title and subtitle

@@ -17,12 +17,6 @@ type LifecycleStep struct {
 	Status string
 }
 
-// Field representa un par clave-valor genérico (Ej: "GPU" -> "rdna4")
-type Field struct {
-	Label string
-	Value string
-}
-
 // IPresenter es el puerto que abstrae toda la presentación e interacción con el usuario.
 // Las implementaciones pueden ser:
 // - TUI (terminal interactiva con Bubbletea)

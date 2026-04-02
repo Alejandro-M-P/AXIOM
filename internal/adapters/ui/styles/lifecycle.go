@@ -5,22 +5,10 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	bubbleprogress "github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/lipgloss"
 )
-
-const (
-	LifecyclePending = "pending"
-	LifecycleRunning = "running"
-	LifecycleDone    = "done"
-	LifecycleError   = "error"
-)
-
-type LifecycleStep struct {
-	Title  string
-	Detail string
-	Status string
-}
 
 var (
 	LifecycleShellStyle = lipgloss.NewStyle().
@@ -52,11 +40,11 @@ var (
 	LifecyclePathStyle        = lipgloss.NewStyle().Foreground(Cyan)
 )
 
-func RenderLifecycle(title, subtitle string, steps []LifecycleStep) string {
+func RenderLifecycle(title, subtitle string, steps []ports.LifecycleStep) string {
 	return RenderLifecycleWithTasks(title, subtitle, steps, "", nil)
 }
 
-func RenderLifecycleWithTasks(title, subtitle string, steps []LifecycleStep, taskTitle string, taskSteps []LifecycleStep) string {
+func RenderLifecycleWithTasks(title, subtitle string, steps []ports.LifecycleStep, taskTitle string, taskSteps []ports.LifecycleStep) string {
 	completed := countCompleted(steps)
 
 	var lines []string
@@ -95,7 +83,7 @@ func RenderLifecycleWithTasks(title, subtitle string, steps []LifecycleStep, tas
 	return LifecycleShellStyle.Render(strings.Join(lines, "\n"))
 }
 
-func RenderLifecycleError(title string, steps []LifecycleStep, taskTitle string, taskSteps []LifecycleStep, err error, where string) string {
+func RenderLifecycleError(title string, steps []ports.LifecycleStep, taskTitle string, taskSteps []ports.LifecycleStep, err error, where string) string {
 	var lines []string
 	lines = append(lines, RenderLifecycleWithTasks(title, i18n.GetLifecycleText("progress", "error_title"), steps, taskTitle, taskSteps))
 	lines = append(lines, lipgloss.NewStyle().Foreground(Red).Bold(true).Render(i18n.GetLifecycleText("progress", "error_label")), err.Error())
@@ -105,10 +93,10 @@ func RenderLifecycleError(title string, steps []LifecycleStep, taskTitle string,
 	return strings.Join(lines, "\n")
 }
 
-func countCompleted(steps []LifecycleStep) int {
+func countCompleted(steps []ports.LifecycleStep) int {
 	completed := 0
 	for _, step := range steps {
-		if step.Status == LifecycleDone {
+		if step.Status == ports.LifecycleDone {
 			completed++
 		}
 	}
@@ -132,13 +120,13 @@ func renderLifecycleStep(label, status string) string {
 	style := LifecycleStepPendingStyle
 
 	switch status {
-	case LifecycleRunning:
+	case ports.LifecycleRunning:
 		prefix = "[>]"
 		style = LifecycleStepRunningStyle
-	case LifecycleDone:
+	case ports.LifecycleDone:
 		prefix = "[x]"
 		style = LifecycleStepDoneStyle
-	case LifecycleError:
+	case ports.LifecycleError:
 		prefix = "[!]"
 		style = LifecycleStepErrorStyle
 	}

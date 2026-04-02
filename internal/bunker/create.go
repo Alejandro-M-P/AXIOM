@@ -61,12 +61,12 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	m.ui.ShowCommandCard(
 		"create",
 		[]ports.Field{
-			{Label: "fields.name", Value: name},
-			{Label: "fields.image", Value: imageName},
-			{Label: "fields.project", Value: projectDir},
-			{Label: "fields.environment", Value: envDir},
-			{Label: "fields.gpu", Value: hardware.Type},
-			{Label: "fields.ssh", Value: yesNo(sshMounted)},
+			ports.NewField("fields.name", name),
+			ports.NewField("fields.image", imageName),
+			ports.NewField("fields.project", projectDir),
+			ports.NewField("fields.environment", envDir),
+			ports.NewField("fields.gpu", hardware.Type),
+			ports.NewField("fields.ssh", yesNo(sshMounted)),
 		},
 		nil,
 	)
@@ -87,8 +87,8 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 			"warnings.bunker_exists.title",
 			"warnings.bunker_exists.desc",
 			[]ports.Field{
-				{Label: "fields.name", Value: name},
-				{Label: "fields.environment", Value: envDir},
+				ports.NewField("fields.name", name),
+				ports.NewField("fields.environment", envDir),
 			},
 			nil,
 			"warnings.bunker_exists.footer",
@@ -102,7 +102,7 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 			"warnings.missing_image.title",
 			"warnings.missing_image.desc",
 			[]ports.Field{
-				{Label: "fields.expected", Value: imageName},
+				ports.NewField("fields.expected", imageName),
 			},
 			available,
 			"warnings.missing_image.footer",
@@ -183,9 +183,9 @@ WaitLoop:
 		"warnings.bunker_ready.title",
 		"warnings.bunker_ready.desc",
 		[]ports.Field{
-			{Label: "fields.name", Value: name},
-			{Label: "fields.image", Value: imageName},
-			{Label: "fields.environment", Value: envDir},
+			ports.NewField("fields.name", name),
+			ports.NewField("fields.image", imageName),
+			ports.NewField("fields.environment", envDir),
 		},
 		nil,
 		"warnings.bunker_ready.footer",

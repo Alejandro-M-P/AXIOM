@@ -61,9 +61,9 @@ func (m *Manager) stop(ctx context.Context) error {
 	m.ui.ShowCommandCard(
 		"stop",
 		[]ports.Field{
-			{Label: "fields.name", Value: selected},
-			{Label: "fields.status", Value: "stopped"},
-			{Label: "fields.environment", Value: humanPath(m.fs, bunkerEnvPath(cfg, selected))},
+			ports.NewField("fields.name", selected),
+			ports.NewField("fields.status", "stopped"),
+			ports.NewField("fields.environment", humanPath(m.fs, bunkerEnvPath(cfg, selected))),
 		},
 		nil,
 	)

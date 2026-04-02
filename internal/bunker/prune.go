@@ -66,7 +66,7 @@ func (m *Manager) prune(ctx context.Context) error {
 
 	confirm, err := m.ui.AskConfirmInCard(
 		"prune",
-		[]ports.Field{{Label: "fields.orphans", Value: fmt.Sprintf("%d", len(orphans))}},
+		[]ports.Field{ports.NewField("fields.orphans", fmt.Sprintf("%d", len(orphans)))},
 		orphans,
 		"prune.confirm",
 	)

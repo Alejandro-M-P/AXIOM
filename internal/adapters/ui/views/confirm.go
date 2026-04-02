@@ -64,7 +64,7 @@ func (m confirmModel) View() string {
 
 	var details []styles.BunkerDetail
 	for _, f := range m.fields {
-		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
+		details = append(details, styles.BunkerDetail{Label: f.GetLabel(), Value: f.GetValue()})
 	}
 
 	lines := styles.BuildCardLines(cmdData["title"], cmdData["subtitle"], details, m.items, cmdData["footer"])
@@ -171,7 +171,7 @@ func (m deleteFormModel) View() string {
 	cmdData := i18n.Commands["delete"]
 	var details []styles.BunkerDetail
 	for _, f := range m.fields {
-		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
+		details = append(details, styles.BunkerDetail{Label: f.GetLabel(), Value: f.GetValue()})
 	}
 
 	lines := styles.BuildCardLines(cmdData["title"], cmdData["subtitle"], details, nil, cmdData["footer"])
@@ -255,7 +255,7 @@ func (m resetFormModel) View() string {
 	cmdData := i18n.Commands["reset"]
 	var details []styles.BunkerDetail
 	for _, f := range m.fields {
-		details = append(details, styles.BunkerDetail{Label: f.Label, Value: f.Value})
+		details = append(details, styles.BunkerDetail{Label: f.GetLabel(), Value: f.GetValue()})
 	}
 
 	lines := styles.BuildCardLines(cmdData["title"], cmdData["subtitle"], details, m.items, cmdData["footer"])
