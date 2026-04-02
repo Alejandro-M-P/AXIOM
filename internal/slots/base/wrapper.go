@@ -7,9 +7,6 @@ import (
 	"os/exec"
 )
 
-// Executor is a function type for executing commands, compatible with slots.Executor
-type Executor func(ctx context.Context, msg string, name string, args ...string) error
-
 // InstallationStep represents a step in the installation process
 type InstallationStep struct {
 	Description string

@@ -20,10 +20,6 @@ const (
 	SlotSANDBOX SlotCategory = "sandbox"
 )
 
-// Executor es la función de ejecución de comandos durante la instalación.
-// Recibe el contexto, el mensaje de progreso, y los argumentos del comando.
-type Executor func(ctx context.Context, msg string, name string, args ...string) error
-
 // Slot define el contrato para cualquier item de slot de instalación.
 type Slot interface {
 	// ID retorna el identificador único del slot.
@@ -39,5 +35,5 @@ type Slot interface {
 	// Dependencies retorna las dependencias del slot.
 	Dependencies() []string
 	// Install ejecuta la instalación del slot.
-	Install(ctx context.Context, exec Executor) error
+	Install(ctx context.Context) error
 }
