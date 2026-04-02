@@ -90,7 +90,7 @@ func (c *ConsoleUI) ShowLogo() {
 	fmt.Println(styles.GetLogo())
 }
 
-func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []ports.Field, items []string) {
+func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []components.CardField, items []string) {
 	cmdData, ok := i18n.Commands[commandKey]
 	if !ok {
 		cmdData = map[string]string{"title": commandKey, "subtitle": "", "footer": ""}
@@ -100,8 +100,8 @@ func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []ports.Field, ite
 	var cardFields []components.CardField
 	for _, f := range fields {
 		// Get localized label
-		label := GetTextLocalized(f.GetLabel())
-		value := f.GetValue()
+		label := GetTextLocalized(f.Label)
+		value := f.Value
 		cardFields = append(cardFields, components.CardField{Label: label, Value: value})
 	}
 
@@ -114,7 +114,7 @@ func (c *ConsoleUI) ShowCommandCard(commandKey string, fields []ports.Field, ite
 	_ = components.RunCardTUI(title, subtitle, cardFields, items, footer)
 }
 
-func (c *ConsoleUI) AskConfirmInCard(commandKey string, fields []ports.Field, items []string, promptKey string) (bool, error) {
+func (c *ConsoleUI) AskConfirmInCard(commandKey string, fields []components.CardField, items []string, promptKey string) (bool, error) {
 	question := getPromptText(promptKey)
 	model := newConfirmModel(commandKey, fields, items, question)
 
@@ -131,7 +131,7 @@ func (c *ConsoleUI) AskConfirmInCard(commandKey string, fields []ports.Field, it
 	return resultModel.result, nil
 }
 
-func (c *ConsoleUI) AskDelete(name string, fields []ports.Field) (bool, string, bool, error) {
+func (c *ConsoleUI) AskDelete(name string, fields []components.CardField) (bool, string, bool, error) {
 	model := newDeleteFormModel(fields)
 	p := tea.NewProgram(model)
 	finalModel, err := p.Run()
@@ -145,7 +145,7 @@ func (c *ConsoleUI) AskDelete(name string, fields []ports.Field) (bool, string, 
 	return res.confirm, res.reason, res.deleteCode, nil
 }
 
-func (c *ConsoleUI) AskReset(fields []ports.Field, items []string) (bool, string, error) {
+func (c *ConsoleUI) AskReset(fields []components.CardField, items []string) (bool, string, error) {
 	model := newResetFormModel(fields, items)
 	p := tea.NewProgram(model)
 	finalModel, err := p.Run()
@@ -267,12 +267,12 @@ func mapSteps(steps []ports.LifecycleStep) []ports.LifecycleStep {
 	return steps
 }
 
-func (c *ConsoleUI) ShowWarning(title, subtitle string, fields []ports.Field, items []string, footer string) {
+func (c *ConsoleUI) ShowWarning(title, subtitle string, fields []components.CardField, items []string, footer string) {
 	// Convert fields to CardField for fullscreen TUI
 	var cardFields []components.CardField
 	for _, f := range fields {
-		label := GetTextLocalized(f.GetLabel())
-		cardFields = append(cardFields, components.CardField{Label: label, Value: f.GetValue()})
+		label := GetTextLocalized(f.Label)
+		cardFields = append(cardFields, components.CardField{Label: label, Value: f.Value})
 	}
 
 	// Get localized title and subtitle
