@@ -137,3 +137,10 @@ gpu_label = "GPU"
 
 [format]
 numbered_step = "%d. %s"
+
+[progress]
+counter = "Progreso: %d/%d"
+installation_counter = "Instalacion: %d/%d"
+error_title = "Error durante el ciclo de vida"
+error_label = "Error:"
+location_label = "Ubicacion:"

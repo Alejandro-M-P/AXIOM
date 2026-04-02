@@ -66,7 +66,7 @@ func RenderLifecycleWithTasks(title, subtitle string, steps []LifecycleStep, tas
 	}
 	lines = append(lines, "")
 	lines = append(lines, renderProgressBar(completed, len(steps)))
-	lines = append(lines, LifecycleMetaStyle.Render(fmt.Sprintf("Progreso: %d/%d", completed, len(steps))))
+	lines = append(lines, LifecycleMetaStyle.Render(i18n.GetLifecycleText("progress", "counter", completed, len(steps))))
 	lines = append(lines, "")
 
 	for i, step := range steps {
@@ -82,7 +82,7 @@ func RenderLifecycleWithTasks(title, subtitle string, steps []LifecycleStep, tas
 		lines = append(lines, "")
 		lines = append(lines, LifecycleSectionStyle.Render(taskTitle))
 		lines = append(lines, renderProgressBar(taskDone, len(taskSteps)))
-		lines = append(lines, LifecycleMetaStyle.Render(fmt.Sprintf("Instalacion: %d/%d", taskDone, len(taskSteps))))
+		lines = append(lines, LifecycleMetaStyle.Render(i18n.GetLifecycleText("progress", "installation_counter", taskDone, len(taskSteps))))
 		for i, step := range taskSteps {
 			label := fmt.Sprintf(i18n.Lifecycle["format"]["numbered_step"], i+1, step.Title)
 			if strings.TrimSpace(step.Detail) != "" {
@@ -97,10 +97,10 @@ func RenderLifecycleWithTasks(title, subtitle string, steps []LifecycleStep, tas
 
 func RenderLifecycleError(title string, steps []LifecycleStep, taskTitle string, taskSteps []LifecycleStep, err error, where string) string {
 	var lines []string
-	lines = append(lines, RenderLifecycleWithTasks(title, "Error durante el ciclo de vida", steps, taskTitle, taskSteps))
-	lines = append(lines, lipgloss.NewStyle().Foreground(Red).Bold(true).Render("Error:"), err.Error())
+	lines = append(lines, RenderLifecycleWithTasks(title, i18n.GetLifecycleText("progress", "error_title"), steps, taskTitle, taskSteps))
+	lines = append(lines, lipgloss.NewStyle().Foreground(Red).Bold(true).Render(i18n.GetLifecycleText("progress", "error_label")), err.Error())
 	if strings.TrimSpace(where) != "" {
-		lines = append(lines, LifecycleMetaStyle.Render("Ubicacion:"), LifecyclePathStyle.Render(where))
+		lines = append(lines, LifecycleMetaStyle.Render(i18n.GetLifecycleText("progress", "location_label")), LifecyclePathStyle.Render(where))
 	}
 	return strings.Join(lines, "\n")
 }
