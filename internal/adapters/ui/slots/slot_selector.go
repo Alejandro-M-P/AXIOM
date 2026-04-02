@@ -9,6 +9,7 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -379,18 +380,11 @@ func contains(slice []string, val string) bool {
 	return false
 }
 
-// getSubcategoryTitle returns a human-readable title for a subcategory.
+// getSubcategoryTitle returns a human-readable title for a subcategory using i18n.
 func getSubcategoryTitle(subcategory string) string {
-	switch subcategory {
-	case "ia":
-		return "AI / LLM Models"
-	case "languages":
-		return "Programming Languages"
-	case "tools":
-		return "Developer Tools"
-	case "data":
-		return "Data Stores"
-	default:
-		return strings.Title(subcategory)
+	if title := i18n.GetSlotsText("subcategories", subcategory); title != "" {
+		return title
 	}
+	// Fallback: titlecase the subcategory name
+	return strings.Title(subcategory)
 }
