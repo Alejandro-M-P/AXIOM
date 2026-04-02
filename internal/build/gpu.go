@@ -14,24 +14,21 @@ import (
 
 // ResolveBuildGPU determines the GPU configuration for a build.
 // If GPUType is explicitly set in config, it uses that; otherwise detects from hardware.
-func ResolveBuildGPU(ctx context.Context, cfg config.EnvConfig, system ports.ISystem) (*config.GPUInfo, error) {
-	result := &config.GPUInfo{}
+func ResolveBuildGPU(ctx context.Context, cfg config.EnvConfig, system ports.ISystem) (ports.GPUInfo, error) {
+	result := ports.GPUInfo{}
 
 	if cfg.GPUType != "" {
 		result.Type = NormalizeGPUType(cfg.GPUType, cfg.GFXVal)
-		result.GfxVal = cfg.GFXVal
 		result.Name = "gpu.forced_by_env"
 		return result, nil
 	}
 
-	hw := system.DetectGPU()
-	result.Type = NormalizeGPUType(hw.Type, hw.GfxVal)
-	result.GfxVal = hw.GfxVal
+	hw, err := system.DetectGPU()
+	if err != nil {
+		return result, fmt.Errorf("errors.build.gpu.detection: %w", err)
+	}
+	result.Type = NormalizeGPUType(hw.Type, "")
 	result.Name = hw.Name
-	result.RawGfx = hw.RawGfx
-	result.PCIAddress = hw.PCIAddress
-	result.VendorID = hw.VendorID
-	result.DeviceID = hw.DeviceID
 
 	if result.Name == "" {
 		result.Name = "gpu.unknown"
@@ -100,8 +97,8 @@ func BaseImageName(gpuType string) string {
 }
 
 // HostGPUVolumeFlags returns the volume flags needed to expose host GPU to container.
-func HostGPUVolumeFlags(gpuInfo *config.GPUInfo) []string {
-	if gpuInfo == nil {
+func HostGPUVolumeFlags(gpuInfo ports.GPUInfo) []string {
+	if gpuInfo.Type == "" {
 		return nil
 	}
 

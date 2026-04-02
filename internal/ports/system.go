@@ -2,15 +2,19 @@ package ports
 
 import (
 	"context"
-
-	"github.com/Alejandro-M-P/AXIOM/internal/config"
 )
+
+// GPUInfo representa información básica de GPU.
+type GPUInfo struct {
+	Type string
+	Name string
+}
 
 // ISystem define el contrato para operaciones del sistema.
 // Incluye detección de hardware, verificación de dependencias, etc.
 type ISystem interface {
 	// DetectGPU detecta la GPU del sistema.
-	DetectGPU() config.GPUInfo
+	DetectGPU() (GPUInfo, error)
 
 	// CheckDeps verifica que las dependencias necesarias estén instaladas.
 	CheckDeps() error

@@ -10,7 +10,6 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system/gpu"
-	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -21,17 +20,12 @@ func NewSystemAdapter() *SystemAdapter {
 	return &SystemAdapter{}
 }
 
-func (s *SystemAdapter) DetectGPU() config.GPUInfo {
+func (s *SystemAdapter) DetectGPU() (ports.GPUInfo, error) {
 	info := gpu.Detect()
-	return config.GPUInfo{
-		Type:       info.Type,
-		GfxVal:     info.GfxVal,
-		Name:       info.Name,
-		RawGfx:     info.RawGfx,
-		PCIAddress: info.PCIAddress,
-		VendorID:   info.VendorID,
-		DeviceID:   info.DeviceID,
-	}
+	return ports.GPUInfo{
+		Type: info.Type,
+		Name: info.Name,
+	}, nil
 }
 
 func (s *SystemAdapter) CheckDeps() error {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
@@ -95,10 +96,6 @@ func TestResolveBuildGPU_Found(t *testing.T) {
 		t.Fatalf("ResolveBuildGPU failed: %v", err)
 	}
 
-	if gpuInfo == nil {
-		t.Fatal("GPUInfo should not be nil")
-	}
-
 	if gpuInfo.Type != "nvidia" {
 		t.Errorf("GPUType = %s, want nvidia", gpuInfo.Type)
 	}
@@ -124,10 +121,6 @@ func TestResolveBuildGPU_NotFound(t *testing.T) {
 		t.Fatalf("ResolveBuildGPU failed: %v", err)
 	}
 
-	if gpuInfo == nil {
-		t.Fatal("GPUInfo should not be nil even when no GPU is configured")
-	}
-
 	// Just verify it returns a valid GPUInfo with some type
 	// The actual type depends on the system's GPU
 	if gpuInfo.Type == "" {
@@ -141,7 +134,7 @@ func TestResolveBuildGPU_NotFound(t *testing.T) {
 }
 
 func TestHostGPUVolumeFlags_NVIDIA(t *testing.T) {
-	gpuInfo := &config.GPUInfo{
+	gpuInfo := ports.GPUInfo{
 		Type: "nvidia",
 		Name: "NVIDIA GPU",
 	}
@@ -158,7 +151,7 @@ func TestHostGPUVolumeFlags_NVIDIA(t *testing.T) {
 }
 
 func TestHostGPUVolumeFlags_AMD(t *testing.T) {
-	gpuInfo := &config.GPUInfo{
+	gpuInfo := ports.GPUInfo{
 		Type: "amd",
 		Name: "AMD GPU",
 	}
@@ -175,9 +168,9 @@ func TestHostGPUVolumeFlags_AMD(t *testing.T) {
 }
 
 func TestHostGPUVolumeFlags_None(t *testing.T) {
-	flags := build.HostGPUVolumeFlags(nil)
+	flags := build.HostGPUVolumeFlags(ports.GPUInfo{})
 
 	if flags != nil {
-		t.Errorf("HostGPUVolumeFlags(nil) = %v, want nil", flags)
+		t.Errorf("HostGPUVolumeFlags(ports.GPUInfo{}) = %v, want nil", flags)
 	}
 }

@@ -15,7 +15,7 @@ import (
 // BuildContext holds all the context needed for a build operation.
 type BuildContext struct {
 	Config            config.EnvConfig
-	GPUInfo           *config.GPUInfo
+	GPUInfo           ports.GPUInfo
 	ImageName         string
 	SlotName          string
 	BuildWorkspaceDir string

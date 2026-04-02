@@ -6,6 +6,7 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
@@ -19,7 +20,7 @@ func TestInstallSystemBase(t *testing.T) {
 	containerName := "test-container"
 	buildCtx := &build.BuildContext{
 		Config:        cfg,
-		GPUInfo:       &config.GPUInfo{Type: "generic"},
+		GPUInfo:       ports.GPUInfo{Type: "generic"},
 		ContainerName: containerName,
 	}
 
@@ -49,7 +50,7 @@ func TestInstallDeveloperTools(t *testing.T) {
 	containerName := "test-container"
 	buildCtx := &build.BuildContext{
 		Config:        cfg,
-		GPUInfo:       &config.GPUInfo{Type: "generic"},
+		GPUInfo:       ports.GPUInfo{Type: "generic"},
 		ContainerName: containerName,
 	}
 
@@ -79,7 +80,7 @@ func TestInstallModelStack(t *testing.T) {
 	containerName := "test-container"
 	buildCtx := &build.BuildContext{
 		Config:        cfg,
-		GPUInfo:       &config.GPUInfo{Type: "nvidia"},
+		GPUInfo:       ports.GPUInfo{Type: "nvidia"},
 		ContainerName: containerName,
 	}
 	modelConfig := build.ModelStackConfig{GPUType: "nvidia"}
@@ -130,7 +131,7 @@ func TestInstallOllama(t *testing.T) {
 			containerName := "test-container"
 			buildCtx := &build.BuildContext{
 				Config:        cfg,
-				GPUInfo:       &config.GPUInfo{Type: tc.gpuType},
+				GPUInfo:       ports.GPUInfo{Type: tc.gpuType},
 				ContainerName: containerName,
 			}
 			modelConfig := build.ModelStackConfig{GPUType: tc.gpuType}
