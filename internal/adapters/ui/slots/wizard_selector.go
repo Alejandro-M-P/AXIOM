@@ -317,7 +317,7 @@ func (m *WizardModel) viewSlotSelect() string {
 	t := theme.DefaultTheme()
 
 	// Create header for slot selection phase
-	header := theme.NewHeader(t, "Select Slot Type", "", "↑/↓: Navigate | Enter: Confirm | Esc: Cancel")
+	header := theme.NewHeader(t, m.presenter.GetText("slots.select_slot_type"), "", "↑/↓: Navigate | Enter: Confirm | Esc: Cancel")
 
 	// Define colors from theme
 	accentColor := t.Primary
@@ -414,7 +414,7 @@ func (m *WizardModel) viewItemWizard() string {
 	totalSteps := len(m.itemPhaseOrder)
 
 	// Create header for item wizard phase
-	header := theme.NewHeader(t, "Select Items", phaseTitle, "Space: Toggle | Enter: Next | Esc: Back")
+	header := theme.NewHeader(t, m.presenter.GetText("slots.select_items"), phaseTitle, "Space: Toggle | Enter: Next | Esc: Back")
 
 	// Define colors from theme
 	accentColor := t.Primary
@@ -536,7 +536,7 @@ func (m *WizardModel) viewSummary() string {
 	t := theme.DefaultTheme()
 
 	// Create header for summary phase
-	header := theme.NewHeader(t, "Summary", "", "↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel")
+	header := theme.NewHeader(t, m.presenter.GetText("slots.summary"), "", "↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel")
 
 	// Define colors from theme
 	accentColor := t.Primary

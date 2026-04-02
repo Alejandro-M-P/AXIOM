@@ -93,7 +93,7 @@ func (m *Manager) deleteImage(ctx context.Context) error {
 	}
 
 	hardware := resolveBuildGPU(cfg)
-	targetImage := baseImageName(hardware.Type)
+	targetImage := baseImageName(m.ui, hardware.Type)
 	images, err := m.listAxiomImages(ctx)
 	if err != nil {
 		return err

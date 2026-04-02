@@ -58,7 +58,7 @@ func (m *Manager) info(ctx context.Context, name string) error {
 	}
 
 	hardware := resolveBuildGPU(cfg)
-	imageName := baseImageName(hardware.Type)
+	imageName := baseImageName(m.ui, hardware.Type)
 
 	m.ui.ShowLogo()
 	m.ui.ShowCommandCard(
@@ -70,7 +70,7 @@ func (m *Manager) info(ctx context.Context, name string) error {
 			ports.NewField("fields.gpu", hardware.Type),
 			ports.NewField("fields.environment", humanPath(m.fs, bunkerEnvPath(cfg, name))),
 			ports.NewField("fields.project", humanPath(m.fs, bunkerProjectPath(cfg, name))),
-			ports.NewField("fields.size", bunkerEnvSize(m.fs, cfg, name)),
+			ports.NewField("fields.size", bunkerEnvSize(m.fs, cfg, name, m.ui)),
 			ports.NewField("fields.last_activity", bunkerLastEntry(m.fs, cfg, name)),
 			ports.NewField("fields.git_branch", defaultString(bunkerGitBranch(m.fs, cfg, name), "-")),
 		},

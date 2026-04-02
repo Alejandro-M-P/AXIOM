@@ -17,6 +17,19 @@ const (
 	SlotSANDBOX SlotCategory = "sandbox"
 )
 
+// SlotCategoryFromString converts a string to a SlotCategory.
+// Defaults to SlotDEV if unknown.
+func SlotCategoryFromString(s string) SlotCategory {
+	switch s {
+	case "data":
+		return SlotDATA
+	case "sandbox":
+		return SlotSANDBOX
+	default:
+		return SlotDEV
+	}
+}
+
 // Executor is a function type for progress callbacks during installation.
 // It takes a context and returns an error if the execution should be cancelled.
 type Executor func(ctx context.Context) error

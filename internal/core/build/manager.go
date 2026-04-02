@@ -372,6 +372,12 @@ func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
 	return m.Build(ctx, cfg)
 }
 
+// SaveSlotSelection saves slot selection for the build process.
+func (m *Manager) SaveSlotSelection(selectedSlot string, selectedIDs []string) error {
+	selections := []SlotSelection{{Slot: selectedSlot, Selected: selectedIDs}}
+	return m.slotManager.SaveSelection(selections)
+}
+
 // newBuildProgress creates a progress tracker for the build.
 // It generates different steps based on the slot type (dev, data, sandbox).
 func (m *Manager) newBuildProgress(ctx *BuildContext, slotName string) *Progress {

@@ -211,6 +211,10 @@ func (m *mockBuildManager) Rebuild(ctx context.Context, cfg config.EnvConfig) er
 	return m.rebuildErr
 }
 
+func (m *mockBuildManager) SaveSlotSelection(selectedSlot string, selectedIDs []string) error {
+	return nil
+}
+
 // mockSlotManager implements SlotManagerInterface for testing
 type mockSlotManager struct {
 	discoverSlotsCalled bool

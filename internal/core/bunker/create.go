@@ -49,12 +49,12 @@ func (m *Manager) createWithImage(ctx context.Context, name, image string) error
 	// Use provided image or auto-detect based on GPU
 	imageName := strings.TrimSpace(image)
 	if imageName == "" {
-		imageName = baseImageName(hardware.Type)
+		imageName = baseImageName(m.ui, hardware.Type)
 	}
 
 	// Get SSH agent socket for volume mounting
 	sshSocket, _ := m.system.SSHAgentSocket()
-	sshMounted := sshVolumeFlag(sshSocket) != ""
+	sshMounted := sshVolumeFlag(m.ui, sshSocket) != ""
 
 	m.ui.ShowLogo()
 	m.ui.ShowCommandCard(

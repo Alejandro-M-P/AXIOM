@@ -51,6 +51,7 @@ type BunkerManagerInterface interface {
 type BuildManagerInterface interface {
 	Build(ctx context.Context, cfg config.EnvConfig) error
 	Rebuild(ctx context.Context, cfg config.EnvConfig) error
+	SaveSlotSelection(selectedSlot string, selectedIDs []string) error
 }
 
 // SlotManagerInterface defines the contract for slot operations.
@@ -168,20 +169,8 @@ func (r *Router) Handle(args []string) error {
 			return nil // User cancelled
 		}
 
-		// Map slot name to SlotCategory
-		var slotCategory slots.SlotCategory
-		switch selectedSlot {
-		case "data":
-			slotCategory = slots.SlotDATA
-		case "sandbox":
-			slotCategory = slots.SlotSANDBOX
-		default:
-			slotCategory = slots.SlotDEV
-		}
-
-		// Save selection for the build process
-		selections := []slots.SlotSelection{{Slot: slotCategory, Selected: selectedIDs}}
-		if err := r.slm.SaveSelection(selections); err != nil {
+		// Save selection for the build process via BuildManager
+		if err := r.bld.SaveSlotSelection(selectedSlot, selectedIDs); err != nil {
 			return fmt.Errorf("errors.router.failed_save_slot_selection: %w", err)
 		}
 

@@ -11,7 +11,6 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -32,17 +31,17 @@ func sanitizeBunkerName(name string) (string, error) {
 }
 
 // formatBytes formatea bytes a formato legible (KB, MB, GB, etc.).
-func formatBytes(bytes int64) string {
+func formatBytes(presenter ports.IPresenter, bytes int64) string {
 	const unit = 1024
 	if bytes < unit {
-		return fmt.Sprintf(i18n.Commands["bunker"]["bytes_format"], bytes)
+		return fmt.Sprintf(presenter.GetText("bunker.bytes_format"), bytes)
 	}
 	div, exp := int64(unit), 0
 	for n := bytes / unit; n >= unit; n /= unit {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf(i18n.Commands["bunker"]["bytes_format_decimal"], float64(bytes)/float64(div), "KMGTPE"[exp])
+	return fmt.Sprintf(presenter.GetText("bunker.bytes_format_decimal"), float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
 // yesNo convierte un booleano a string de sí/no internacionalizado.
@@ -133,12 +132,12 @@ func removePathWritable(fs ports.IFileSystem, path string) error {
 }
 
 // baseImageName retorna el nombre de la imagen base según el tipo de GPU.
-func baseImageName(gpuType string) string {
+func baseImageName(presenter ports.IPresenter, gpuType string) string {
 	gpuType = strings.TrimSpace(gpuType)
 	if gpuType == "" {
 		gpuType = "generic"
 	}
-	return fmt.Sprintf(i18n.Commands["bunker"]["image_name"], gpuType)
+	return fmt.Sprintf(presenter.GetText("bunker.image_name"), gpuType)
 }
 
 // resolveBuildGPU detecta la GPU para builds.
@@ -151,7 +150,7 @@ func resolveBuildGPU(cfg EnvConfig) GPUInfo {
 }
 
 // bunkerEnvSize calcula el tamaño del directorio de entorno.
-func bunkerEnvSize(fs ports.IFileSystem, cfg EnvConfig, name string) string {
+func bunkerEnvSize(fs ports.IFileSystem, cfg EnvConfig, name string, presenter ports.IPresenter) string {
 	path := config.BuildWorkspaceDir(cfg.BaseDir, name)
 	if _, err := fs.Stat(path); err != nil {
 		return "-"
@@ -172,7 +171,7 @@ func bunkerEnvSize(fs ports.IFileSystem, cfg EnvConfig, name string) string {
 	if err != nil || size == 0 {
 		return "-"
 	}
-	return formatBytes(size)
+	return formatBytes(presenter, size)
 }
 
 // bunkerGitBranch obtiene la rama git del proyecto.
@@ -215,11 +214,11 @@ func bunkerEnvPath(cfg EnvConfig, name string) string {
 
 // sshVolumeFlag retorna el flag de volumen SSH si hay un agent SSH activo.
 // El socketPath viene del sistema (ISystem.SSHAgentSocket).
-func sshVolumeFlag(socketPath string) string {
+func sshVolumeFlag(presenter ports.IPresenter, socketPath string) string {
 	if socketPath == "" {
 		return ""
 	}
-	return fmt.Sprintf(i18n.Commands["bunker"]["volume_ssh"], socketPath, socketPath)
+	return fmt.Sprintf(presenter.GetText("bunker.volume_ssh"), socketPath, socketPath)
 }
 
 // ensureTutorFile asegura que el archivo tutor exista.

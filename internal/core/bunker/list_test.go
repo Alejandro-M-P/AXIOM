@@ -198,7 +198,8 @@ func TestBunkerEnvSize_Calculation(t *testing.T) {
 	}
 
 	fs := filesystem.NewFSAdapter()
-	size := bunkerEnvSize(fs, cfg, "test-bunker")
+	ui := mocks.NewMockPresenter()
+	size := bunkerEnvSize(fs, cfg, "test-bunker", ui)
 	if size == "-" {
 		t.Error("expected size to be calculated, got '-'")
 	}
@@ -210,7 +211,8 @@ func TestBunkerEnvSize_NotExist(t *testing.T) {
 	}
 
 	fs := filesystem.NewFSAdapter()
-	size := bunkerEnvSize(fs, cfg, "nonexistent")
+	ui := mocks.NewMockPresenter()
+	size := bunkerEnvSize(fs, cfg, "nonexistent", ui)
 	if size != "-" {
 		t.Errorf("expected '-' for nonexistent bunker, got '%s'", size)
 	}
