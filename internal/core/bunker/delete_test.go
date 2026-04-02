@@ -205,7 +205,7 @@ func TestListBunkerNames_ExcludesDefault(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{
 		{Name: "bunker-1", Status: "running", Image: "localhost/axiom-generic:latest"},
-		{Name: defaultBuildContainerName, Status: "running", Image: "localhost/axiom-build:latest"},
+		{Name: DefaultBuildContainerName, Status: "running", Image: "localhost/axiom-build:latest"},
 	}
 
 	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
@@ -216,7 +216,7 @@ func TestListBunkerNames_ExcludesDefault(t *testing.T) {
 	}
 
 	for _, name := range names {
-		if name == defaultBuildContainerName {
+		if name == DefaultBuildContainerName {
 			t.Error("defaultBuildContainerName should be excluded from list")
 		}
 	}

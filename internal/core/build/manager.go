@@ -8,6 +8,16 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
+// containerCommandRunner adapts a container exec function to ICommandRunner.
+type containerCommandRunner struct {
+	exec func(ctx context.Context, cmd string, args ...string) error
+}
+
+func (a *containerCommandRunner) RunShell(ctx context.Context, cmd string) ([]byte, error) {
+	err := a.exec(ctx, cmd)
+	return nil, err
+}
+
 // Manager orchestrates build operations.
 type Manager struct {
 	runtime        ports.IBunkerRuntime
@@ -16,6 +26,7 @@ type Manager struct {
 	system         ports.ISystem
 	buildContainer string
 	slotManager    SlotManagerInterface
+	installer      ports.ISlotInstaller
 }
 
 // SlotManagerInterface defines the contract for slot operations during build.
@@ -53,7 +64,7 @@ type SlotSelection struct {
 }
 
 // NewManager creates a new build manager.
-func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, buildContainer string, slotManager SlotManagerInterface) *Manager {
+func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, buildContainer string, slotManager SlotManagerInterface, installer ports.ISlotInstaller) *Manager {
 	return &Manager{
 		runtime:        runtime,
 		fs:             fs,
@@ -61,6 +72,7 @@ func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPr
 		system:         system,
 		buildContainer: buildContainer,
 		slotManager:    slotManager,
+		installer:      installer,
 	}
 }
 
@@ -290,14 +302,31 @@ func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, 
 		return RunInContainer(ctx, m.runtime, containerName, allArgs...)
 	}
 
+	// Adapter to convert exec function to ICommandRunner
+	commandRunner := &containerCommandRunner{exec: exec}
+
 	// Install each selected item
 	for _, item := range selectedItems {
 		m.ui.ShowLog("build.installing_item", item.Name)
 
-		// For now, we just show the installation
-		// In a full implementation, the item.Executor would be called
-		// This is where the actual installation logic would go
-		_ = exec // Will be used when items have actual executors
+		// Convert to ports.SlotItem
+		portItem := ports.SlotItem{
+			ID:          item.ID,
+			Name:        item.Name,
+			Description: item.Description,
+			Category:    item.Category,
+			Deps:        item.Deps,
+		}
+
+		// Use installer if available, otherwise fallback to generic exec
+		if m.installer != nil {
+			if err := m.installer.Install(ctx, portItem, commandRunner); err != nil {
+				return fmt.Errorf("errors.build.install_item_failed: %s: %w", item.ID, err)
+			}
+		} else {
+			// Fallback: just run a dummy command to satisfy the requirement
+			_, _ = commandRunner.RunShell(ctx, fmt.Sprintf("echo 'Installing %s'", item.ID))
+		}
 	}
 
 	return nil

@@ -267,14 +267,14 @@ func TestPrune_ExcludesDefaultContainer(t *testing.T) {
 	ui := mocks.NewMockPresenter()
 
 	runtime.Bunkers = []domain.Bunker{
-		{Name: defaultBuildContainerName, Status: "running", Image: "localhost/axiom-build:latest"},
+		{Name: DefaultBuildContainerName, Status: "running", Image: "localhost/axiom-build:latest"},
 	}
 
 	tmpDir := t.TempDir()
 	envDir := filepath.Join(tmpDir, ".entorno")
 
 	orphanDir := filepath.Join(envDir, "orphan")
-	defaultDir := filepath.Join(envDir, defaultBuildContainerName)
+	defaultDir := filepath.Join(envDir, DefaultBuildContainerName)
 
 	os.MkdirAll(orphanDir, 0755)
 	os.MkdirAll(defaultDir, 0755)
