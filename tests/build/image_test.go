@@ -22,7 +22,8 @@ func TestBuildContextCreation(t *testing.T) {
 
 	ctx := context.Background()
 	mockSystem := mocks.NewMockSystem()
-	buildCtx, err := build.PrepareBuildContext(ctx, cfg, "test-container", "dev", mockSystem)
+	mockUI := mocks.NewMockPresenter()
+	buildCtx, err := build.PrepareBuildContext(ctx, cfg, "test-container", "dev", mockSystem, mockUI)
 
 	if err != nil {
 		t.Fatalf("PrepareBuildContext failed: %v", err)
@@ -36,8 +37,10 @@ func TestBuildContextCreation(t *testing.T) {
 		t.Errorf("ContainerName = %s, want test-container", buildCtx.ContainerName)
 	}
 
-	if buildCtx.ImageName != "localhost/axiom-dev:latest" {
-		t.Errorf("ImageName = %s, want localhost/axiom-dev:latest", buildCtx.ImageName)
+	// Now returns i18n key since GetText returns key when not found
+	expectedImageName := "build_image.image_name"
+	if buildCtx.ImageName != expectedImageName {
+		t.Errorf("ImageName = %s, want %s", buildCtx.ImageName, expectedImageName)
 	}
 
 	expectedDir := filepath.Join(cfg.BaseDir, ".entorno", "test-container")

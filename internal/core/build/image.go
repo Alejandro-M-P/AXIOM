@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -24,8 +23,8 @@ type BuildContext struct {
 
 // PrepareBuildContext creates a BuildContext from the environment configuration.
 // It generates container and workspace names based on the slot type.
-func PrepareBuildContext(ctx context.Context, cfg config.EnvConfig, containerName, slotName string, system ports.ISystem) (*BuildContext, error) {
-	gpuInfo, err := ResolveBuildGPU(ctx, cfg, system)
+func PrepareBuildContext(ctx context.Context, cfg config.EnvConfig, containerName, slotName string, system ports.ISystem, presenter ports.IPresenter) (*BuildContext, error) {
+	gpuInfo, err := ResolveBuildGPU(ctx, cfg, system, presenter)
 	if err != nil {
 		return nil, fmt.Errorf("errors.build.image.gpu_resolution: %w", err)
 	}
@@ -34,11 +33,11 @@ func PrepareBuildContext(ctx context.Context, cfg config.EnvConfig, containerNam
 	// If containerName is provided (non-empty), use it; otherwise generate from slot
 	actualContainerName := containerName
 	if actualContainerName == "" {
-		actualContainerName = i18n.GetLifecycleText("build_image", "container_name", slotName)
+		actualContainerName = presenter.GetText("build_image.container_name", slotName)
 	}
 
 	// Use slot name for image name: axiom-dev, axiom-data, axiom-sandbox
-	imageName := i18n.GetLifecycleText("build_image", "image_name", slotName)
+	imageName := presenter.GetText("build_image.image_name", slotName)
 
 	return &BuildContext{
 		Config:            cfg,

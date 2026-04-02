@@ -90,7 +90,8 @@ func TestResolveBuildGPU_Found(t *testing.T) {
 
 	ctx := context.Background()
 	mockSystem := mocks.NewMockSystem()
-	gpuInfo, err := build.ResolveBuildGPU(ctx, cfg, mockSystem)
+	mockUI := mocks.NewMockPresenter()
+	gpuInfo, err := build.ResolveBuildGPU(ctx, cfg, mockSystem, mockUI)
 
 	if err != nil {
 		t.Fatalf("ResolveBuildGPU failed: %v", err)
@@ -113,7 +114,8 @@ func TestResolveBuildGPU_NotFound(t *testing.T) {
 
 	ctx := context.Background()
 	mockSystem := mocks.NewMockSystem()
-	gpuInfo, err := build.ResolveBuildGPU(ctx, cfg, mockSystem)
+	mockUI := mocks.NewMockPresenter()
+	gpuInfo, err := build.ResolveBuildGPU(ctx, cfg, mockSystem, mockUI)
 
 	// When GPUType is not configured, it falls back to hardware detection
 	// The result depends on the actual GPU on the system

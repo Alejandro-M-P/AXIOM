@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -83,7 +82,7 @@ func (m *Manager) info(ctx context.Context, name string) error {
 func (m *Manager) bunkerStatus(ctx context.Context, name string) string {
 	bunkers, err := m.runtime.ListBunkers(ctx)
 	if err != nil {
-		return i18n.Commands["bunker"]["status_stopped"]
+		return m.ui.GetText("bunker.status_stopped")
 	}
 
 	for _, b := range bunkers {
@@ -91,5 +90,5 @@ func (m *Manager) bunkerStatus(ctx context.Context, name string) string {
 			return b.Status
 		}
 	}
-	return i18n.Commands["bunker"]["status_stopped"]
+	return m.ui.GetText("bunker.status_stopped")
 }

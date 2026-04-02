@@ -8,13 +8,12 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // ResolveBuildGPU determines the GPU configuration for a build.
 // If GPUType is explicitly set in config, it uses that; otherwise detects from hardware.
-func ResolveBuildGPU(ctx context.Context, cfg config.EnvConfig, system ports.ISystem) (ports.GPUInfo, error) {
+func ResolveBuildGPU(ctx context.Context, cfg config.EnvConfig, system ports.ISystem, presenter ports.IPresenter) (ports.GPUInfo, error) {
 	result := ports.GPUInfo{}
 
 	if cfg.GPUType != "" {
@@ -88,12 +87,12 @@ func gfxMajor(gfxVal string) int {
 }
 
 // BaseImageName returns the image name for a given GPU type.
-func BaseImageName(gpuType string) string {
+func BaseImageName(presenter ports.IPresenter, gpuType string) string {
 	gpuType = strings.TrimSpace(gpuType)
 	if gpuType == "" {
 		gpuType = "generic"
 	}
-	return i18n.GetLifecycleText("build.image", "image_name", gpuType)
+	return presenter.GetText("build.image_name", gpuType)
 }
 
 // HostGPUVolumeFlags returns the volume flags needed to expose host GPU to container.

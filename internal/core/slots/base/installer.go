@@ -99,6 +99,12 @@ func (b *BaseInstaller) GetOSName() string {
 
 // IsToolInstalled checks if a tool (command) is available in the system
 func (b *BaseInstaller) IsToolInstalled(tool string) bool {
+	// Use the execFunc which is injected via constructor
+	if b.execFunc != nil {
+		cmd := b.execFunc(context.Background(), "which", tool)
+		return cmd.Run() == nil
+	}
+	// Fallback for when no execFunc is injected
 	cmd := exec.Command("which", tool)
 	err := cmd.Run()
 	return err == nil

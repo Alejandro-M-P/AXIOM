@@ -157,8 +157,10 @@ func TestBunkerStatus_NotFound(t *testing.T) {
 	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	status := mgr.BunkerStatus(context.Background(), "nonexistent")
-	if status != "stopped" {
-		t.Errorf("expected 'stopped' for nonexistent bunker, got '%s'", status)
+	// Now returns i18n key since GetText returns key when not found
+	expected := "bunker.status_stopped"
+	if status != expected {
+		t.Errorf("expected '%s' for nonexistent bunker, got '%s'", expected, status)
 	}
 }
 
@@ -172,8 +174,10 @@ func TestBunkerStatus_ListError(t *testing.T) {
 	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
 
 	status := mgr.BunkerStatus(context.Background(), "test-bunker")
-	if status != "stopped" {
-		t.Errorf("expected 'stopped' fallback on error, got '%s'", status)
+	// Now returns i18n key since GetText returns key when not found
+	expected := "bunker.status_stopped"
+	if status != expected {
+		t.Errorf("expected '%s' fallback on error, got '%s'", expected, status)
 	}
 }
 

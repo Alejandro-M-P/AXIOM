@@ -97,7 +97,7 @@ func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) error {
 	// Prepare build context - use slot name for image
 	// Pass empty containerName to auto-generate based on slot (axiom-dev, axiom-data, axiom-sandbox)
 	var imageName string
-	buildCtx, err := PrepareBuildContext(ctx, cfg, "", slotName, m.system)
+	buildCtx, err := PrepareBuildContext(ctx, cfg, "", slotName, m.system, m.ui)
 	if err != nil {
 		return err
 	}
@@ -335,7 +335,7 @@ func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, 
 // Rebuild rebuilds an existing image after asking for confirmation.
 func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
 	// Use empty containerName to auto-generate based on slot (axiom-dev, axiom-data, axiom-sandbox)
-	buildCtx, err := PrepareBuildContext(ctx, cfg, "", "dev", m.system)
+	buildCtx, err := PrepareBuildContext(ctx, cfg, "", "dev", m.system, m.ui)
 	if err != nil {
 		return err
 	}

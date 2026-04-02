@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -46,7 +45,7 @@ func InstallSystemBase(ctx context.Context, containerName string, cfg *BuildCont
 
 	// Install Homebrew
 	ui.ShowLog("info", ui.GetText("task.install_homebrew"))
-	cmd := i18n.GetLifecycleText("build.steps", "homebrew_install_cmd")
+	cmd := ui.GetText("build.steps.homebrew_install_cmd")
 	if err := exec(ctx, "bash", "-c", cmd); err != nil {
 		return fmt.Errorf("errors.build.steps.failed_install_homebrew: %w", err)
 	}
@@ -87,7 +86,7 @@ func InstallDeveloperTools(ctx context.Context, containerName string, cfg *Build
 func InstallModelStack(ctx context.Context, containerName string, cfg *BuildContext, modelConfig ModelStackConfig, ui ports.IPresenter, exec func(context.Context, string, ...string) error) error {
 	// Install Ollama
 	ui.ShowLog("info", ui.GetText("task.install_ollama"), cfg.GPUInfo.Type)
-	if err := installOllama(ctx, cfg.GPUInfo.Type, exec); err != nil {
+	if err := installOllama(ctx, cfg.GPUInfo.Type, ui, exec); err != nil {
 		return fmt.Errorf("errors.build.steps.failed_install_ollama: %w", err)
 	}
 
@@ -101,13 +100,13 @@ func InstallModelStack(ctx context.Context, containerName string, cfg *BuildCont
 }
 
 // installOllama downloads and installs Ollama for the specified GPU type.
-func installOllama(ctx context.Context, gpuType string, exec func(context.Context, string, ...string) error) error {
+func installOllama(ctx context.Context, gpuType string, ui ports.IPresenter, exec func(context.Context, string, ...string) error) error {
 	arch, err := OllamaArch()
 	if err != nil {
 		return err
 	}
 
-	mainURL := i18n.GetLifecycleText("build.steps", "ollama_url", arch)
+	mainURL := ui.GetText("build.steps.ollama_url", arch)
 	if err := exec(ctx, "curl", "-fsSL", mainURL, "-o", "/tmp/ollama.tar.zst"); err != nil {
 		return err
 	}
@@ -116,7 +115,7 @@ func installOllama(ctx context.Context, gpuType string, exec func(context.Contex
 	}
 
 	if strings.HasPrefix(gpuType, "rdna") || gpuType == "amd" {
-		rocmURL := i18n.GetLifecycleText("build.steps", "ollama_rocm_url", arch)
+		rocmURL := ui.GetText("build.steps.ollama_rocm_url", arch)
 		if err := exec(ctx, "curl", "-fsSL", rocmURL, "-o", "/tmp/ollama-rocm.tar.zst"); err != nil {
 			return err
 		}
