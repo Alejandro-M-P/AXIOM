@@ -3,14 +3,14 @@ package ports
 import (
 	"context"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 )
 
 // ISystem define el contrato para operaciones del sistema.
 // Incluye detección de hardware, verificación de dependencias, etc.
 type ISystem interface {
 	// DetectGPU detecta la GPU del sistema.
-	DetectGPU() domain.GPUInfo
+	DetectGPU() config.GPUInfo
 
 	// CheckDeps verifica que las dependencias necesarias estén instaladas.
 	CheckDeps() error

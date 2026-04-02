@@ -6,7 +6,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -35,7 +35,7 @@ func NewManager(rootDir string, runtime ports.IBunkerRuntime, fs ports.IFileSyst
 }
 
 // LoadConfig carga la configuración desde el archivo config.toml
-func (m *Manager) LoadConfig() (domain.EnvConfig, error) {
+func (m *Manager) LoadConfig() (config.EnvConfig, error) {
 	return LoadConfig(m.fs, m.rootDir)
 }
 

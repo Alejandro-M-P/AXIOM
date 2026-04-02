@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -67,7 +66,7 @@ func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPr
 
 // Build executes the complete build flow for creating a base image.
 // It integrates with the slot system to allow users to select which items to install.
-func (m *Manager) Build(ctx context.Context, cfg domain.EnvConfig) error {
+func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) error {
 	// Load the slot selection that was saved by the router
 	selections, err := m.slotManager.LoadSelection()
 	if err != nil {
@@ -305,7 +304,7 @@ func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, 
 }
 
 // Rebuild rebuilds an existing image after asking for confirmation.
-func (m *Manager) Rebuild(ctx context.Context, cfg domain.EnvConfig) error {
+func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
 	// Use empty containerName to auto-generate based on slot (axiom-dev, axiom-data, axiom-sandbox)
 	buildCtx, err := PrepareBuildContext(ctx, cfg, "", "dev", m.system)
 	if err != nil {

@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/build"
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestInstallSystemBase(t *testing.T) {
 	ui := mocks.NewMockPresenter()
-	cfg := domain.EnvConfig{
+	cfg := config.EnvConfig{
 		AxiomPath: "/home/user/axiom",
 		BaseDir:   "/home/user",
 		ROCMMode:  "",
@@ -19,7 +19,7 @@ func TestInstallSystemBase(t *testing.T) {
 	containerName := "test-container"
 	buildCtx := &build.BuildContext{
 		Config:        cfg,
-		GPUInfo:       &domain.GPUInfo{Type: "generic"},
+		GPUInfo:       &config.GPUInfo{Type: "generic"},
 		ContainerName: containerName,
 	}
 
@@ -42,14 +42,14 @@ func TestInstallSystemBase(t *testing.T) {
 
 func TestInstallDeveloperTools(t *testing.T) {
 	ui := mocks.NewMockPresenter()
-	cfg := domain.EnvConfig{
+	cfg := config.EnvConfig{
 		AxiomPath: "/home/user/axiom",
 		BaseDir:   "/home/user",
 	}
 	containerName := "test-container"
 	buildCtx := &build.BuildContext{
 		Config:        cfg,
-		GPUInfo:       &domain.GPUInfo{Type: "generic"},
+		GPUInfo:       &config.GPUInfo{Type: "generic"},
 		ContainerName: containerName,
 	}
 
@@ -72,14 +72,14 @@ func TestInstallDeveloperTools(t *testing.T) {
 
 func TestInstallModelStack(t *testing.T) {
 	ui := mocks.NewMockPresenter()
-	cfg := domain.EnvConfig{
+	cfg := config.EnvConfig{
 		AxiomPath: "/home/user/axiom",
 		BaseDir:   "/home/user",
 	}
 	containerName := "test-container"
 	buildCtx := &build.BuildContext{
 		Config:        cfg,
-		GPUInfo:       &domain.GPUInfo{Type: "nvidia"},
+		GPUInfo:       &config.GPUInfo{Type: "nvidia"},
 		ContainerName: containerName,
 	}
 	modelConfig := build.ModelStackConfig{GPUType: "nvidia"}
@@ -123,14 +123,14 @@ func TestInstallOllama(t *testing.T) {
 
 			// We can't directly test installOllama since it's not exported,
 			// but we verify the exec function gets called through InstallModelStack
-			cfg := domain.EnvConfig{
+			cfg := config.EnvConfig{
 				AxiomPath: "/home/user/axiom",
 				BaseDir:   "/home/user",
 			}
 			containerName := "test-container"
 			buildCtx := &build.BuildContext{
 				Config:        cfg,
-				GPUInfo:       &domain.GPUInfo{Type: tc.gpuType},
+				GPUInfo:       &config.GPUInfo{Type: tc.gpuType},
 				ContainerName: containerName,
 			}
 			modelConfig := build.ModelStackConfig{GPUType: tc.gpuType}

@@ -10,7 +10,7 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system/gpu"
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -21,9 +21,9 @@ func NewSystemAdapter() *SystemAdapter {
 	return &SystemAdapter{}
 }
 
-func (s *SystemAdapter) DetectGPU() domain.GPUInfo {
+func (s *SystemAdapter) DetectGPU() config.GPUInfo {
 	info := gpu.Detect()
-	return domain.GPUInfo{
+	return config.GPUInfo{
 		Type:       info.Type,
 		GfxVal:     info.GfxVal,
 		Name:       info.Name,

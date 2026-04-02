@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
@@ -273,24 +273,24 @@ func TestSSHVolumeFlag_WithAgent(t *testing.T) {
 
 func TestEnvConfigAlias_Correct(t *testing.T) {
 	var cfg EnvConfig
-	var domainCfg domain.EnvConfig
+	var configCfg config.EnvConfig
 
 	cfg.BaseDir = "/test"
-	domainCfg.BaseDir = "/test"
+	configCfg.BaseDir = "/test"
 
-	if cfg.BaseDir != domainCfg.BaseDir {
+	if cfg.BaseDir != configCfg.BaseDir {
 		t.Error("EnvConfig alias not working correctly")
 	}
 }
 
 func TestGPUInfoAlias_Correct(t *testing.T) {
 	var gpu GPUInfo
-	var domainGPU domain.GPUInfo
+	var configGPU config.GPUInfo
 
 	gpu.Type = "test"
-	domainGPU.Type = "test"
+	configGPU.Type = "test"
 
-	if gpu.Type != domainGPU.Type {
+	if gpu.Type != configGPU.Type {
 		t.Error("GPUInfo alias not working correctly")
 	}
 }

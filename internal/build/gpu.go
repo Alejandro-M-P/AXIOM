@@ -7,15 +7,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // ResolveBuildGPU determines the GPU configuration for a build.
 // If GPUType is explicitly set in config, it uses that; otherwise detects from hardware.
-func ResolveBuildGPU(ctx context.Context, cfg domain.EnvConfig, system ports.ISystem) (*domain.GPUInfo, error) {
-	result := &domain.GPUInfo{}
+func ResolveBuildGPU(ctx context.Context, cfg config.EnvConfig, system ports.ISystem) (*config.GPUInfo, error) {
+	result := &config.GPUInfo{}
 
 	if cfg.GPUType != "" {
 		result.Type = NormalizeGPUType(cfg.GPUType, cfg.GFXVal)
@@ -100,7 +100,7 @@ func BaseImageName(gpuType string) string {
 }
 
 // HostGPUVolumeFlags returns the volume flags needed to expose host GPU to container.
-func HostGPUVolumeFlags(gpuInfo *domain.GPUInfo) []string {
+func HostGPUVolumeFlags(gpuInfo *config.GPUInfo) []string {
 	if gpuInfo == nil {
 		return nil
 	}

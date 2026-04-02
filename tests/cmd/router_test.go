@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/internal/router"
 	"github.com/Alejandro-M-P/AXIOM/internal/slots"
@@ -187,8 +187,8 @@ func (m *mockBunkerManager) Help() error {
 	return m.helpErr
 }
 
-func (m *mockBunkerManager) LoadConfig() (domain.EnvConfig, error) {
-	return domain.EnvConfig{}, nil
+func (m *mockBunkerManager) LoadConfig() (config.EnvConfig, error) {
+	return config.EnvConfig{}, nil
 }
 
 func (m *mockBunkerManager) GetUI() ports.IPresenter {
@@ -202,12 +202,12 @@ type mockBuildManager struct {
 	buildCalled bool
 }
 
-func (m *mockBuildManager) Build(ctx context.Context, cfg domain.EnvConfig) error {
+func (m *mockBuildManager) Build(ctx context.Context, cfg config.EnvConfig) error {
 	m.buildCalled = true
 	return m.buildErr
 }
 
-func (m *mockBuildManager) Rebuild(ctx context.Context, cfg domain.EnvConfig) error {
+func (m *mockBuildManager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
 	return m.rebuildErr
 }
 

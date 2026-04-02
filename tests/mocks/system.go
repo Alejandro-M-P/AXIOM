@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -24,7 +24,7 @@ type MockSystem struct {
 	PrepareSSHAgentCalls int
 
 	// Return values
-	GPUInfo            domain.GPUInfo
+	GPUInfo            config.GPUInfo
 	CheckDepsErr       error
 	RefreshSudoErr     error
 	PrepareSSHAgentErr error
@@ -33,7 +33,7 @@ type MockSystem struct {
 // NewMockSystem creates a new MockSystem with default values.
 func NewMockSystem() *MockSystem {
 	return &MockSystem{
-		GPUInfo: domain.GPUInfo{
+		GPUInfo: config.GPUInfo{
 			Type:       "rdna4",
 			GfxVal:     "gfx1100",
 			Name:       "AMD Radeon RX 7700 XT",
@@ -45,7 +45,7 @@ func NewMockSystem() *MockSystem {
 	}
 }
 
-func (m *MockSystem) DetectGPU() domain.GPUInfo {
+func (m *MockSystem) DetectGPU() config.GPUInfo {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.DetectGPUCalls++

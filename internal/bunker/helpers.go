@@ -10,16 +10,15 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
-// EnvConfig alias para domain.EnvConfig para evitar imports múltiples
-type EnvConfig = domain.EnvConfig
+// EnvConfig is an alias to config.EnvConfig for convenience within the bunker package.
+type EnvConfig = config.EnvConfig
 
-// GPUInfo alias para domain.GPUInfo
-type GPUInfo = domain.GPUInfo
+// GPUInfo is an alias to config.GPUInfo for convenience within the bunker package.
+type GPUInfo = config.GPUInfo
 
 // sanitizeBunkerName valida y limpia el nombre de un búnker.
 func sanitizeBunkerName(name string) (string, error) {
@@ -235,13 +234,13 @@ func ensureTutorFile(fs ports.IFileSystem, path string) error {
 }
 
 // LoadConfig lee el archivo config.toml y retorna una configuración.
-func LoadConfig(fs ports.IFileSystem, axiomPath string) (domain.EnvConfig, error) {
+func LoadConfig(fs ports.IFileSystem, axiomPath string) (config.EnvConfig, error) {
 	path := filepath.Join(axiomPath, "config.toml")
 
 	data, err := fs.ReadFile(path)
 	if err != nil {
 		// Si el archivo no existe, retornamos config vacía (no es error)
-		return domain.EnvConfig{}, nil
+		return config.EnvConfig{}, nil
 	}
 
 	var cfg struct {
@@ -260,10 +259,10 @@ func LoadConfig(fs ports.IFileSystem, axiomPath string) (domain.EnvConfig, error
 	}
 
 	if err := toml.Unmarshal(data, &cfg); err != nil {
-		return domain.EnvConfig{}, err
+		return config.EnvConfig{}, err
 	}
 
-	result := domain.EnvConfig{
+	result := config.EnvConfig{
 		AxiomPath:  cfg.AxiomPath,
 		GitUser:    cfg.GitUser,
 		GitEmail:   cfg.GitEmail,

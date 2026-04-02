@@ -8,12 +8,11 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
 func TestBuildContextCreation(t *testing.T) {
-	cfg := domain.EnvConfig{
+	cfg := config.EnvConfig{
 		AxiomPath: "/home/user/axiom",
 		BaseDir:   "/home/user",
 		GPUType:   "nvidia",
@@ -49,7 +48,7 @@ func TestBuildContextCreation(t *testing.T) {
 
 func TestPrepareSharedDirectories(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
-	cfg := domain.EnvConfig{
+	cfg := config.EnvConfig{
 		BaseDir: "/home/user",
 	}
 
@@ -106,7 +105,7 @@ func TestPrepareSharedDirectories(t *testing.T) {
 }
 
 func TestBuildContainerFlags(t *testing.T) {
-	cfg := domain.EnvConfig{
+	cfg := config.EnvConfig{
 		AxiomPath: "/home/user/axiom",
 		BaseDir:   "/home/user",
 	}

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/internal/slots"
 )
@@ -44,13 +44,13 @@ type BunkerManagerInterface interface {
 	DeleteImage() error
 	Help() error
 	GetUI() ports.IPresenter
-	LoadConfig() (domain.EnvConfig, error)
+	LoadConfig() (config.EnvConfig, error)
 }
 
 // BuildManagerInterface defines the contract for build operations.
 type BuildManagerInterface interface {
-	Build(ctx context.Context, cfg domain.EnvConfig) error
-	Rebuild(ctx context.Context, cfg domain.EnvConfig) error
+	Build(ctx context.Context, cfg config.EnvConfig) error
+	Rebuild(ctx context.Context, cfg config.EnvConfig) error
 }
 
 // SlotManagerInterface defines the contract for slot operations.

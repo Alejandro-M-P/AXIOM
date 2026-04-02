@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/build"
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
@@ -82,7 +82,7 @@ func TestNormalizeGPUType_Unknown(t *testing.T) {
 }
 
 func TestResolveBuildGPU_Found(t *testing.T) {
-	cfg := domain.EnvConfig{
+	cfg := config.EnvConfig{
 		GPUType: "nvidia",
 		GFXVal:  "",
 	}
@@ -109,7 +109,7 @@ func TestResolveBuildGPU_Found(t *testing.T) {
 }
 
 func TestResolveBuildGPU_NotFound(t *testing.T) {
-	cfg := domain.EnvConfig{
+	cfg := config.EnvConfig{
 		GPUType: "",
 		GFXVal:  "",
 	}
@@ -141,7 +141,7 @@ func TestResolveBuildGPU_NotFound(t *testing.T) {
 }
 
 func TestHostGPUVolumeFlags_NVIDIA(t *testing.T) {
-	gpuInfo := &domain.GPUInfo{
+	gpuInfo := &config.GPUInfo{
 		Type: "nvidia",
 		Name: "NVIDIA GPU",
 	}
@@ -158,7 +158,7 @@ func TestHostGPUVolumeFlags_NVIDIA(t *testing.T) {
 }
 
 func TestHostGPUVolumeFlags_AMD(t *testing.T) {
-	gpuInfo := &domain.GPUInfo{
+	gpuInfo := &config.GPUInfo{
 		Type: "amd",
 		Name: "AMD GPU",
 	}

@@ -8,15 +8,14 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // BuildContext holds all the context needed for a build operation.
 type BuildContext struct {
-	Config            domain.EnvConfig
-	GPUInfo           *domain.GPUInfo
+	Config            config.EnvConfig
+	GPUInfo           *config.GPUInfo
 	ImageName         string
 	SlotName          string
 	BuildWorkspaceDir string
@@ -25,7 +24,7 @@ type BuildContext struct {
 
 // PrepareBuildContext creates a BuildContext from the environment configuration.
 // It generates container and workspace names based on the slot type.
-func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerName, slotName string, system ports.ISystem) (*BuildContext, error) {
+func PrepareBuildContext(ctx context.Context, cfg config.EnvConfig, containerName, slotName string, system ports.ISystem) (*BuildContext, error) {
 	gpuInfo, err := ResolveBuildGPU(ctx, cfg, system)
 	if err != nil {
 		return nil, fmt.Errorf("errors.build.image.gpu_resolution: %w", err)
@@ -52,7 +51,7 @@ func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerNam
 }
 
 // PrepareSharedDirectories creates the necessary directories for the build.
-func PrepareSharedDirectories(ctx context.Context, fs ports.IFileSystem, cfg domain.EnvConfig) error {
+func PrepareSharedDirectories(ctx context.Context, fs ports.IFileSystem, cfg config.EnvConfig) error {
 	if err := fs.MkdirAll(filepath.Join(config.AIConfigDir(cfg.BaseDir), "models"), 0700); err != nil {
 		return err
 	}
@@ -66,7 +65,7 @@ func PrepareSharedDirectories(ctx context.Context, fs ports.IFileSystem, cfg dom
 }
 
 // RecreateBuildContainer removes any existing build container and creates a fresh one.
-func RecreateBuildContainer(ctx context.Context, runtime ports.IBunkerRuntime, fs ports.IFileSystem, containerName string, buildWorkspaceDir string, cfg domain.EnvConfig) error {
+func RecreateBuildContainer(ctx context.Context, runtime ports.IBunkerRuntime, fs ports.IFileSystem, containerName string, buildWorkspaceDir string, cfg config.EnvConfig) error {
 	// Remove existing container if any
 	_ = runtime.RemoveBunker(ctx, containerName, true)
 
@@ -88,7 +87,7 @@ func RecreateBuildContainer(ctx context.Context, runtime ports.IBunkerRuntime, f
 }
 
 // BuildContainerFlags returns the docker/podman flags needed for the build container.
-func BuildContainerFlags(cfg domain.EnvConfig) string {
+func BuildContainerFlags(cfg config.EnvConfig) string {
 	return fmt.Sprintf(
 		"--volume %s:/ai_config:z --volume %s:/run/axiom/env:ro,z --device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render",
 		config.AIConfigDir(cfg.BaseDir),

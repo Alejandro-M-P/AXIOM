@@ -1,9 +1,7 @@
-// Package domain contiene los modelos puros del negocio.
-// No tiene dependencias externas - es la capa más interna de la Clean Architecture.
-package domain
+package config
 
-// EnvConfig representa la configuración del entorno AXIOM.
-// Se carga desde el archivo .env en la raíz del proyecto.
+// EnvConfig represents the configuration of the AXIOM environment.
+// Loaded from the config.toml file at the project root.
 type EnvConfig struct {
 	AxiomPath  string
 	GitUser    string
@@ -19,7 +17,7 @@ type EnvConfig struct {
 	Language   string
 }
 
-// GPUInfo representa la información de la GPU del sistema.
+// GPUInfo represents GPU hardware information.
 type GPUInfo struct {
 	Type       string
 	GfxVal     string

@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/BurntSushi/toml"
 )
 
@@ -38,9 +38,9 @@ type Config struct {
 	LogLevel    string `toml:"log_level"`    // "debug", "info", "warn", "error"
 }
 
-// ToEnvConfig convierte Config del adapter a EnvConfig del dominio.
-func (c Config) ToEnvConfig() domain.EnvConfig {
-	return domain.EnvConfig{
+// ToEnvConfig convierte Config del adapter a EnvConfig del config package.
+func (c Config) ToEnvConfig() config.EnvConfig {
+	return config.EnvConfig{
 		AxiomPath:  c.AxiomPath,
 		GitUser:    c.GitUser,
 		GitEmail:   c.GitEmail,
