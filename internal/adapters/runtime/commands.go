@@ -1,5 +1,7 @@
 package runtime
 
+import "fmt"
+
 // CommandSet define los comandos para un runtime de contenedor
 type CommandSet struct {
 	// Container lifecycle
@@ -96,3 +98,8 @@ var Podman = CommandSet{
 // RequiredDeps lists the system dependencies that must be installed
 // for AXIOM to function correctly.
 var RequiredDeps = []string{"distrobox", "podman", "jq"}
+
+// WrapperScript returns the wrapper script content for creating axiom binary in ~/.local/bin
+var WrapperScript = func(axiomPath string) string {
+	return fmt.Sprintf("#!/bin/bash\nexport AXIOM_PATH=\"%s\"\nbash \"$AXIOM_PATH/axiom.sh\" \"$@\"\n", axiomPath)
+}

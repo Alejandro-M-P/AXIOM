@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -200,73 +199,36 @@ func (m *Manager) bunkerExists(name string) (bool, error) {
 
 // createContainerFlags genera los flags para crear el contenedor.
 func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir, sshSocket string) string {
-	// Obtener templates de i18n para volume flags
-	volProject := i18n.Commands["bunker"]["volume_project"]
-	volAIConfig := i18n.Commands["bunker"]["volume_ai_config"]
-	volConfig := i18n.Commands["bunker"]["volume_config"]
-
-	parts := []string{
-		fmt.Sprintf(volProject, projectDir, name),
-		fmt.Sprintf(volAIConfig, cfg.AIConfigDir()),
-		fmt.Sprintf(volConfig, filepath.Join(cfg.AxiomPath, "config.toml")),
-		"--device /dev/kfd",
-		"--device /dev/dri",
-		"--security-opt label=disable",
-		"--group-add video",
-		"--group-add render",
-	}
-
-	if cfg.ROCMMode == "host" {
-		parts = append(parts, hostGPUVolumeFlags(m.fs, gpuType, m.system.GetCommandPath)...)
-	}
-	if sshFlag := sshVolumeFlag(sshSocket); sshFlag != "" {
-		parts = append(parts, sshFlag)
-	}
-
-	return strings.Join(parts, " ")
-}
-
-// hostGPUVolumeFlags retorna los flags de volumen para GPU en modo host.
-func hostGPUVolumeFlags(fs ports.IFileSystem, gpuType string, getCmdPath func(string) (string, error)) []string {
-	// Obtener template de i18n para volume flags GPU
-	volGPU := i18n.Commands["bunker"]["volume_gpu_ro"]
-
-	var flags []string
-	addPath := func(path string) {
-		realPath, err := filepath.EvalSymlinks(path)
-		if err == nil && realPath != path {
-			flags = append(flags, fmt.Sprintf(volGPU, realPath, path))
-			flags = append(flags, fmt.Sprintf(volGPU, realPath, realPath))
-		} else {
-			flags = append(flags, fmt.Sprintf(volGPU, path, path))
+	// 1. Obtener volume flags del presenter (usa i18n)
+	volFlags, err := m.ui.GetBunkerVolumeFlags(
+		projectDir,
+		name,
+		cfg.AIConfigDir(),
+		cfg.AxiomPath+"/config.toml",
+		gpuType,
+		sshSocket,
+	)
+	volumeStr := ""
+	if err == nil && len(volFlags) > 0 {
+		// Unir todos los volume flags
+		for _, v := range volFlags {
+			if v != "" {
+				volumeStr += v + " "
+			}
 		}
 	}
 
-	switch strings.ToLower(strings.TrimSpace(gpuType)) {
-	case "rdna3", "rdna4", "amd", "generic":
-		for _, path := range []string{"/usr/lib/rocm", "/usr/lib64/rocm", "/opt/rocm"} {
-			if info, err := fs.Stat(path); err == nil && info.IsDir() {
-				addPath(path)
-			}
-		}
-		for _, binary := range []string{"rocminfo", "rocm-smi"} {
-			if resolved, err := getCmdPath(binary); err == nil {
-				addPath(resolved)
-			}
-		}
-	case "nvidia":
-		flags = append(flags, "--device=nvidia.com/gpu=all")
-		for _, path := range []string{"/usr/lib/x86_64-linux-gnu/libcuda.so.1", "/usr/local/cuda"} {
-			if _, err := fs.Stat(path); err == nil {
-				addPath(path)
-			}
-		}
-	case "intel":
-		for _, path := range []string{"/usr/lib/intel-opencl", "/usr/lib/x86_64-linux-gnu/intel-opencl"} {
-			if info, err := fs.Stat(path); err == nil && info.IsDir() {
-				addPath(path)
-			}
-		}
+	// 2. Pasar al runtime que añade los device flags
+	flags, err := m.runtime.GetCreateFlags(
+		context.Background(),
+		name,
+		"", // image - no se usa en GetCreateFlags
+		"", // home - no se usa en GetCreateFlags
+		strings.TrimSpace(volumeStr),
+	)
+	if err != nil {
+		// Fallback mínimo si falla
+		return "--device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render"
 	}
 	return flags
 }

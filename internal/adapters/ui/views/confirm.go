@@ -72,12 +72,14 @@ func (m confirmModel) View() string {
 	lines = append(lines, styles.BunkerWarningStyle.Render(m.question))
 	lines = append(lines, "")
 
-	yesButton := styles.InactiveButton.Render("SÍ, CONTINUAR")
-	noButton := styles.InactiveButton.Render("NO, CANCELAR")
+	yesBtn := i18n.GetWizardText("confirm", "yes_btn")
+	noBtn := i18n.GetWizardText("confirm", "no_btn")
+	yesButton := styles.InactiveButton.Render(yesBtn)
+	noButton := styles.InactiveButton.Render(noBtn)
 	if m.cursor == 0 {
-		yesButton = styles.ActiveButton.Render("SÍ, CONTINUAR")
+		yesButton = styles.ActiveButton.Render(yesBtn)
 	} else {
-		noButton = styles.ActiveButton.Render("NO, CANCELAR")
+		noButton = styles.ActiveButton.Render(noBtn)
 	}
 	lines = append(lines, yesButton+"  "+noButton)
 
@@ -90,12 +92,14 @@ func (m confirmModel) View() string {
 }
 
 func renderFormButtons(cursor int) string {
-	yesButton := styles.InactiveButton.Render("SÍ, CONTINUAR")
-	noButton := styles.InactiveButton.Render("NO, CANCELAR")
+	yesBtn := i18n.GetWizardText("confirm", "yes_btn")
+	noBtn := i18n.GetWizardText("confirm", "no_btn")
+	yesButton := styles.InactiveButton.Render(yesBtn)
+	noButton := styles.InactiveButton.Render(noBtn)
 	if cursor == 0 {
-		yesButton = styles.ActiveButton.Render("SÍ, CONTINUAR")
+		yesButton = styles.ActiveButton.Render(yesBtn)
 	} else {
-		noButton = styles.ActiveButton.Render("NO, CANCELAR")
+		noButton = styles.ActiveButton.Render(noBtn)
 	}
 	return yesButton + "  " + noButton
 }
@@ -116,7 +120,7 @@ type deleteFormModel struct {
 func newDeleteFormModel(fields []ports.Field) deleteFormModel {
 	ti := textinput.New()
 	ti.Prompt = " ❯ "
-	ti.Placeholder = "Escribe aquí tu justificación..."
+	ti.Placeholder = i18n.GetWizardText("confirm", "placeholder_reason")
 	return deleteFormModel{fields: fields, textInput: ti, cursor: 1} // Por seguridad, el cursor empieza en NO
 }
 
@@ -205,7 +209,7 @@ type resetFormModel struct {
 func newResetFormModel(fields []ports.Field, items []string) resetFormModel {
 	ti := textinput.New()
 	ti.Prompt = " ❯ "
-	ti.Placeholder = "Escribe aquí tu justificación..."
+	ti.Placeholder = i18n.GetWizardText("confirm", "placeholder_reason")
 	return resetFormModel{fields: fields, items: items, textInput: ti, cursor: 1} // Empieza en NO
 }
 

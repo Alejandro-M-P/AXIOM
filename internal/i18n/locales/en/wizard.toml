@@ -2,7 +2,9 @@
 
 [finalizing]
 success_title = "AXIOM: Bunker configured successfully!"
+success_icon = "🛡️"
 next_step = "Next step: Run"
+next_icon = "🚀"
 press_enter = "(Press Enter to exit)"
 
 [step_language]
@@ -102,3 +104,98 @@ step_format = "Step %d of %d"
 selected_format = "Selected: %d/%d"
 # Format: %s (cursor prefix) + %s (checkbox) + %s (item name)
 item_format = "%s%s %s"
+
+[help_commands]
+init = "Initialize AXIOM configuration"
+create = "Create a new bunker"
+build = "Build environment with slots"
+list = "List and select bunkers"
+info = "Show bunker information"
+delete = "Delete a bunker"
+stop = "Stop a running bunker"
+prune = "Clean up orphaned bunkers"
+slots = "Discover available slots"
+help = "Show this help"
+
+[create_form]
+select_image = "SELECT IMAGE"
+choose_image = "Choose the base image for your bunker:"
+bunker_name = "BUNKER NAME"
+enter_name = "Enter a name for your bunker:"
+confirm_title = "CONFIRM"
+confirm_question = "Create bunker with these settings?"
+name_label = "Name:"
+image_label = "Image:"
+create_btn = "CREATE"
+cancel_btn = "CANCEL"
+navigate = "↑/↓: Navigate | Enter: Confirm | Esc: Cancel"
+enter_confirm = "Enter: Confirm | Esc: Back"
+placeholder_name = "bunker-name"
+cursor_prefix = "❯ "
+image_dev = "axiom-dev (Development environment)"
+image_data = "axiom-data (Data & Databases)"
+image_sandbox = "axiom-sandbox (Sandbox/Testing)"
+
+[bunker_selector]
+navigate = "↑/↓: Navigate | Enter: Select | Esc: Cancel"
+selected_format = "Selected: %d/%d"
+default_status = "stopped"
+cursor_prefix = "❯ "
+
+[confirm]
+yes_btn = "YES, CONTINUE"
+no_btn = "NO, CANCEL"
+placeholder_reason = "Write your justification here..."
+
+[components]
+escape_exit = "Exit"
+yes = "YES"
+no = "NO"
+enter_confirm = "[Enter] Confirm  |  [Esc] Cancel"
+card_escape = "[ESC] or [Enter] Exit"
+esc_key = "[ESC]"
+esc_shortcut = "[q]"
+
+[slots]
+slot_selection = "Slot Selection"
+navigate = "↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel"
+space_toggle = "Space: toggle  │  Enter: confirm  │  Esc: cancel"
+group_decorator = "━━━ %s ━━━"
+checkbox_unchecked = "[ ]"
+checkbox_checked = "[x]"
+selected_format = "Selected: %d/%d"
+select_slot_type = "Select Slot Type"
+select_items = "Select Items"
+summary = "Summary"
+slots_discovered = "Slots discovered in your project:"
+no_slots = "No slots discovered. Run 'axiom init' first."
+
+[slot_wizard]
+dev = "Development"
+dev_desc = "Development environment with common tools"
+data = "Data"
+data_desc = "Databases and storage"
+sandbox = "Sandbox"
+sandbox_desc = "Isolated environment for testing"
+
+[slots_tui]
+title = "Available Slots"
+navigate = "↑/↓: Navigate | Esc: Exit"
+slots_discovered = "Slots discovered in your project:"
+no_slots = "No slots discovered. Run 'axiom init' first."
+cursor_prefix = "❯ "
+total_format = "Total: %d slots | Press Esc to exit"
+item_format = "%s%s  [%s]"
+
+[help_tui]
+title = "AXIOM Help"
+navigate = "↑/↓: Navigate | Esc: Exit"
+available_commands = "Available Commands:"
+cursor_prefix = "❯ "
+item_format = "%s%s  -  %s"
+press_esc = "Press Esc to exit"
+
+[bunker]
+item_bullet = "•"
+meta_separator = "  |  "
+cursor = ">"

@@ -16,6 +16,10 @@ type IBunkerRuntime interface {
 	// CreateBunker crea un nuevo bunker con la imagen especificada.
 	CreateBunker(ctx context.Context, name, image, home string, flags string) error
 
+	// GetCreateFlags genera los flags para crear un bunker.
+	// volumeFlags viene del presenter (que usa i18n) - el runtime solo añade device flags.
+	GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error)
+
 	// StartBunker inicia un bunker existente.
 	StartBunker(ctx context.Context, name string) error
 

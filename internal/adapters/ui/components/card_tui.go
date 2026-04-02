@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -119,7 +120,7 @@ func (c *CardTUI) View() string {
 	footerStyle := lipgloss.NewStyle().
 		Foreground(t.Muted).
 		Italic(true)
-	content.WriteString(footerStyle.Render("[ESC] o [Enter] Salir"))
+	content.WriteString(footerStyle.Render(i18n.GetWizardText("components", "card_escape")))
 
 	// Use CenteredContainer for fullscreen
 	centered := NewCenteredContainer(c.width, c.height)

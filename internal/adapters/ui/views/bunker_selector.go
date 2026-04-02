@@ -7,6 +7,7 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -112,9 +113,10 @@ func (m bunkerSelectorModel) View() string {
 		Width(contentWidth)
 
 	var content strings.Builder
+	var nameStyle lipgloss.Style
 
 	// Header
-	header := theme.NewHeader(t, m.title, m.subtitle, "↑/↓: Navigate | Enter: Select | Esc: Cancel")
+	header := theme.NewHeader(t, m.title, m.subtitle, i18n.GetWizardText("bunker_selector", "navigate"))
 	content.WriteString(header.View())
 	content.WriteString("\n\n")
 
@@ -123,12 +125,11 @@ func (m bunkerSelectorModel) View() string {
 		prefix := "  "
 		status := m.statuses[bunker]
 		if status == "" {
-			status = "stopped"
+			status = i18n.GetWizardText("bunker_selector", "default_status")
 		}
 
-		var nameStyle lipgloss.Style
 		if i == m.cursor {
-			prefix = "❯ "
+			prefix = i18n.GetWizardText("bunker_selector", "cursor_prefix")
 			nameStyle = lipgloss.NewStyle().Foreground(t.Primary).Bold(true)
 		} else {
 			nameStyle = lipgloss.NewStyle().Foreground(t.Text)
@@ -154,7 +155,8 @@ func (m bunkerSelectorModel) View() string {
 	footerStyle := lipgloss.NewStyle().Foreground(t.Muted)
 	content.WriteString(footerStyle.Render(strings.Repeat("─", contentWidth-4)))
 	content.WriteString("\n")
-	content.WriteString(footerStyle.Render(fmt.Sprintf("Selected: %d/%d", m.cursor+1, len(m.bunkers))))
+	selectedText := i18n.GetWizardText("bunker_selector", "selected_format")
+	content.WriteString(footerStyle.Render(fmt.Sprintf(selectedText, m.cursor+1, len(m.bunkers))))
 
 	return styles.GetLogo() + "\n" + windowStyle.Render(content.String())
 }
@@ -176,9 +178,7 @@ func (c *ConsoleUI) AskSelectBunker(bunkers []string, statuses map[string]string
 	finalModel, err := p.Run()
 
 	// Cleanup terminal
-	fmt.Print("\033[?1049l")
-	fmt.Print("\033[?25h")
-	os.Stdout.Sync()
+	cleanupTerminal()
 
 	if err != nil {
 		return "", false, fmt.Errorf("errors.ui.bunker_selector_failed: %w", err)

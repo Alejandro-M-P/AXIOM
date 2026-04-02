@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -29,8 +30,8 @@ func NewConfirmDialog(title, message string) *ConfirmDialog {
 	return &ConfirmDialog{
 		title:    title,
 		message:  message,
-		yesLabel: "YES",
-		noLabel:  "NO",
+		yesLabel: i18n.GetWizardText("components", "yes"),
+		noLabel:  i18n.GetWizardText("components", "no"),
 		cursor:   0,
 	}
 }
@@ -149,7 +150,7 @@ func (d *ConfirmDialog) View() string {
 
 	// Help text
 	helpStyle := lipgloss.NewStyle().Foreground(t.Muted)
-	content.WriteString(helpStyle.Render("[Enter] Confirm  |  [Esc] Cancel"))
+	content.WriteString(helpStyle.Render(i18n.GetWizardText("components", "enter_confirm")))
 
 	// Use CenteredContainer for fullscreen centering
 	centered := NewCenteredContainer(d.width, d.height)

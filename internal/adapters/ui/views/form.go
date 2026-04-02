@@ -80,20 +80,21 @@ type Model struct {
 	detectedGPU  gpu.GPUInfo
 	language     string
 	envExists    bool
+	homeDir      string
 }
 
-func NewModel(axiomPath string, envExists bool, lang string) Model {
+func NewModel(axiomPath string, envExists bool, lang string, homeDir string) Model {
 	ti := textinput.New()
 	ti.Focus()
 	ti.Prompt = " ❯ "
 
 	hw := gpu.Detect()
 
-	// Siempre empezamos preguntando el idioma
+	// Siempre preguntamos el idioma
 	start := StepLanguage
 
 	initialConfig := system.Config{
-		BaseDir:    fmt.Sprintf("%s/dev", os.Getenv("HOME")),
+		BaseDir:    filepath.Join(homeDir, "dev"),
 		GfxVersion: hw.GfxVal,
 		GpuType:    hw.Type,
 		RocmMode:   "host",
@@ -111,6 +112,7 @@ func NewModel(axiomPath string, envExists bool, lang string) Model {
 		config:      initialConfig,
 		language:    lang,
 		envExists:   envExists,
+		homeDir:     homeDir,
 	}
 }
 
@@ -215,8 +217,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				oldBaseDir := m.config.BaseDir
 				if val != "" {
 					if !strings.HasPrefix(val, "/") {
-						home, _ := os.UserHomeDir()
-						val = filepath.Join(home, val)
+						val = filepath.Join(m.homeDir, val)
 					}
 					m.config.BaseDir = val
 				}
@@ -233,8 +234,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case StepModelsDir:
 				if val != "" {
 					if !strings.HasPrefix(val, "/") {
-						home, _ := os.UserHomeDir()
-						val = filepath.Join(home, val)
+						val = filepath.Join(m.homeDir, val)
 					}
 					m.config.ModelsDir = val
 				}
@@ -359,8 +359,8 @@ func (m Model) View() string {
 	header := styles.GetLogo() + "\n\n"
 
 	if m.step == StepFinalizing {
-		body := styles.GreenStyle.Render("🛡️  "+i18n.GetWizardText("finalizing", "success_title")) + "\n\n" +
-			"🚀 " + i18n.GetWizardText("finalizing", "next_step") + " " + styles.GreenStyle.Render("axiom build") + "\n\n" +
+		body := styles.GreenStyle.Render(i18n.GetWizardText("finalizing", "success_icon")+"  "+i18n.GetWizardText("finalizing", "success_title")) + "\n\n" +
+			i18n.GetWizardText("finalizing", "next_icon") + " " + i18n.GetWizardText("finalizing", "next_step") + " " + styles.GreenStyle.Render("axiom build") + "\n\n" +
 			styles.ExampleStyle.Render(i18n.GetWizardText("finalizing", "press_enter"))
 
 		// Use CenteredContainer for fullscreen centering
@@ -527,7 +527,7 @@ func (m Model) renderReview() string {
 	for i, item := range items {
 		prefix := "  "
 		if m.reviewCursor == i {
-			prefix = "❯ "
+			prefix = i18n.GetWizardText("bunker_selector", "cursor_prefix")
 		}
 		lines = append(lines, prefix+item)
 	}

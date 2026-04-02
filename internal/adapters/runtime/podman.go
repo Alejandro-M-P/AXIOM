@@ -37,6 +37,19 @@ func (a *PodmanAdapter) CreateBunker(ctx context.Context, name, image, home, fla
 	return nil
 }
 
+// GetCreateFlags genera los flags para crear un bunker.
+// volumeFlags viene del presenter (que usa i18n) - solo añade device flags aquí.
+func (a *PodmanAdapter) GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error) {
+	// Device flags - estos son los únicos que el runtime conoce
+	deviceFlags := "--device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render"
+
+	// Combinar volume flags (del presenter/i18n) con device flags (del runtime)
+	if volumeFlags != "" {
+		return volumeFlags + " " + deviceFlags, nil
+	}
+	return deviceFlags, nil
+}
+
 func (a *PodmanAdapter) StartBunker(ctx context.Context, name string) error {
 	args := a.cmds.StartBunker(name)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)

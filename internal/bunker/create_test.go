@@ -3,7 +3,6 @@ package bunker
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -141,16 +140,14 @@ func TestCreateContainerFlags(t *testing.T) {
 		AuthMode:  "local",
 	}
 
+	// createContainerFlags now only generates volume flags (device flags come from runtime.GetCreateFlags)
 	flags := mgr.createContainerFlags(cfg, "generic", "test-bunker", "/home/user/projects/test-bunker", "")
 
-	// Verify key flags are present
+	// Verify volume flags are present
 	expectedParts := []string{
 		"--volume /home/user/projects/test-bunker:/test-bunker:z",
-		"--device /dev/kfd",
-		"--device /dev/dri",
-		"--security-opt label=disable",
-		"--group-add video",
-		"--group-add render",
+		"--volume /home/user/projects/ai_config:/ai_config:z",
+		"--volume /home/user/.axiom/config.toml:/run/axiom/env:ro,z",
 	}
 
 	for _, part := range expectedParts {
@@ -181,61 +178,6 @@ func startsWith(s, prefix string) bool {
 
 func endsWith(s, suffix string) bool {
 	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
-}
-
-func TestHostGPUVolumeFlags_RDNA(t *testing.T) {
-	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
-	fs := filesystem.NewFSAdapter()
-	// hostGPUVolumeFlags is a standalone function - testing it directly
-	result := hostGPUVolumeFlags(fs, "rdna3", noopResolver)
-	if result == nil {
-		t.Error("expected non-nil flags slice")
-	}
-
-	result = hostGPUVolumeFlags(fs, "rdna4", noopResolver)
-	if result == nil {
-		t.Error("expected non-nil flags slice")
-	}
-
-	result = hostGPUVolumeFlags(fs, "amd", noopResolver)
-	if result == nil {
-		t.Error("expected non-nil flags slice")
-	}
-
-	result = hostGPUVolumeFlags(fs, "generic", noopResolver)
-	if result == nil {
-		t.Error("expected non-nil flags slice")
-	}
-}
-
-func TestHostGPUVolumeFlags_Nvidia(t *testing.T) {
-	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
-	fs := mocks.NewMockFileSystem()
-	result := hostGPUVolumeFlags(fs, "nvidia", noopResolver)
-	if result == nil {
-		t.Error("expected non-nil flags slice for nvidia")
-	}
-}
-
-func TestHostGPUVolumeFlags_Intel(t *testing.T) {
-	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
-	fs := mocks.NewMockFileSystem()
-	// Intel GPU volumes only added if paths exist
-	result := hostGPUVolumeFlags(fs, "intel", noopResolver)
-	// Result may be nil if Intel OpenCL paths don't exist on this system
-	if result != nil {
-		t.Logf("Intel GPU flags returned: %v", result)
-	}
-}
-
-func TestHostGPUVolumeFlags_Empty(t *testing.T) {
-	noopResolver := func(name string) (string, error) { return "", fmt.Errorf("not found") }
-	fs := mocks.NewMockFileSystem()
-	// Empty GPU type doesn't match any case, so returns nil
-	result := hostGPUVolumeFlags(fs, "", noopResolver)
-	if result != nil {
-		t.Logf("Empty GPU type flags returned: %v", result)
-	}
 }
 
 func TestBunkerFlags_Struct(t *testing.T) {

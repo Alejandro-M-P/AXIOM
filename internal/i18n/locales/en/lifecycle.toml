@@ -19,51 +19,51 @@ code_deleted = "Code deleted"
 yes = "yes"
 no = "no"
 
-[warnings.bunker_exists]
+[bunker_exists]
 title = "Existing Bunker"
 desc = "A container with that name already exists; it will be opened directly."
 footer = "Reusing previous configuration."
 
-[warnings.missing_image]
+[missing_image]
 title = "Base Image Not Available"
 desc = "The bunker cannot be created without a previous image."
 footer = "First build the base with: axiom build"
 
-[warnings.bunker_ready]
+[bunker_ready]
 title = "Bunker Ready"
 desc = "The container is now ready and will open."
 footer = "Configuration applied: shell, starship and opencode."
 
-[warnings.no_bunkers]
+[no_bunkers]
 title = "No bunkers"
 desc = "There are no created bunkers."
 footer = "Use axiom create <name> to create a new one."
 
-[warnings.none_active]
+[none_active]
 title = "None active"
 desc = "There are no active bunkers right now."
 footer = "All detected bunkers are already stopped."
 
-[warnings.bunker_deleted]
+[bunker_deleted]
 title = "Bunker Deleted"
 desc = "The uninstallation finished correctly."
 
-[warnings.image_deleted]
+[image_deleted]
 title = "Image Deleted"
 desc = "The base image was deleted successfully."
 footer = "These are the AXIOM images that are still available."
 
-[warnings.no_bunkers_list]
+[no_bunkers_list]
 title = "No bunkers"
 desc = "No environment has been detected."
 footer = "No bunkers created yet. Use: axiom create <name>"
 
-[warnings.prune_clean]
+[prune_clean]
 title = "All clean"
 desc = "There are no orphan environments."
 footer = "Everything is clean."
 
-[warnings.prune_completed]
+[prune_completed]
 title = "Prune Completed"
 desc = "The space from the orphan environments was freed."
 
@@ -79,16 +79,16 @@ image_exists_warning = "Warning"
 image_exists_desc = "This image already exists. It will be overwritten if you continue."
 image_exists_confirm = "Overwrite existing image?"
 
-[build.steps]
+[build_steps]
 homebrew_install_cmd = "NONINTERACTIVE=1 /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
 ollama_url = "https://ollama.com/download/ollama-linux-%s.tar.zst"
 ollama_rocm_url = "https://ollama.com/download/ollama-linux-%s-rocm.tar.zst"
 
-[build.image]
+[build_image]
 container_name = "axiom-%s"
 image_name = "localhost/axiom-%s:latest"
 
-[build.commit]
+[build_commit]
 author = "axiom"
 message = "AXIOM build image"
 

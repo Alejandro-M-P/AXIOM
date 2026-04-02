@@ -124,8 +124,8 @@ func CreateWrapper(axiomPath string) error {
 	os.MkdirAll(binPath, 0700)
 
 	target := filepath.Join(binPath, "axiom")
-	// Wrapper que exporta la ruta y lanza axiom.sh
-	content := fmt.Sprintf("#!/bin/bash\nexport AXIOM_PATH=\"%s\"\nbash \"$AXIOM_PATH/axiom.sh\" \"$@\"\n", axiomPath)
+	// Usar el comando centralizado de commands.go
+	content := runtime.WrapperScript(axiomPath)
 
 	return os.WriteFile(target, []byte(content), 0755)
 }

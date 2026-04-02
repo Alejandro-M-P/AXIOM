@@ -203,6 +203,40 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 			return text
 		}
 	}
+
+	// Handle 3-level lifecycle keys like "build.commit.author" → lifecycle["build_commit"]["author"]
+	if len(parts) == 3 {
+		section, cat, sub := parts[0], parts[1], parts[2]
+		if section == "build" {
+			combined := section + "_" + cat
+			if text, ok := i18n.Lifecycle[combined][sub]; ok {
+				if len(args) > 0 {
+					return fmt.Sprintf(text, args...)
+				}
+				return text
+			}
+		}
+		// Handle slots.xxx.name and slots.xxx.description
+		if section == "slots" {
+			if slotData, ok := i18n.Slots[cat]; ok {
+				if text, ok := slotData[sub]; ok {
+					if len(args) > 0 {
+						return fmt.Sprintf(text, args...)
+					}
+					return text
+				}
+			}
+		}
+		// Handle errors.xxx.yyy
+		if section == "errors" {
+			if text, ok := i18n.Errors[cat][sub]; ok {
+				if len(args) > 0 {
+					return fmt.Sprintf(text, args...)
+				}
+				return text
+			}
+		}
+	}
 	// Fallback to missing translation placeholder
 	if text, ok := i18n.Errors["ui"]["missing_translation"]; ok {
 		return text
@@ -211,9 +245,13 @@ func (c *ConsoleUI) GetText(key string, args ...any) string {
 }
 
 func (c *ConsoleUI) ClearScreen() {
-	// Clear screen and reset cursor
+	clearScreen()
+}
+
+// clearScreen centralizes terminal control codes for screen clearing.
+// These are NOT user-visible text — they're ANSI escape sequences for terminal control.
+func clearScreen() {
 	fmt.Print("\033[2J\033[H\033[3J")
-	// Also move cursor to beginning and clear line
 	fmt.Print("\r\x1b[2K")
 }
 
@@ -347,8 +385,8 @@ func (c *ConsoleUI) RunInitWizardResult(ctx context.Context) (bool, error) {
 }
 
 // RunInitWizardWithParams executes the initialization wizard with specific parameters.
-func (c *ConsoleUI) RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string) (bool, error) {
-	model := NewModel(axiomPath, envExists, lang)
+func (c *ConsoleUI) RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string, homeDir string) (bool, error) {
+	model := NewModel(axiomPath, envExists, lang, homeDir)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {
@@ -395,4 +433,39 @@ func RunFullscreenSimple(model tea.Model) (tea.Model, error) {
 	}
 
 	return finalModel, nil
+}
+
+// GetBunkerVolumeFlags devuelve los flags de volumen para crear un contenedor.
+func (c *ConsoleUI) GetBunkerVolumeFlags(projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (map[string]string, error) {
+	result := make(map[string]string)
+
+	// Get templates from i18n
+	volProject := i18n.Commands["bunker"]["volume_project"]
+	volAIConfig := i18n.Commands["bunker"]["volume_ai_config"]
+	volConfig := i18n.Commands["bunker"]["volume_config"]
+	volSSH := i18n.Commands["bunker"]["volume_ssh"]
+
+	// Format volume flags with arguments
+	result["volume_project"] = fmt.Sprintf(volProject, projectDir, name)
+	result["volume_ai_config"] = fmt.Sprintf(volAIConfig, aiConfigDir)
+	result["volume_config"] = fmt.Sprintf(volConfig, configPath)
+
+	// GPU mode (for host GPU volumes)
+	if gpuType != "" {
+		switch strings.ToLower(gpuType) {
+		case "rdna3", "rdna4", "amd", "generic":
+			result["volume_gpu_mode"] = "amd"
+		case "nvidia":
+			result["volume_gpu_mode"] = "nvidia"
+		case "intel":
+			result["volume_gpu_mode"] = "intel"
+		}
+	}
+
+	// SSH socket volume
+	if sshSocket != "" {
+		result["volume_ssh"] = fmt.Sprintf(volSSH, sshSocket, sshSocket)
+	}
+
+	return result, nil
 }

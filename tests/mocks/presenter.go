@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
@@ -208,7 +209,7 @@ func (m *MockPresenter) RunInitWizardResult(ctx context.Context) (bool, error) {
 }
 
 // RunInitWizardWithParams implements ports.IPresenter.
-func (m *MockPresenter) RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string) (bool, error) {
+func (m *MockPresenter) RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string, homeDir string) (bool, error) {
 	return false, nil
 }
 
@@ -228,4 +229,13 @@ func (m *MockPresenter) AskSelectBunker(bunkers []string, statuses map[string]st
 // RunHelpTUI implements ports.IPresenter.
 func (m *MockPresenter) RunHelpTUI() error {
 	return nil
+}
+
+// GetBunkerVolumeFlags implements ports.IPresenter.
+func (m *MockPresenter) GetBunkerVolumeFlags(projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (map[string]string, error) {
+	return map[string]string{
+		"volume_project":   fmt.Sprintf("--volume %s:/%s:z", projectDir, name),
+		"volume_ai_config": fmt.Sprintf("--volume %s:/ai_config:z", aiConfigDir),
+		"volume_config":    fmt.Sprintf("--volume %s:/run/axiom/env:ro,z", configPath),
+	}, nil
 }

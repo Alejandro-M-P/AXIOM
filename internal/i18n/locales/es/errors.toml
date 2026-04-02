@@ -29,10 +29,10 @@ export_container_not_found = "export_image: contenedor %s no encontrado"
 export_failed_start_container = "export_image: error al iniciar contenedor: %w"
 export_failed_commit = "export_image: error al commitear contenedor: %w"
 
-[build.gpu]
+[build_gpu]
 unsupported_arch = "Arquitectura no soportada"
 
-[build.steps]
+[build_steps]
 failed_sync_repos = "Error al sincronizar repos: %w"
 failed_install_pkgs = "Error al instalar paquetes: %w"
 failed_install_homebrew = "Error al instalar Homebrew: %w"
@@ -42,10 +42,10 @@ failed_install_dev_tools = "Error al instalar herramientas de desarrollo: %w"
 failed_install_ollama = "Error al instalar Ollama: %w"
 failed_clean_caches = "Error al limpiar caché: %w"
 
-[build.image]
+[build_image]
 gpu_resolution = "Error de resolución GPU: %w"
 
-[slots.base]
+[slots_base]
 failed_load_prefs = "Error al cargar preferencias del SO: %w"
 unknown_os = "No se puede instalar herramientas base: sistema operativo desconocido"
 unsupported_os = "Sistema operativo no soportado: %s"
@@ -57,16 +57,16 @@ failed_install_tool = "Error al instalar %s: %w"
 failed_install_homebrew = "Error al instalar Homebrew: %w\nOutput: %s"
 command_failed = "Comando fallido: %w\nOutput: %s"
 
-[slots.base.os_detector]
+[slots_base_os_detector]
 unknown_os = "SO desconocido: %s"
 unknown_linux = "Linux desconocido"
 os_not_recognized = "Distribución no reconocida de os-release"
 
-[slots.registry]
+[slots_registry]
 item_not_found = "Elemento de slot no encontrado: %s"
 registry_empty = "El registro de slots está vacío: no hay elementos registrados"
 
-[slots.engine]
+[slots_engine]
 unknown_dependency = "Dependencia desconocida: %s"
 
 [env]
@@ -92,7 +92,7 @@ slot_selector_failed = "Error al ejecutar selector de slots: %w"
 wizard_selector_failed = "Error al ejecutar wizard de selección: %w"
 confirm_dialog_failed = "Error al ejecutar diálogo de confirmación: %w"
 
-[slots.ui]
+[slots_ui]
 invalid_items_type = "Tipo de items inválido, se esperaba []slots.SlotItem"
 
 [router]

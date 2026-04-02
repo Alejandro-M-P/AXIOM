@@ -111,7 +111,7 @@ func (m slotsTUIModel) View() string {
 	var content strings.Builder
 
 	// Header
-	header := theme.NewHeader(t, "Available Slots", "", "↑/↓: Navigate | Esc: Exit")
+	header := theme.NewHeader(t, i18n.GetWizardText("slots_tui", "title"), "", i18n.GetWizardText("slots_tui", "navigate"))
 	content.WriteString(header.View())
 	content.WriteString("\n")
 
@@ -120,11 +120,11 @@ func (m slotsTUIModel) View() string {
 		Foreground(t.Primary).
 		Bold(true).
 		Width(contentWidth - 4)
-	content.WriteString(titleStyle.Render("\nSlots discovered in your project:\n\n"))
+	content.WriteString(titleStyle.Render("\n" + i18n.GetWizardText("slots_tui", "slots_discovered") + "\n\n"))
 
 	if len(m.slots) == 0 {
 		emptyStyle := lipgloss.NewStyle().Foreground(t.Muted).Italic(true)
-		content.WriteString(emptyStyle.Render("  No slots discovered. Run 'axiom init' first.") + "\n")
+		content.WriteString(emptyStyle.Render("  "+i18n.GetWizardText("slots_tui", "no_slots")) + "\n")
 	}
 
 	// Lista de slots
@@ -135,11 +135,11 @@ func (m slotsTUIModel) View() string {
 		descStyle := lipgloss.NewStyle().Foreground(t.Muted)
 
 		if i == m.cursor {
-			prefix = "❯ "
+			prefix = i18n.GetWizardText("bunker_selector", "cursor_prefix")
 			slotStyle = lipgloss.NewStyle().Foreground(t.Primary).Bold(true)
 		}
 
-		line := fmt.Sprintf(i18n.Wizard["common"]["slots_item_format"], prefix, slotStyle.Render(slot.name), catStyle.Render(slot.category))
+		line := fmt.Sprintf(i18n.GetWizardText("common", "slots_item_format"), prefix, slotStyle.Render(slot.name), catStyle.Render(slot.category))
 		content.WriteString(line + "\n")
 		content.WriteString(descStyle.Render("    "+slot.description) + "\n\n")
 	}
@@ -148,7 +148,7 @@ func (m slotsTUIModel) View() string {
 	footerStyle := lipgloss.NewStyle().Foreground(t.Muted)
 	content.WriteString(footerStyle.Render("\n" + strings.Repeat("─", contentWidth-4)))
 	content.WriteString("\n")
-	content.WriteString(footerStyle.Render(fmt.Sprintf(i18n.Wizard["common"]["slots_total"], len(m.slots))))
+	content.WriteString(footerStyle.Render(fmt.Sprintf(i18n.GetWizardText("common", "slots_total"), len(m.slots))))
 
 	return styles.GetLogo() + "\n" + windowStyle.Render(content.String())
 }

@@ -34,11 +34,11 @@ func PrepareBuildContext(ctx context.Context, cfg domain.EnvConfig, containerNam
 	// If containerName is provided (non-empty), use it; otherwise generate from slot
 	actualContainerName := containerName
 	if actualContainerName == "" {
-		actualContainerName = i18n.GetLifecycleText("build.image", "container_name", slotName)
+		actualContainerName = i18n.GetLifecycleText("build_image", "container_name", slotName)
 	}
 
 	// Use slot name for image name: axiom-dev, axiom-data, axiom-sandbox
-	imageName := i18n.GetLifecycleText("build.image", "image_name", slotName)
+	imageName := i18n.GetLifecycleText("build_image", "image_name", slotName)
 
 	return &BuildContext{
 		Config:            cfg,

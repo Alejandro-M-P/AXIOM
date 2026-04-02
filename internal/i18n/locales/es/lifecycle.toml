@@ -81,16 +81,16 @@ image_exists_warning = "Advertencia"
 image_exists_desc = "Esta imagen ya existe. Se sobrescribirá si continúas."
 image_exists_confirm = "¿Sobrescribir imagen existente?"
 
-[build.steps]
+[build_steps]
 homebrew_install_cmd = "NONINTERACTIVE=1 /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
 ollama_url = "https://ollama.com/download/ollama-linux-%s.tar.zst"
 ollama_rocm_url = "https://ollama.com/download/ollama-linux-%s-rocm.tar.zst"
 
-[build.image]
+[build_image]
 container_name = "axiom-%s"
 image_name = "localhost/axiom-%s:latest"
 
-[build.commit]
+[build_commit]
 author = "axiom"
 message = "Imagen de construcción de AXIOM"
 

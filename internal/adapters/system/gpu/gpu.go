@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 )
 
 var (
@@ -31,7 +33,7 @@ type GPUInfo struct {
 func Detect() GPUInfo {
 	info := GPUInfo{
 		Type:   "generic",
-		Name:   "Desconocida",
+		Name:   i18n.GetSlotsText("gpu", "unknown"),
 		GfxVal: "",
 	}
 
@@ -255,7 +257,7 @@ func typeFromVendor(vendorID, fallback string) string {
 func cleanLSPCIName(line string) string {
 	line = strings.TrimSpace(strings.ReplaceAll(line, "\"", ""))
 	if line == "" {
-		return "Desconocida"
+		return i18n.GetSlotsText("gpu", "unknown")
 	}
 
 	if idx := strings.Index(line, " "); idx >= 0 {

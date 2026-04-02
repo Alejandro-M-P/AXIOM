@@ -64,7 +64,7 @@ languages = "Programming Languages"
 tools = "Developer Tools"
 data = "Data Stores"
 
-[bunker.list]
+[bunker_list]
 label_image = "img:"
 label_gpu = "gpu:"
 label_env = "env:"
@@ -77,3 +77,6 @@ header_status = "STATUS"
 header_size = "SIZE"
 header_last = "LAST"
 header_branch = "BRANCH"
+
+[gpu]
+unknown = "Unknown"

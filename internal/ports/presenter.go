@@ -88,5 +88,8 @@ type IPresenter interface {
 	RunInitWizardResult(ctx context.Context) (bool, error)
 
 	// RunInitWizardWithParams ejecuta el wizard de inicialización con parámetros específicos.
-	RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string) (bool, error)
+	RunInitWizardWithParams(ctx context.Context, axiomPath string, envExists bool, lang string, homeDir string) (bool, error)
+
+	// GetBunkerVolumeFlags devuelve los flags de volumen para crear un contenedor.
+	GetBunkerVolumeFlags(projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (map[string]string, error)
 }

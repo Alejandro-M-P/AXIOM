@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -27,8 +28,8 @@ type createFormModel struct {
 // newCreateFormModel crea un nuevo modelo para el formulario de creación.
 func newCreateFormModel(images []string) createFormModel {
 	ti := textinput.New()
-	ti.Prompt = " ❯ "
-	ti.Placeholder = "nombre-del-bunker"
+	ti.Prompt = " " + i18n.GetWizardText("create_form", "cursor_prefix")
+	ti.Placeholder = i18n.GetWizardText("create_form", "placeholder_name")
 	ti.Focus()
 	return createFormModel{
 		step:       0,
@@ -124,15 +125,15 @@ func (m createFormModel) View() string {
 	switch m.step {
 	case 0:
 		// Selección de imagen
-		content.WriteString(styles.HeaderStyleWithDimensions(width).Render("SELECT IMAGE"))
+		content.WriteString(styles.HeaderStyleWithDimensions(width).Render(i18n.GetWizardText("create_form", "select_image")))
 		content.WriteString("\n\n")
-		content.WriteString("Choose the base image for your bunker:\n\n")
+		content.WriteString(i18n.GetWizardText("create_form", "choose_image") + "\n\n")
 
 		for i, img := range m.images {
 			prefix := "  "
 			style := styles.ContentStyleWithDimensions(width, height).Foreground(t.Muted)
 			if i == m.imageIndex {
-				prefix = "❯ "
+				prefix = i18n.GetWizardText("create_form", "cursor_prefix")
 				style = styles.ContentStyleWithDimensions(width, height).Foreground(t.Primary).Bold(true)
 			}
 			// Mostrar nombre legible de la imagen
@@ -141,50 +142,54 @@ func (m createFormModel) View() string {
 		}
 
 		content.WriteString("\n")
-		content.WriteString(styles.FooterStyleWithDimensions(width).Render("↑/↓: Navigate | Enter: Confirm | Esc: Cancel"))
+		content.WriteString(styles.FooterStyleWithDimensions(width).Render(i18n.GetWizardText("create_form", "navigate")))
 
 	case 1:
 		// Ingreso de nombre
-		content.WriteString(styles.HeaderStyleWithDimensions(width).Render("BUNKER NAME"))
+		content.WriteString(styles.HeaderStyleWithDimensions(width).Render(i18n.GetWizardText("create_form", "bunker_name")))
 		content.WriteString("\n\n")
-		content.WriteString("Enter a name for your bunker:\n\n")
+		content.WriteString(i18n.GetWizardText("create_form", "enter_name") + "\n\n")
 
 		namePreview := m.nameInput.Value()
 		if namePreview == "" {
-			namePreview = "nombre-del-bunker"
+			namePreview = i18n.GetWizardText("create_form", "placeholder_name")
 		}
 		nameStyle := styles.ContentStyleWithDimensions(width, height).Foreground(t.Text)
-		content.WriteString(nameStyle.Render("❯ "+namePreview) + "\n")
+		content.WriteString(nameStyle.Render(i18n.GetWizardText("create_form", "cursor_prefix")+namePreview) + "\n")
 
 		content.WriteString("\n")
 		content.WriteString(m.nameInput.View() + "\n")
-		content.WriteString(styles.FooterStyleWithDimensions(width).Render("Enter: Confirm | Esc: Back"))
+		content.WriteString(styles.FooterStyleWithDimensions(width).Render(i18n.GetWizardText("create_form", "enter_confirm")))
 
 	case 2:
 		// Confirmación final
 		selectedImage := m.images[m.imageIndex]
-		content.WriteString(styles.HeaderStyleWithDimensions(width).Render("CONFIRM"))
+		content.WriteString(styles.HeaderStyleWithDimensions(width).Render(i18n.GetWizardText("create_form", "confirm_title")))
 		content.WriteString("\n\n")
-		content.WriteString("Create bunker with these settings?\n\n")
+		content.WriteString(i18n.GetWizardText("create_form", "confirm_question") + "\n\n")
 
 		infoStyle := styles.ContentStyleWithDimensions(width, height).Foreground(t.Text)
-		content.WriteString(infoStyle.Render(fmt.Sprintf("  Name:   %s", m.name)) + "\n")
-		content.WriteString(infoStyle.Render(fmt.Sprintf("  Image:  %s", getImageDisplayName(selectedImage))) + "\n")
+		nameLabel := i18n.GetWizardText("create_form", "name_label")
+		imageLabel := i18n.GetWizardText("create_form", "image_label")
+		content.WriteString(infoStyle.Render(fmt.Sprintf("  %s  %s", nameLabel, m.name)) + "\n")
+		content.WriteString(infoStyle.Render(fmt.Sprintf("  %s  %s", imageLabel, getImageDisplayName(selectedImage))) + "\n")
 
 		content.WriteString("\n\n")
 
 		// Botones
-		yesBtn := styles.InactiveButton.Render("CREATE")
-		noBtn := styles.InactiveButton.Render("CANCEL")
+		createBtn := i18n.GetWizardText("create_form", "create_btn")
+		cancelBtn := i18n.GetWizardText("create_form", "cancel_btn")
+		yesBtn := styles.InactiveButton.Render(createBtn)
+		noBtn := styles.InactiveButton.Render(cancelBtn)
 		if m.confirm {
-			yesBtn = styles.ActiveButton.Render("CREATE")
+			yesBtn = styles.ActiveButton.Render(createBtn)
 		} else {
-			noBtn = styles.ActiveButton.Render("CANCEL")
+			noBtn = styles.ActiveButton.Render(cancelBtn)
 		}
 		content.WriteString(yesBtn + "  " + noBtn + "\n")
 
 		content.WriteString("\n")
-		content.WriteString(styles.FooterStyleWithDimensions(width).Render("Enter: Confirm | Esc: Back"))
+		content.WriteString(styles.FooterStyleWithDimensions(width).Render(i18n.GetWizardText("create_form", "enter_confirm")))
 	}
 
 	return styles.GetLogo() + "\n" + windowStyle.Render(content.String())
@@ -194,14 +199,25 @@ func (m createFormModel) View() string {
 func getImageDisplayName(image string) string {
 	switch image {
 	case "axiom-dev":
-		return "axiom-dev (Development environment)"
+		return i18n.GetWizardText("create_form", "image_dev")
 	case "axiom-data":
-		return "axiom-data (Data & Databases)"
+		return i18n.GetWizardText("create_form", "image_data")
 	case "axiom-sandbox":
-		return "axiom-sandbox (Sandbox/Testing)"
+		return i18n.GetWizardText("create_form", "image_sandbox")
 	default:
 		return image
 	}
+}
+
+// cleanupTerminal forces exit from alternate screen mode and flushes stdout
+// to prevent corrupted display when running Bubble Tea programs multiple times
+func cleanupTerminal() {
+	// Exit alternate screen mode
+	fmt.Print("\033[?1049l")
+	// Reset cursor visibility (show cursor)
+	fmt.Print("\033[?25h")
+	// Flush stdout to ensure sequences are sent
+	os.Stdout.Sync()
 }
 
 // AskCreateBunker ejecuta el formulario TUI de creación de bunkers.
@@ -216,10 +232,8 @@ func (c *ConsoleUI) AskCreateBunker(images []string) (string, string, bool, erro
 
 	finalModel, err := p.Run()
 
-	// Cleanup terminal - exit alternate screen mode
-	fmt.Print("\033[?1049l")
-	fmt.Print("\033[?25h")
-	os.Stdout.Sync()
+	// Cleanup terminal
+	cleanupTerminal()
 
 	if err != nil {
 		return "", "", false, fmt.Errorf("errors.ui.create_form_failed: %w", err)

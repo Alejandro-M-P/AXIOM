@@ -10,6 +10,7 @@ import (
 // Compile-time check that MockRuntime implements ports.IBunkerRuntime
 var _ interface {
 	CreateBunker(ctx context.Context, name, image, home, flags string) error
+	GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error)
 	StartBunker(ctx context.Context, name string) error
 	StopBunker(ctx context.Context, name string) error
 	RemoveBunker(ctx context.Context, name string, force bool) error
@@ -134,6 +135,11 @@ func (m *MockRuntime) CreateBunker(ctx context.Context, name, image, home, flags
 		Image:  image,
 	})
 	return nil
+}
+
+// GetCreateFlags implements ports.IBunkerRuntime.
+func (m *MockRuntime) GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error) {
+	return volumeFlags, nil
 }
 
 // StartBunker implements ports.IBunkerRuntime.

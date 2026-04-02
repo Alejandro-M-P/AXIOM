@@ -13,6 +13,8 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // ItemGroup represents a group of slot items by subcategory.
@@ -133,7 +135,10 @@ func (m *SlotSelectorModel) View() string {
 	t := theme.DefaultTheme()
 
 	// Header
-	header := theme.NewHeader(t, "Slot Selection", "", "↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel")
+	header := theme.NewHeader(t,
+		i18n.GetWizardText("slots", "slot_selection"),
+		"",
+		i18n.GetWizardText("slots", "navigate"))
 	builder.WriteString(header.View())
 	builder.WriteString("\n")
 
@@ -145,22 +150,25 @@ func (m *SlotSelectorModel) View() string {
 			Foreground(t.Success).
 			Bold(true).
 			Padding(1, 0, 0, 0)
-		builder.WriteString(groupHeaderStyle.Render("━━━ " + group.title + " ━━━\n"))
+		groupTitle := i18n.GetWizardText("slots", "group_decorator")
+		builder.WriteString(groupHeaderStyle.Render(fmt.Sprintf(groupTitle, group.title)) + "\n")
 
 		// Items in group
 		for _, item := range group.items {
-			checked := "[ ]"
+			checkboxUnchecked := i18n.GetWizardText("slots", "checkbox_unchecked")
+			checkboxChecked := i18n.GetWizardText("slots", "checkbox_checked")
+			checked := checkboxUnchecked
 			checkboxStyle := lipgloss.NewStyle().Foreground(t.Muted)
 
 			if m.selected[item.ID] {
-				checked = "[x]"
+				checked = checkboxChecked
 				checkboxStyle = lipgloss.NewStyle().Foreground(t.Primary)
 			}
 
 			cursorPrefix := "  "
 			cursorStyle := lipgloss.NewStyle()
 			if cursor == m.cursor {
-				cursorPrefix = "❯ "
+				cursorPrefix = i18n.GetWizardText("bunker_selector", "cursor_prefix")
 				cursorStyle = lipgloss.NewStyle().Foreground(t.Text)
 			} else {
 				cursorStyle = lipgloss.NewStyle().Foreground(t.Muted)
@@ -202,9 +210,10 @@ func (m *SlotSelectorModel) View() string {
 	selectedCount := countSelected(m.selected, m.groups)
 	totalCount := countAllItems(m.groups)
 	summaryStyle := lipgloss.NewStyle().Foreground(t.Success)
-	builder.WriteString(summaryStyle.Render(fmt.Sprintf("Selected: %d/%d", selectedCount, totalCount)) + "    ")
+	selectedFormat := i18n.GetWizardText("slots", "selected_format")
+	builder.WriteString(summaryStyle.Render(fmt.Sprintf(selectedFormat, selectedCount, totalCount)) + "    ")
 
-	builder.WriteString(footerStyle.Render("Space: toggle  │  Enter: confirm  │  Esc: cancel\n"))
+	builder.WriteString(footerStyle.Render(i18n.GetWizardText("slots", "space_toggle") + "\n"))
 
 	// Use CenteredContainer for fullscreen centering
 	centered := components.NewCenteredContainer(m.Width, m.Height)
@@ -386,5 +395,5 @@ func getSubcategoryTitle(subcategory string) string {
 		return title
 	}
 	// Fallback: titlecase the subcategory name
-	return strings.Title(subcategory)
+	return cases.Title(language.English).String(subcategory)
 }

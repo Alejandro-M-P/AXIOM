@@ -302,8 +302,11 @@ func (r *Router) handleInit() error {
 		}
 	}
 
+	// Obtener homeDir para el wizard
+	homeDir, _ := r.fs.UserHomeDir()
+
 	// Ejecutar el wizard TUI a través del presenter
-	completed, err := r.bm.GetUI().RunInitWizardWithParams(context.Background(), r.axiomPath, configExists, lang)
+	completed, err := r.bm.GetUI().RunInitWizardWithParams(context.Background(), r.axiomPath, configExists, lang, homeDir)
 	if err != nil {
 		return fmt.Errorf("errors.router.init_wizard_failed: %w", err)
 	}

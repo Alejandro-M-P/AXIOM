@@ -31,16 +31,16 @@ type commandHelp struct {
 // newHelpTUIModel crea un nuevo modelo de ayuda.
 func newHelpTUIModel() helpTUIModel {
 	commands := []commandHelp{
-		{"init", "Initialize AXIOM configuration", "axiom init"},
-		{"create", "Create a new bunker", "axiom create"},
-		{"build", "Build environment with slots", "axiom build"},
-		{"list", "List and select bunkers", "axiom list"},
-		{"info", "Show bunker information", "axiom info <name>"},
-		{"delete", "Delete a bunker", "axiom delete [name]"},
-		{"stop", "Stop a running bunker", "axiom stop [name]"},
-		{"prune", "Clean up orphaned bunkers", "axiom prune"},
-		{"slots", "Discover available slots", "axiom slots"},
-		{"help", "Show this help", "axiom help"},
+		{"init", i18n.GetWizardText("help_commands", "init"), "axiom init"},
+		{"create", i18n.GetWizardText("help_commands", "create"), "axiom create"},
+		{"build", i18n.GetWizardText("help_commands", "build"), "axiom build"},
+		{"list", i18n.GetWizardText("help_commands", "list"), "axiom list"},
+		{"info", i18n.GetWizardText("help_commands", "info"), "axiom info <name>"},
+		{"delete", i18n.GetWizardText("help_commands", "delete"), "axiom delete [name]"},
+		{"stop", i18n.GetWizardText("help_commands", "stop"), "axiom stop [name]"},
+		{"prune", i18n.GetWizardText("help_commands", "prune"), "axiom prune"},
+		{"slots", i18n.GetWizardText("help_commands", "slots"), "axiom slots"},
+		{"help", i18n.GetWizardText("help_commands", "help"), "axiom help"},
 	}
 	return helpTUIModel{
 		commands: commands,
@@ -123,7 +123,7 @@ func (m helpTUIModel) View() string {
 	var content strings.Builder
 
 	// Header
-	header := theme.NewHeader(t, "AXIOM Help", "", "↑/↓: Navigate | Esc: Exit")
+	header := theme.NewHeader(t, i18n.GetWizardText("help_tui", "title"), "", i18n.GetWizardText("help_tui", "navigate"))
 	content.WriteString(header.View())
 	content.WriteString("\n")
 
@@ -132,7 +132,7 @@ func (m helpTUIModel) View() string {
 		Foreground(t.Primary).
 		Bold(true).
 		Width(contentWidth - 4)
-	content.WriteString(titleStyle.Render("\nAvailable Commands:\n"))
+	content.WriteString(titleStyle.Render("\n" + i18n.GetWizardText("help_tui", "available_commands") + "\n"))
 
 	// Lista de comandos
 	for i, cmd := range m.commands {
@@ -142,11 +142,11 @@ func (m helpTUIModel) View() string {
 		usageStyle := lipgloss.NewStyle().Foreground(t.Primary).Italic(true)
 
 		if i == m.cursor {
-			prefix = "❯ "
+			prefix = i18n.GetWizardText("bunker_selector", "cursor_prefix")
 			cmdStyle = lipgloss.NewStyle().Foreground(t.Primary).Bold(true)
 		}
 
-		line := fmt.Sprintf(i18n.Wizard["help"]["item_format"], prefix, cmdStyle.Render(cmd.name), descStyle.Render(cmd.description))
+		line := fmt.Sprintf(i18n.GetWizardText("help", "item_format"), prefix, cmdStyle.Render(cmd.name), descStyle.Render(cmd.description))
 		content.WriteString(line + "\n")
 		content.WriteString(usageStyle.Render("    "+cmd.usage) + "\n\n")
 	}
@@ -155,7 +155,7 @@ func (m helpTUIModel) View() string {
 	footerStyle := lipgloss.NewStyle().Foreground(t.Muted)
 	content.WriteString(footerStyle.Render("\n" + strings.Repeat("─", contentWidth-4)))
 	content.WriteString("\n")
-	content.WriteString(footerStyle.Render(i18n.Wizard["common"]["help_press_esc"]))
+	content.WriteString(footerStyle.Render(i18n.GetWizardText("common", "help_press_esc")))
 
 	return styles.GetLogo() + "\n" + windowStyle.Render(content.String())
 }

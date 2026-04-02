@@ -2,6 +2,7 @@ package components
 
 import (
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -15,7 +16,7 @@ type EscapeButton struct {
 // NewEscapeButton crea un nuevo EscapeButton con el texto por defecto.
 func NewEscapeButton() *EscapeButton {
 	return &EscapeButton{
-		text:  "Salir", // default, will be overridden by caller
+		text:  i18n.GetWizardText("components", "escape_exit"),
 		theme: theme.DefaultTheme(),
 	}
 }
