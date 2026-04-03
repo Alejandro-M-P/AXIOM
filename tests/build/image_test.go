@@ -37,8 +37,8 @@ func TestBuildContextCreation(t *testing.T) {
 		t.Errorf("ContainerName = %s, want test-container", buildCtx.ContainerName)
 	}
 
-	// Now returns i18n key since GetText returns key when not found
-	expectedImageName := "build_image.image_name"
+	// Core generates the image name directly: axiom-{slotName}
+	expectedImageName := "axiom-dev"
 	if buildCtx.ImageName != expectedImageName {
 		t.Errorf("ImageName = %s, want %s", buildCtx.ImageName, expectedImageName)
 	}
