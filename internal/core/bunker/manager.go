@@ -18,17 +18,19 @@ type Manager struct {
 	fs      ports.IFileSystem
 	ui      ports.IPresenter
 	system  ports.ISystem
+	git     ports.IGit
 	mu      sync.Mutex // Protege operaciones que pueden tener race conditions
 }
 
 // NewManager crea una nueva instancia del Manager con sus dependencias.
-func NewManager(rootDir string, runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem) *Manager {
+func NewManager(rootDir string, runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, git ports.IGit) *Manager {
 	return &Manager{
 		rootDir: rootDir,
 		runtime: runtime,
 		fs:      fs,
 		ui:      ui,
 		system:  system,
+		git:     git,
 	}
 }
 
@@ -139,4 +141,12 @@ func (m *Manager) DeleteImage() error {
 // UI exposes the presenter for router access
 func (m *Manager) GetUI() ports.IPresenter {
 	return m.ui
+}
+
+// ConfigureGit configures Git user.name and user.email for a project directory.
+func (m *Manager) ConfigureGit(ctx context.Context, cfg EnvConfig, projectDir string) error {
+	if cfg.GitUser == "" || cfg.GitEmail == "" {
+		return nil
+	}
+	return m.git.ConfigureUser(ctx, projectDir, cfg.GitUser, cfg.GitEmail)
 }

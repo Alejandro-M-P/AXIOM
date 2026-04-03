@@ -47,9 +47,10 @@ func main() {
 	fsAdapter := filesystem.NewFSAdapter()
 	uiAdapter := ui.NewConsoleUI()
 	systemAdapter := system.NewSystemAdapter()
+	gitAdapter := runtime.NewGitAdapter(fsAdapter)
 
 	// Create managers via DI
-	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter, systemAdapter)
+	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter, systemAdapter, gitAdapter)
 
 	// Load slots from TOML files (in addition to init() registered slots)
 	if err := slots.LoadAndRegisterSlots(rootDir); err != nil {

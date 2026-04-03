@@ -17,7 +17,7 @@ func TestCreateValidation_EmptyName(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.CreateBunker(context.Background(), "")
 	if err == nil {
@@ -33,7 +33,7 @@ func TestCreateValidation_EmptyNameWithSpaces(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.CreateBunker(context.Background(), "   ")
 	if err == nil {
@@ -49,7 +49,7 @@ func TestCreateValidation_InvalidChars(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	invalidNames := []string{
 		"../etc",
@@ -78,7 +78,7 @@ func TestCreateRuntimeError(t *testing.T) {
 	runtime.CreateBunkerErr = errors.New("runtime error")
 	runtime.Images = []string{"localhost/axiom-generic:latest"}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.CreateBunker(context.Background(), "test-bunker")
 	if err == nil {
@@ -93,7 +93,7 @@ func TestCreateWithFlags(t *testing.T) {
 
 	runtime.Images = []string{"localhost/axiom-generic:latest"}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.CreateBunker(context.Background(), "valid-name")
 	if err != nil && err.Error() != "missing_name" && err.Error() != "invalid_name" && err.Error() != "access_denied" {
@@ -132,7 +132,7 @@ func TestCreateContainerFlags(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	cfg := EnvConfig{
 		BaseDir:   "/home/user/projects",

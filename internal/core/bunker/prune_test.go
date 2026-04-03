@@ -33,7 +33,7 @@ func TestPruneSuccess(t *testing.T) {
 
 	ui.AskConfirmInCardResp = true
 
-	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.PruneBunkers(context.Background())
 	if err != nil {
@@ -48,7 +48,7 @@ func TestPrune_ConcurrentSafety(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	errCh := make(chan error, 10)
 
@@ -89,7 +89,7 @@ func TestPrune_OnlyOneRunning(t *testing.T) {
 
 	ui.AskConfirmInCardResp = true
 
-	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	var wg sync.WaitGroup
 	for i := 0; i < 5; i++ {
@@ -118,7 +118,7 @@ func TestPruneWithErrors(t *testing.T) {
 
 	ui.AskConfirmInCardResp = true
 
-	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.PruneBunkers(context.Background())
 	if err != nil {
@@ -143,7 +143,7 @@ func TestPrune_NoOrphans(t *testing.T) {
 		t.Fatalf("failed to create active dir: %s", err)
 	}
 
-	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.PruneBunkers(context.Background())
 	if err != nil {
@@ -169,7 +169,7 @@ func TestPrune_UserDeclines(t *testing.T) {
 
 	ui.AskConfirmInCardResp = false
 
-	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.PruneBunkers(context.Background())
 	if err != nil {
@@ -190,7 +190,7 @@ func TestPrune_EmptyEnvDir(t *testing.T) {
 		t.Fatalf("failed to create .entorno dir: %s", err)
 	}
 
-	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.PruneBunkers(context.Background())
 	if err != nil {
@@ -215,7 +215,7 @@ func TestPrune_UserCancels(t *testing.T) {
 
 	ui.AskConfirmInCardErr = errors.New("user cancelled")
 
-	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.PruneBunkers(context.Background())
 	if err != nil {
@@ -230,7 +230,7 @@ func TestPrune_VerifyMutexBlocksConcurrent(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	startCh := make(chan struct{})
 	doneCount := 0
@@ -281,7 +281,7 @@ func TestPrune_ExcludesDefaultContainer(t *testing.T) {
 
 	ui.AskConfirmInCardResp = true
 
-	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager(tmpDir, runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	_ = mgr.PruneBunkers(context.Background())
 }

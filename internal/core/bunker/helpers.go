@@ -174,24 +174,6 @@ func bunkerEnvSize(fs ports.IFileSystem, cfg EnvConfig, name string, presenter p
 	return formatBytes(presenter, size)
 }
 
-// bunkerGitBranch obtiene la rama git del proyecto.
-func bunkerGitBranch(fs ports.IFileSystem, cfg EnvConfig, name string) string {
-	projectPath := filepath.Join(cfg.BaseDir, name)
-	headPath := filepath.Join(projectPath, ".git", "HEAD")
-	content, err := fs.ReadFile(headPath)
-	if err != nil {
-		return "-"
-	}
-	head := strings.TrimSpace(string(content))
-	if strings.HasPrefix(head, "ref: refs/heads/") {
-		return strings.TrimPrefix(head, "ref: refs/heads/")
-	}
-	if len(head) >= 7 {
-		return head[:7]
-	}
-	return "-"
-}
-
 // bunkerLastEntry obtiene la última fecha de modificación del entorno.
 func bunkerLastEntry(fs ports.IFileSystem, cfg EnvConfig, name string) string {
 	path := config.BuildWorkspaceDir(cfg.BaseDir, name)

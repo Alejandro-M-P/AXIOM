@@ -71,7 +71,7 @@ func (m *Manager) info(ctx context.Context, name string) error {
 			ports.NewField("fields.project", humanPath(m.fs, bunkerProjectPath(cfg, name))),
 			ports.NewField("fields.size", bunkerEnvSize(m.fs, cfg, name, m.ui)),
 			ports.NewField("fields.last_activity", bunkerLastEntry(m.fs, cfg, name)),
-			ports.NewField("fields.git_branch", defaultString(bunkerGitBranch(m.fs, cfg, name), "-")),
+			ports.NewField("fields.git_branch", m.git.GetBranch(bunkerProjectPath(cfg, name))),
 		},
 		nil,
 	)

@@ -13,7 +13,7 @@ func TestNewManager(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	if mgr == nil {
 		t.Fatal("NewManager returned nil")
@@ -37,7 +37,7 @@ func TestNewManager_AllDependencies(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/test/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/test/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	if mgr.rootDir != "/test/root" {
 		t.Errorf("rootDir mismatch: expected '/test/root', got '%s'", mgr.rootDir)
@@ -59,7 +59,7 @@ func TestManagerHasMutex(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	if mgr == nil {
 		t.Fatal("Manager is nil")
@@ -84,7 +84,7 @@ func TestManagerInterfaceCompliance(t *testing.T) {
 		ListAxiomImages(ctx context.Context) ([]string, error)
 		Help() error
 		GetUI() ports.IPresenter
-	} = NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	} = NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 }
 
 func TestManager_GetUI(t *testing.T) {
@@ -92,7 +92,7 @@ func TestManager_GetUI(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	got := mgr.GetUI()
 	if got == nil {
@@ -108,7 +108,7 @@ func TestManagerAliases(t *testing.T) {
 	fs := mocks.NewMockFileSystem()
 	ui := mocks.NewMockPresenter()
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	_ = mgr.Create("test")
 	_ = mgr.Delete("test")

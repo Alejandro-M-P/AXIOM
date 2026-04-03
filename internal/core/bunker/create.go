@@ -172,6 +172,10 @@ WaitLoop:
 		return err
 	}
 
+	if err := m.ConfigureGit(ctx, cfg, projectDir); err != nil {
+		return err
+	}
+
 	if strings.ToLower(strings.TrimSpace(cfg.AuthMode)) == "ssh" {
 		_ = m.system.PrepareSSHAgent(ctx)
 	}

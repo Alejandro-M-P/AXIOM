@@ -18,7 +18,7 @@ func TestStopSuccess(t *testing.T) {
 		{Name: "test-bunker", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.StopBunker(context.Background())
 	if err != nil {
@@ -37,7 +37,7 @@ func TestStopNonExistent(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.StopBunker(context.Background())
 	if err != nil {
@@ -65,7 +65,7 @@ func TestStop_NoActiveBunkers(t *testing.T) {
 		{Name: "test-bunker", Status: "stopped", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.StopBunker(context.Background())
 	if err != nil {
@@ -94,7 +94,7 @@ func TestStopRuntimeError(t *testing.T) {
 	}
 	runtime.StopBunkerErr = errors.New("runtime error")
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.StopBunker(context.Background())
 	if err == nil {
@@ -114,7 +114,7 @@ func TestStop_InteractiveSelection(t *testing.T) {
 
 	// With multiple active bunkers, interactive selection is needed
 	// which is not implemented, so we expect an error
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.StopBunker(context.Background())
 	// This should error because selectBunkerInteractive returns error for multiple bunkers
@@ -132,7 +132,7 @@ func TestStop_VerifyBunkerStatus(t *testing.T) {
 		{Name: "test-bunker", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.StopBunker(context.Background())
 	if err != nil {

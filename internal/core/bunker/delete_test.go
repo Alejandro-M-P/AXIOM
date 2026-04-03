@@ -24,7 +24,7 @@ func TestDeleteSuccess(t *testing.T) {
 	ui.AskDeleteConfirm = true
 	ui.AskDeleteDeleteCode = false
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.DeleteBunker(context.Background(), "test-bunker", false, false)
 	if err != nil {
@@ -51,7 +51,7 @@ func TestDeleteWithForce(t *testing.T) {
 	ui.AskDeleteConfirm = true
 	ui.AskDeleteDeleteCode = false
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.DeleteBunker(context.Background(), "test-bunker", true, false)
 	if err != nil {
@@ -75,7 +75,7 @@ func TestDeleteWithImage(t *testing.T) {
 	ui.AskDeleteConfirm = true
 	ui.AskDeleteDeleteCode = false
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.DeleteBunker(context.Background(), "test-bunker", false, true)
 	if err != nil {
@@ -90,7 +90,7 @@ func TestDeleteNonExistent(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.DeleteBunker(context.Background(), "nonexistent", false, false)
 	if err != nil && err.Error() != "invalid_name" {
@@ -109,7 +109,7 @@ func TestDeleteUserDeclines(t *testing.T) {
 
 	ui.AskDeleteConfirm = false
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.DeleteBunker(context.Background(), "test-bunker", false, false)
 	if err != nil {
@@ -134,7 +134,7 @@ func TestDeleteRuntimeError(t *testing.T) {
 	ui.AskDeleteConfirm = true
 	ui.AskDeleteDeleteCode = false
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.DeleteBunker(context.Background(), "test-bunker", false, false)
 	if err == nil {
@@ -151,7 +151,7 @@ func TestDeleteImage_Success(t *testing.T) {
 
 	ui.AskConfirmInCardResp = true
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.DeleteBunkerImage(context.Background())
 	if err != nil {
@@ -168,7 +168,7 @@ func TestDeleteImage_UserDeclines(t *testing.T) {
 
 	ui.AskConfirmInCardResp = false
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.DeleteBunkerImage(context.Background())
 	if err != nil {
@@ -186,7 +186,7 @@ func TestListBunkerNames_FromRuntime(t *testing.T) {
 		{Name: "bunker-2", Status: "stopped", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	names, err := mgr.listBunkerNames(context.Background(), EnvConfig{BaseDir: "/root"})
 	if err != nil {
@@ -208,7 +208,7 @@ func TestListBunkerNames_ExcludesDefault(t *testing.T) {
 		{Name: DefaultBuildContainerName, Status: "running", Image: "localhost/axiom-build:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	names, err := mgr.listBunkerNames(context.Background(), EnvConfig{BaseDir: "/root"})
 	if err != nil {
@@ -338,7 +338,7 @@ func TestListAxiomImages_Function(t *testing.T) {
 		{Name: "bunker-3", Status: "running", Image: "docker.io/library/alpine:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	images, err := mgr.listAxiomImages(context.Background())
 	if err != nil {

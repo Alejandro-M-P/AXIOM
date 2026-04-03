@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/core/domain"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
@@ -20,7 +21,7 @@ func TestListEmpty(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.ListBunkers(context.Background())
 	if err != nil {
@@ -41,7 +42,7 @@ func TestListWithBunkers(t *testing.T) {
 		{Name: "bunker-1", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.ListBunkers(context.Background())
 	if err != nil {
@@ -59,7 +60,7 @@ func TestListFormatting_MultipleBunkers(t *testing.T) {
 		{Name: "bunker-2", Status: "stopped", Image: "localhost/axiom-rdna4:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.ListBunkers(context.Background())
 	// With multiple bunkers, interactive selection is needed which is not fully implemented
@@ -77,7 +78,7 @@ func TestBunkerInfo_Success(t *testing.T) {
 		{Name: "test-bunker", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.BunkerInfo(context.Background(), "test-bunker")
 	if err != nil {
@@ -105,7 +106,7 @@ func TestBunkerInfo_EmptyNameFallsBackToList(t *testing.T) {
 		{Name: "bunker-1", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	err := mgr.BunkerInfo(context.Background(), "")
 	if err != nil {
@@ -122,7 +123,7 @@ func TestBunkerStatus_Running(t *testing.T) {
 		{Name: "test-bunker", Status: "running", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	status := mgr.BunkerStatus(context.Background(), "test-bunker")
 	if status != "running" {
@@ -139,7 +140,7 @@ func TestBunkerStatus_Stopped(t *testing.T) {
 		{Name: "test-bunker", Status: "stopped", Image: "localhost/axiom-generic:latest"},
 	}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	status := mgr.BunkerStatus(context.Background(), "test-bunker")
 	if status != "stopped" {
@@ -154,7 +155,7 @@ func TestBunkerStatus_NotFound(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	status := mgr.BunkerStatus(context.Background(), "nonexistent")
 	// Now returns i18n key since GetText returns key when not found
@@ -171,7 +172,7 @@ func TestBunkerStatus_ListError(t *testing.T) {
 
 	runtime.ListBunkersErr = context.DeadlineExceeded
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	status := mgr.BunkerStatus(context.Background(), "test-bunker")
 	// Now returns i18n key since GetText returns key when not found
@@ -250,9 +251,6 @@ func TestBunkerProjectPath_Function(t *testing.T) {
 
 func TestBunkerGitBranch_Detached(t *testing.T) {
 	tmpDir := t.TempDir()
-	cfg := EnvConfig{
-		BaseDir: tmpDir,
-	}
 
 	projectDir := filepath.Join(tmpDir, "test-bunker")
 	gitDir := filepath.Join(projectDir, ".git")
@@ -267,19 +265,17 @@ func TestBunkerGitBranch_Detached(t *testing.T) {
 	}
 
 	fs := filesystem.NewFSAdapter()
-	branch := bunkerGitBranch(fs, cfg, "test-bunker")
+	git := runtime.NewGitAdapter(fs)
+	branch := git.GetBranch(projectDir)
 	if branch != "abc1234" {
 		t.Errorf("expected 'abc1234', got '%s'", branch)
 	}
 }
 
 func TestBunkerGitBranch_NonExistent(t *testing.T) {
-	cfg := EnvConfig{
-		BaseDir: "/nonexistent",
-	}
-
 	fs := filesystem.NewFSAdapter()
-	branch := bunkerGitBranch(fs, cfg, "nonexistent")
+	git := runtime.NewGitAdapter(fs)
+	branch := git.GetBranch("/nonexistent")
 	if branch != "-" {
 		t.Errorf("expected '-' for nonexistent project, got '%s'", branch)
 	}
@@ -368,7 +364,7 @@ func TestImageExists_Function(t *testing.T) {
 
 	runtime.Images = []string{"localhost/axiom-generic:latest"}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	if !mgr.ImageExists(context.Background(), "localhost/axiom-generic:latest") {
 		t.Error("expected ImageExists to return true for existing image")
@@ -386,7 +382,7 @@ func TestListAxiomImages_Empty(t *testing.T) {
 
 	runtime.Bunkers = []domain.Bunker{}
 
-	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem())
+	mgr := NewManager("/root", runtime, fs, ui, mocks.NewMockSystem(), mocks.NewMockGit())
 
 	images, err := mgr.ListAxiomImages(context.Background())
 	if err != nil {
