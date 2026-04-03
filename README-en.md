@@ -73,8 +73,9 @@ Run `axiom create my-project` and in 30 seconds you have a fully equipped enviro
 | `axiom stop` | Stops the execution of an active bunker. |
 | `axiom info [name]` | Shows the detailed summary card of a bunker. |
 | `axiom prune` | Cleans up orphan environments with no container. |
-| `axiom rebuild` | Rebuilds the base image. |
-| `axiom reset` | Deletes ALL bunkers and images (Total reset). |
+| `axiom enter <name>` | ⏳ Pending — Enters an existing bunker interactively. |
+| `axiom rebuild` | ⏳ Pending — Rebuilds the base image. |
+| `axiom reset` | ⏳ Pending — Deletes ALL bunkers and images (Total reset). |
 
 ### Current Go Migration Layout
 AXIOM is currently undergoing a massive refactor to replace Bash scripts (`lib/*.sh`) with a robust Go binary. The current code layout lives in `pkg/` but is actively evolving to decouple logic from presentation:
@@ -87,6 +88,9 @@ AXIOM is currently undergoing a massive refactor to replace Bash scripts (`lib/*
 | `axiom create` | 🚧 WIP | Adjusting `$HOME` persistence and enforcing strictly secure `0700` permissions. |
 | `axiom delete` | 🚧 WIP | Working, but needs decoupling from the `stdin` UI blocks in the core Manager. |
 | `axiom prune` | ⏳ Pending | Needs to be rewritten leveraging Goroutines for concurrent background deletion. |
+| `axiom enter` | ⏳ Pending | Interactive TTY entry into existing bunker via distrobox-enter. |
+| `axiom rebuild` | ⏳ Pending | Reuses build plan but deletes the image first. |
+| `axiom reset` | ⏳ Pending | Total cleanup: all bunkers, all images, config reset. |
 | **Git Tools** | ⏳ Pending | The interactive bash commands (`lib/git.sh`) will be replaced using `go-git`. |
 
 ### 🗺️ Technical Vision & Roadmap

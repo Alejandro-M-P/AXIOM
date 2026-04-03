@@ -53,7 +53,7 @@ internal/
 | `axiom prune` | ✅ | |
 | `axiom info` | ✅ | |
 | `axiom delete-image` | ✅ | |
-| `axiom build` | ✅ | Wizard para seleccionar slots |
+| `axiom build` | 🚧 | Wizard para seleccionar slots, construcción de imágenes |
 | `axiom rebuild` | ❌ | No implementado |
 | `axiom reset` | ❌ | No implementado |
 | `axiom enter` | ❌ | No implementado |
