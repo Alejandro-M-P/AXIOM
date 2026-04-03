@@ -60,9 +60,9 @@ func (a *PodmanAdapter) GetVolumeFlags(ctx context.Context, projectDir, name, ai
 		}
 	}
 
-	// SSH socket volume
+	// SSH socket volume (read-only for security)
 	if sshSocket != "" {
-		parts = append(parts, fmt.Sprintf("--volume %s:%s", sshSocket, sshSocket))
+		parts = append(parts, fmt.Sprintf("--volume %s:%s:ro", sshSocket, sshSocket))
 	}
 
 	return strings.Join(parts, " "), nil
