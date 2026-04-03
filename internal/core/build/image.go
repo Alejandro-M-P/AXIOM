@@ -3,7 +3,6 @@ package build
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
@@ -132,7 +131,7 @@ func removePathWritable(fs ports.IFileSystem, path string) error {
 	if !fs.Exists(path) {
 		return nil
 	}
-	_ = fs.WalkDir(path, func(currentPath string, d os.DirEntry, walkErr error) error {
+	_ = fs.WalkDir(path, func(currentPath string, d ports.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil
 		}

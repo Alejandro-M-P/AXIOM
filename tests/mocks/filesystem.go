@@ -168,7 +168,7 @@ func (m *MockFileSystem) OpenFile(path string, flag int, perm os.FileMode) (*os.
 	return nil, nil
 }
 
-func (m *MockFileSystem) WalkDir(root string, walkFn func(path string, d os.DirEntry, err error) error) error {
+func (m *MockFileSystem) WalkDir(root string, walkFn func(path string, d ports.DirEntry, err error) error) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -221,3 +221,20 @@ func (m *mockFileInfo) Mode() os.FileMode {
 func (m *mockFileInfo) ModTime() time.Time { return time.Now() }
 func (m *mockFileInfo) IsDir() bool        { return m.isDir }
 func (m *mockFileInfo) Sys() interface{}   { return nil }
+
+// MockDirEntry implements ports.DirEntry for testing.
+type MockDirEntry struct {
+	isDir bool
+	info  *mockFileInfo
+}
+
+func (m *MockDirEntry) IsDir() bool {
+	return m.isDir
+}
+
+func (m *MockDirEntry) Info() (os.FileInfo, error) {
+	if m.info != nil {
+		return m.info, nil
+	}
+	return &mockFileInfo{name: "mock", isDir: m.isDir}, nil
+}

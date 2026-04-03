@@ -442,7 +442,7 @@ func TestWalkDir(t *testing.T) {
 	os.WriteFile(filepath.Join(subDir, "f2.txt"), []byte("2"), 0644)
 
 	var visited []string
-	err := adapter.WalkDir(tmpDir, func(path string, d os.DirEntry, err error) error {
+	err := adapter.WalkDir(tmpDir, func(path string, d ports.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -460,7 +460,7 @@ func TestWalkDir(t *testing.T) {
 func TestWalkDir_Error(t *testing.T) {
 	adapter := filesystem.NewFSAdapter()
 
-	err := adapter.WalkDir("/nonexistent/path/for/walking", func(path string, d os.DirEntry, err error) error {
+	err := adapter.WalkDir("/nonexistent/path/for/walking", func(path string, d ports.DirEntry, err error) error {
 		return err
 	})
 	if err == nil {

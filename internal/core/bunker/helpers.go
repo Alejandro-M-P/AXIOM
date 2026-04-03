@@ -114,7 +114,7 @@ func removePathWritable(fs ports.IFileSystem, path string) error {
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-	_ = fs.WalkDir(path, func(currentPath string, d os.DirEntry, walkErr error) error {
+	_ = fs.WalkDir(path, func(currentPath string, d ports.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil
 		}
@@ -156,7 +156,7 @@ func bunkerEnvSize(fs ports.IFileSystem, cfg EnvConfig, name string, presenter p
 		return "-"
 	}
 	var size int64
-	err := fs.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
+	err := fs.WalkDir(path, func(_ string, d ports.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}

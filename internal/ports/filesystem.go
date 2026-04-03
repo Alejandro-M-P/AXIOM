@@ -2,6 +2,13 @@ package ports
 
 import "os"
 
+// DirEntry is an abstraction over os.DirEntry for use in walk callbacks.
+// This keeps the core free from direct OS type dependencies.
+type DirEntry interface {
+	IsDir() bool
+	Info() (os.FileInfo, error)
+}
+
 // IFileSystem define el contrato para operaciones del sistema de archivos.
 // Las implementaciones pueden ser locales o remotas (S3, etc.).
 type IFileSystem interface {
@@ -30,7 +37,7 @@ type IFileSystem interface {
 	OpenFile(path string, flag int, perm os.FileMode) (*os.File, error)
 
 	// WalkDir recorre el árbol de directorios.
-	WalkDir(root string, walkFn func(path string, d os.DirEntry, err error) error) error
+	WalkDir(root string, walkFn func(path string, d DirEntry, err error) error) error
 
 	// Chmod cambia los permisos de un archivo.
 	Chmod(path string, mode os.FileMode) error

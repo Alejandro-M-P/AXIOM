@@ -64,8 +64,10 @@ func (f *FSAdapter) OpenFile(path string, flag int, perm os.FileMode) (*os.File,
 }
 
 // WalkDir recorre el árbol de directorios.
-func (f *FSAdapter) WalkDir(root string, walkFn func(path string, d os.DirEntry, err error) error) error {
-	return filepath.WalkDir(root, walkFn)
+func (f *FSAdapter) WalkDir(root string, walkFn func(path string, d ports.DirEntry, err error) error) error {
+	return filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		return walkFn(path, &osDirEntryAdapter{entry: d}, err)
+	})
 }
 
 // Chmod cambia los permisos de un archivo.
@@ -101,6 +103,22 @@ func (f *FSAdapter) EnsureFileExists(path string, perm os.FileMode) error {
 	}
 	return file.Close()
 }
+
+// osDirEntryAdapter wraps an os.DirEntry and implements ports.DirEntry.
+type osDirEntryAdapter struct {
+	entry os.DirEntry
+}
+
+func (a *osDirEntryAdapter) IsDir() bool {
+	return a.entry.IsDir()
+}
+
+func (a *osDirEntryAdapter) Info() (os.FileInfo, error) {
+	return a.entry.Info()
+}
+
+// Verify it implements ports.DirEntry
+var _ ports.DirEntry = (*osDirEntryAdapter)(nil)
 
 // CreateFile creates a file with the given permissions, truncating if it exists.
 func (f *FSAdapter) CreateFile(path string, perm os.FileMode) (*os.File, error) {

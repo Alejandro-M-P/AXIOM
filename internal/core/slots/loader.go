@@ -4,7 +4,6 @@ package slots
 import (
 	"embed"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -86,7 +85,7 @@ func LoadSlotsFromTOML(fs ports.IFileSystem, basePath string) ([]SlotItem, error
 	var items []SlotItem
 
 	// Walk the directory tree usando el puerto IFileSystem
-	err := fs.WalkDir(basePath, func(path string, d os.DirEntry, walkErr error) error {
+	err := fs.WalkDir(basePath, func(path string, d ports.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil // Skip errors and continue
 		}
@@ -156,7 +155,7 @@ func loadFromFilesystem(fs ports.IFileSystem, axiomPath string) error {
 	}
 
 	// Walk through all subdirectories looking for "tomls" folders
-	err := fs.WalkDir(basePath, func(path string, info os.DirEntry, err error) error {
+	err := fs.WalkDir(basePath, func(path string, info ports.DirEntry, err error) error {
 		if err != nil {
 			return nil // Skip errors and continue
 		}
