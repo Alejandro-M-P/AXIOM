@@ -64,7 +64,7 @@ func PrepareSharedDirectories(ctx context.Context, fs ports.IFileSystem, cfg con
 }
 
 // RecreateBuildContainer removes any existing build container and creates a fresh one.
-func RecreateBuildContainer(ctx context.Context, runtime ports.IBunkerRuntime, fs ports.IFileSystem, containerName string, buildWorkspaceDir string, cfg config.EnvConfig) error {
+func RecreateBuildContainer(ctx context.Context, runtime ports.IBunkerRuntime, fs ports.IFileSystem, containerName string, buildWorkspaceDir string, cfg config.EnvConfig, gpuType string) error {
 	// Remove existing container if any
 	_ = runtime.RemoveBunker(ctx, containerName, true)
 
@@ -78,20 +78,22 @@ func RecreateBuildContainer(ctx context.Context, runtime ports.IBunkerRuntime, f
 		return err
 	}
 
-	// Build container flags
-	flags := BuildContainerFlags(cfg)
+	// Get volume flags from runtime (core doesn't know Podman flag format)
+	aiConfigDir := config.AIConfigDir(cfg.BaseDir)
+	configPath := filepath.Join(cfg.AxiomPath, "config.toml")
+	volumeFlags, err := runtime.GetVolumeFlags(ctx, buildWorkspaceDir, containerName, aiConfigDir, configPath, gpuType, "")
+	if err != nil {
+		return fmt.Errorf("errors.build.get_volume_flags: %w", err)
+	}
+
+	// Get full create flags (volumes + GPU devices) from runtime
+	flags, err := runtime.GetCreateFlags(ctx, containerName, "archlinux:latest", buildWorkspaceDir, volumeFlags, gpuType)
+	if err != nil {
+		return fmt.Errorf("errors.build.get_create_flags: %w", err)
+	}
 
 	// Create container using the base image
 	return runtime.CreateBunker(ctx, containerName, "archlinux:latest", buildWorkspaceDir, flags)
-}
-
-// BuildContainerFlags returns the docker/podman flags needed for the build container.
-func BuildContainerFlags(cfg config.EnvConfig) string {
-	return fmt.Sprintf(
-		"--volume %s:/ai_config:z --volume %s:/run/axiom/env:ro,z --device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render",
-		config.AIConfigDir(cfg.BaseDir),
-		filepath.Join(cfg.AxiomPath, "config.toml"),
-	)
 }
 
 // ExportBuildImage commits the build container to an image using the runtime.

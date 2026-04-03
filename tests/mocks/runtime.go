@@ -3,6 +3,7 @@ package mocks
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/core/domain"
@@ -11,7 +12,7 @@ import (
 // Compile-time check that MockRuntime implements ports.IBunkerRuntime
 var _ interface {
 	CreateBunker(ctx context.Context, name, image, home, flags string) error
-	GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error)
+	GetCreateFlags(ctx context.Context, name, image, home, volumeFlags, gpuType string) (string, error)
 	GetVolumeFlags(ctx context.Context, projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (string, error)
 	StartBunker(ctx context.Context, name string) error
 	StopBunker(ctx context.Context, name string) error
@@ -140,13 +141,35 @@ func (m *MockRuntime) CreateBunker(ctx context.Context, name, image, home, flags
 }
 
 // GetCreateFlags implements ports.IBunkerRuntime.
-func (m *MockRuntime) GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error) {
-	return volumeFlags, nil
+func (m *MockRuntime) GetCreateFlags(ctx context.Context, name, image, home, volumeFlags, gpuType string) (string, error) {
+	gpuFlags := m.GetGPUDeviceFlags(ctx, gpuType)
+	gpuFlagsStr := strings.Join(gpuFlags, " ")
+	if volumeFlags != "" && gpuFlagsStr != "" {
+		return volumeFlags + " " + gpuFlagsStr, nil
+	}
+	if volumeFlags != "" {
+		return volumeFlags, nil
+	}
+	return gpuFlagsStr, nil
 }
 
 // GetVolumeFlags implements ports.IBunkerRuntime.
 func (m *MockRuntime) GetVolumeFlags(ctx context.Context, projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (string, error) {
 	return fmt.Sprintf("--volume %s:/%s:z --volume %s:/ai_config:z --volume %s:/run/axiom/env:ro,z", projectDir, name, aiConfigDir, configPath), nil
+}
+
+// GetGPUDeviceFlags implements ports.IBunkerRuntime.
+func (m *MockRuntime) GetGPUDeviceFlags(ctx context.Context, gpuType string) []string {
+	if gpuType == "" || gpuType == "generic" {
+		return nil
+	}
+	return []string{
+		"--device", "/dev/kfd",
+		"--device", "/dev/dri",
+		"--security-opt", "label=disable",
+		"--group-add", "video",
+		"--group-add", "render",
+	}
 }
 
 // StartBunker implements ports.IBunkerRuntime.

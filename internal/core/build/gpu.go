@@ -95,23 +95,6 @@ func BaseImageName(presenter ports.IPresenter, gpuType string) string {
 	return presenter.GetText("build.image_name", gpuType)
 }
 
-// HostGPUVolumeFlags returns the volume flags needed to expose host GPU to container.
-func HostGPUVolumeFlags(gpuInfo ports.GPUInfo) []string {
-	if gpuInfo.Type == "" {
-		return nil
-	}
-
-	flags := []string{
-		"--device", "/dev/kfd",
-		"--device", "/dev/dri",
-		"--security-opt", "label=disable",
-		"--group-add", "video",
-		"--group-add", "render",
-	}
-
-	return flags
-}
-
 // OllamaArch returns the architecture suffix for Ollama downloads.
 func OllamaArch() (string, error) {
 	switch runtime.GOARCH {

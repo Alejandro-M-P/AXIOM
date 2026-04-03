@@ -145,7 +145,7 @@ func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) error {
 	// Step 1: Recreate build container
 	containerName := buildCtx.ContainerName
 	if err := progress.RunStep(1, func() error {
-		return RecreateBuildContainer(ctx, m.runtime, m.fs, containerName, buildCtx.BuildWorkspaceDir, buildCtx.Config)
+		return RecreateBuildContainer(ctx, m.runtime, m.fs, containerName, buildCtx.BuildWorkspaceDir, buildCtx.Config, buildCtx.GPUInfo.Type)
 	}); err != nil {
 		progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
 		return err

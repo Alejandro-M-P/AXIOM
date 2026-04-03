@@ -69,13 +69,21 @@ func (a *PodmanAdapter) GetVolumeFlags(ctx context.Context, projectDir, name, ai
 }
 
 // GetCreateFlags generates the flags for creating a bunker.
-// volumeFlags comes from GetVolumeFlags - the runtime only adds device flags.
-func (a *PodmanAdapter) GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error) {
-	// Device flags - centralized in commands.go
+// volumeFlags comes from GetVolumeFlags - the runtime adds device flags based on gpuType.
+func (a *PodmanAdapter) GetCreateFlags(ctx context.Context, name, image, home, volumeFlags, gpuType string) (string, error) {
+	// Device flags - based on gpuType
+	gpuFlags := a.GetGPUDeviceFlags(ctx, gpuType)
+	gpuFlagsStr := strings.Join(gpuFlags, " ")
 	if volumeFlags != "" {
-		return volumeFlags + " " + DeviceFlags, nil
+		return volumeFlags + " " + gpuFlagsStr, nil
 	}
-	return DeviceFlags, nil
+	return gpuFlagsStr, nil
+}
+
+// GetGPUDeviceFlags returns the GPU device flags required for container creation.
+// These are Podman-specific flags for exposing GPU devices to the container.
+func (a *PodmanAdapter) GetGPUDeviceFlags(ctx context.Context, gpuType string) []string {
+	return GetGPUDeviceFlags(gpuType)
 }
 
 func (a *PodmanAdapter) StartBunker(ctx context.Context, name string) error {

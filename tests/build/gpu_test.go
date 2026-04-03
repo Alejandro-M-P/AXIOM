@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
-	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
 
@@ -135,44 +135,42 @@ func TestResolveBuildGPU_NotFound(t *testing.T) {
 	}
 }
 
-func TestHostGPUVolumeFlags_NVIDIA(t *testing.T) {
-	gpuInfo := ports.GPUInfo{
-		Type: "nvidia",
-		Name: "NVIDIA GPU",
-	}
-
-	flags := build.HostGPUVolumeFlags(gpuInfo)
+func TestGPUDeviceFlags_NVIDIA(t *testing.T) {
+	flags := runtime.GetGPUDeviceFlags("nvidia")
 
 	if flags == nil {
-		t.Fatal("HostGPUVolumeFlags returned nil")
+		t.Fatal("GetGPUDeviceFlags returned nil for nvidia")
 	}
 
 	if len(flags) == 0 {
-		t.Error("HostGPUVolumeFlags returned empty flags")
+		t.Error("GetGPUDeviceFlags returned empty flags for nvidia")
 	}
 }
 
-func TestHostGPUVolumeFlags_AMD(t *testing.T) {
-	gpuInfo := ports.GPUInfo{
-		Type: "amd",
-		Name: "AMD GPU",
-	}
-
-	flags := build.HostGPUVolumeFlags(gpuInfo)
+func TestGPUDeviceFlags_AMD(t *testing.T) {
+	flags := runtime.GetGPUDeviceFlags("amd")
 
 	if flags == nil {
-		t.Fatal("HostGPUVolumeFlags returned nil")
+		t.Fatal("GetGPUDeviceFlags returned nil for amd")
 	}
 
 	if len(flags) == 0 {
-		t.Error("HostGPUVolumeFlags returned empty flags")
+		t.Error("GetGPUDeviceFlags returned empty flags for amd")
 	}
 }
 
-func TestHostGPUVolumeFlags_None(t *testing.T) {
-	flags := build.HostGPUVolumeFlags(ports.GPUInfo{})
+func TestGPUDeviceFlags_Generic(t *testing.T) {
+	flags := runtime.GetGPUDeviceFlags("generic")
 
 	if flags != nil {
-		t.Errorf("HostGPUVolumeFlags(ports.GPUInfo{}) = %v, want nil", flags)
+		t.Errorf("GetGPUDeviceFlags(generic) = %v, want nil", flags)
+	}
+}
+
+func TestGPUDeviceFlags_Empty(t *testing.T) {
+	flags := runtime.GetGPUDeviceFlags("")
+
+	if flags != nil {
+		t.Errorf("GetGPUDeviceFlags(\"\") = %v, want nil", flags)
 	}
 }

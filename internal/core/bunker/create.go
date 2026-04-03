@@ -217,6 +217,7 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 		"", // image - no se usa en GetCreateFlags
 		"", // home - no se usa en GetCreateFlags
 		strings.TrimSpace(volumeStr),
+		gpuType,
 	)
 	if err != nil {
 		// Si falla, devolver solo los volume flags.

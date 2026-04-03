@@ -108,19 +108,32 @@ func TestPrepareSharedDirectories(t *testing.T) {
 }
 
 func TestBuildContainerFlags(t *testing.T) {
+	runtime := mocks.NewMockRuntime()
+	ctx := context.Background()
 	cfg := config.EnvConfig{
 		AxiomPath: "/home/user/axiom",
 		BaseDir:   "/home/user",
 	}
 
-	flags := build.BuildContainerFlags(cfg)
+	// Core asks runtime for volume flags, then full create flags
+	aiConfigDir := config.AIConfigDir(cfg.BaseDir)
+	configPath := filepath.Join(cfg.AxiomPath, "config.toml")
+	volumeFlags, err := runtime.GetVolumeFlags(ctx, "/workspace", "test-container", aiConfigDir, configPath, "nvidia", "")
+	if err != nil {
+		t.Fatalf("GetVolumeFlags failed: %v", err)
+	}
+
+	flags, err := runtime.GetCreateFlags(ctx, "test-container", "archlinux:latest", "/workspace", volumeFlags, "nvidia")
+	if err != nil {
+		t.Fatalf("GetCreateFlags failed: %v", err)
+	}
 
 	// Verify flags contain expected elements
 	if flags == "" {
-		t.Fatal("BuildContainerFlags returned empty string")
+		t.Fatal("GetCreateFlags returned empty string")
 	}
 
-	expectedVolume := "--volume " + config.AIConfigDir(cfg.BaseDir) + ":/ai_config:z"
+	expectedVolume := "--volume " + aiConfigDir + ":/ai_config:z"
 	if !contains(flags, expectedVolume) {
 		t.Errorf("Flags should contain %s, got: %s", expectedVolume, flags)
 	}

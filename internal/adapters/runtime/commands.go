@@ -96,7 +96,3 @@ var Podman = CommandSet{
 // RequiredDeps lists the system dependencies that must be installed
 // for AXIOM to function correctly.
 var RequiredDeps = []string{"distrobox", "podman", "jq"}
-
-// DeviceFlags are the GPU device flags required for container creation.
-// Centralized here so changing GPU device access requires touching one file.
-const DeviceFlags = "--device /dev/kfd --device /dev/dri --security-opt label=disable --group-add video --group-add render"

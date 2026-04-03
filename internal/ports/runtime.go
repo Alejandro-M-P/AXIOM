@@ -17,12 +17,16 @@ type IBunkerRuntime interface {
 	CreateBunker(ctx context.Context, name, image, home string, flags string) error
 
 	// GetCreateFlags generates the flags for creating a bunker.
-	// volumeFlags comes from GetVolumeFlags - the runtime only adds device flags.
-	GetCreateFlags(ctx context.Context, name, image, home, volumeFlags string) (string, error)
+	// volumeFlags comes from GetVolumeFlags - the runtime adds device flags based on gpuType.
+	GetCreateFlags(ctx context.Context, name, image, home, volumeFlags, gpuType string) (string, error)
 
 	// GetVolumeFlags returns the volume mount flags for container creation.
 	// These are technical flags (--volume ...), not user-visible text.
 	GetVolumeFlags(ctx context.Context, projectDir, name, aiConfigDir, configPath, gpuType, sshSocket string) (string, error)
+
+	// GetGPUDeviceFlags returns the GPU device flags required for container creation.
+	// Returns nil for generic/no GPU. These are runtime-specific (Podman vs Docker).
+	GetGPUDeviceFlags(ctx context.Context, gpuType string) []string
 
 	// StartBunker inicia un bunker existente.
 	StartBunker(ctx context.Context, name string) error
