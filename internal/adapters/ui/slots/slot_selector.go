@@ -9,7 +9,6 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/theme"
-	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	tea "github.com/charmbracelet/bubbletea"
@@ -358,23 +357,23 @@ func (b *Builder) AddItem(subcategory, id, name, description string) *Builder {
 
 // Build constructs the final list of ItemGroup.
 func (b *Builder) Build() []ItemGroup {
-	// Define the order of subcategories
-	order := slots.SubcategoryOrder
-
-	var result []ItemGroup
-	for _, subcategory := range order {
-		if items, ok := b.groups[subcategory]; ok {
-			title := getSubcategoryTitle(subcategory)
-			result = append(result, ItemGroup{title: title, items: items})
+	// Collect and sort subcategories alphabetically — no hardcoded order
+	var subcats []string
+	for sub := range b.groups {
+		subcats = append(subcats, sub)
+	}
+	for i := 0; i < len(subcats); i++ {
+		for j := i + 1; j < len(subcats); j++ {
+			if subcats[i] > subcats[j] {
+				subcats[i], subcats[j] = subcats[j], subcats[i]
+			}
 		}
 	}
 
-	// Add any remaining subcategories not in the predefined order
-	for subcategory, items := range b.groups {
-		if !contains(order, subcategory) {
-			title := getSubcategoryTitle(subcategory)
-			result = append(result, ItemGroup{title: title, items: items})
-		}
+	var result []ItemGroup
+	for _, subcategory := range subcats {
+		title := getSubcategoryTitle(subcategory)
+		result = append(result, ItemGroup{title: title, items: b.groups[subcategory]})
 	}
 
 	return result

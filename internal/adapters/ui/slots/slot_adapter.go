@@ -96,7 +96,6 @@ func (u *SlotSelectorUI) RunWizardWithSlot(items any) ([]string, string, bool, e
 func buildItemGroups(items []slots.SlotItem) []ItemGroup {
 	// Group items by subcategory
 	groupsMap := make(map[string][]SlotItemDisplay)
-	order := slots.SubcategoryOrder
 
 	for _, item := range items {
 		display := SlotItemDisplay{
@@ -107,21 +106,24 @@ func buildItemGroups(items []slots.SlotItem) []ItemGroup {
 		groupsMap[item.SubCategory] = append(groupsMap[item.SubCategory], display)
 	}
 
-	// Build ordered result
-	var result []ItemGroup
-	for _, subcategory := range order {
-		if items, ok := groupsMap[subcategory]; ok {
-			title := getSubcategoryTitle(subcategory)
-			result = append(result, ItemGroup{title: title, items: items})
+	// Collect and sort subcategories alphabetically — no hardcoded order
+	var subcats []string
+	for sub := range groupsMap {
+		subcats = append(subcats, sub)
+	}
+	for i := 0; i < len(subcats); i++ {
+		for j := i + 1; j < len(subcats); j++ {
+			if subcats[i] > subcats[j] {
+				subcats[i], subcats[j] = subcats[j], subcats[i]
+			}
 		}
 	}
 
-	// Add any remaining subcategories not in predefined order
-	for subcategory, items := range groupsMap {
-		if !contains(order, subcategory) {
-			title := getSubcategoryTitle(subcategory)
-			result = append(result, ItemGroup{title: title, items: items})
-		}
+	// Build result in sorted order
+	var result []ItemGroup
+	for _, subcategory := range subcats {
+		title := getSubcategoryTitle(subcategory)
+		result = append(result, ItemGroup{title: title, items: groupsMap[subcategory]})
 	}
 
 	return result

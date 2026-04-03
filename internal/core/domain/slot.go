@@ -7,19 +7,6 @@ import "context"
 // SlotCategory representa la categoría de un slot de instalación.
 type SlotCategory string
 
-const (
-	// SlotDEV representa herramientas de desarrollo.
-	SlotDEV SlotCategory = "dev"
-	// SlotAI representa herramientas de IA.
-	SlotAI SlotCategory = "ai"
-	// SlotSYSTEM representa herramientas del sistema.
-	SlotSYSTEM SlotCategory = "system"
-	// SlotDATA representa tecnologías de persistencia (bases de datos).
-	SlotDATA SlotCategory = "data"
-	// SlotSANDBOX representa una imagen mínima sin instalaciones adicionales.
-	SlotSANDBOX SlotCategory = "sandbox"
-)
-
 // Slot define el contrato para cualquier item de slot de instalación.
 type Slot interface {
 	// ID retorna el identificador único del slot.

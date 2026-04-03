@@ -99,12 +99,20 @@ func resolveRootDir() string {
 		return p
 	}
 
-	if exec, err := os.Executable(); err == nil {
-		return filepath.Dir(exec)
+	// Try current working directory first (works when running from source)
+	if cwd, err := os.Getwd(); err == nil {
+		// Check if this looks like the project root
+		if _, err := os.Stat(filepath.Join(cwd, "internal", "core", "slots")); err == nil {
+			return cwd
+		}
 	}
 
-	if cwd, err := os.Getwd(); err == nil {
-		return cwd
+	// Fall back to executable directory
+	if exec, err := os.Executable(); err == nil {
+		dir := filepath.Dir(exec)
+		if _, err := os.Stat(filepath.Join(dir, "internal", "core", "slots")); err == nil {
+			return dir
+		}
 	}
 
 	return "."

@@ -1,0 +1,9 @@
+id = "fail2ban"
+name = "Fail2ban"
+description = "Protección contra ataques de fuerza bruta"
+category = "security"
+subcategory = "firewall"
+dependencies = ["fail2ban"]
+
+[install]
+cmd = "echo 'Instalando Fail2ban...'"

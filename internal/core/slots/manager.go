@@ -350,7 +350,6 @@ func (m *SlotManager) RunSlotSelector(category string, items []SlotItem, presele
 func (m *SlotManager) buildItemGroupsForUI(items []SlotItem) []ItemGroup {
 	// Group items by subcategory
 	groupsMap := make(map[string][]SlotItemDisplay)
-	order := SubcategoryOrder
 
 	for _, item := range items {
 		display := SlotItemDisplay{
@@ -361,32 +360,28 @@ func (m *SlotManager) buildItemGroupsForUI(items []SlotItem) []ItemGroup {
 		groupsMap[item.SubCategory] = append(groupsMap[item.SubCategory], display)
 	}
 
-	// Build ordered result
-	var result []ItemGroup
-	for _, subcategory := range order {
-		if items, ok := groupsMap[subcategory]; ok {
-			title := m.ui.GetText("slots.subcategories." + subcategory)
-			result = append(result, ItemGroup{Title: title, Items: items})
+	// Collect and sort subcategories alphabetically — no hardcoded order
+	var subcats []string
+	for sub := range groupsMap {
+		subcats = append(subcats, sub)
+	}
+	for i := 0; i < len(subcats); i++ {
+		for j := i + 1; j < len(subcats); j++ {
+			if subcats[i] > subcats[j] {
+				subcats[i], subcats[j] = subcats[j], subcats[i]
+			}
 		}
 	}
 
-	// Add any remaining subcategories not in predefined order
-	for subcategory, items := range groupsMap {
-		found := false
-		for _, o := range order {
-			if o == subcategory {
-				found = true
-				break
-			}
+	// Build result in sorted order
+	var result []ItemGroup
+	for _, subcategory := range subcats {
+		title := m.ui.GetText("slots.subcategories." + subcategory)
+		if title == "slots.subcategories."+subcategory {
+			// Fallback: no i18n key found, use raw subcategory name
+			title = subcategory
 		}
-		if !found {
-			title := m.ui.GetText("slots.subcategories." + subcategory)
-			if title == "slots.subcategories."+subcategory {
-				// Fallback: no i18n key found, use raw subcategory name
-				title = subcategory
-			}
-			result = append(result, ItemGroup{Title: title, Items: items})
-		}
+		result = append(result, ItemGroup{Title: title, Items: groupsMap[subcategory]})
 	}
 
 	return result

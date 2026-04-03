@@ -2,38 +2,14 @@
 // It allows users to compose development environments by selecting individual
 // installation items grouped into categories (slots).
 package slots
-
 import (
 	"context"
 )
-
 // SlotCategory represents the category/type of a slot.
 type SlotCategory string
-
-// Slot category constants.
-const (
-	SlotDEV     SlotCategory = "dev"
-	SlotDATA    SlotCategory = "data"
-	SlotSANDBOX SlotCategory = "sandbox"
-)
-
-// SlotCategoryFromString converts a string to a SlotCategory.
-// Defaults to SlotDEV if unknown.
-func SlotCategoryFromString(s string) SlotCategory {
-	switch s {
-	case "data":
-		return SlotDATA
-	case "sandbox":
-		return SlotSANDBOX
-	default:
-		return SlotDEV
-	}
-}
-
 // Executor is a function type for progress callbacks during installation.
 // It takes a context and returns an error if the execution should be cancelled.
 type Executor func(ctx context.Context) error
-
 // SlotItem represents a single installable unit within a slot.
 // It contains all information needed to install and manage that item.
 type SlotItem struct {
@@ -47,27 +23,20 @@ type SlotItem struct {
 	InstallSteps []string     // Multiple steps to install (from TOML, alternative to InstallCmd)
 	IsBaseTool   bool         // If true, this is a base tool not shown in the wizard
 }
-
-// SubcategoryOrder defines the display order for slot subcategories in the UI.
-var SubcategoryOrder = []string{"ia", "languages", "tools", "data"}
-
 // SlotSelection represents a user's selection for a particular slot.
 // This is persisted to configuration files.
 type SlotSelection struct {
 	Slot     SlotCategory `toml:"slot"`
 	Selected []string     `toml:"selected"` // Item IDs selected by user
 }
-
 // Dependencies returns the list of dependencies for this item.
 func (s *SlotItem) Dependencies() []string {
 	return s.Deps
 }
-
 // GetCategory returns the slot category for this item.
 func (s *SlotItem) GetCategory() SlotCategory {
 	return s.Category
 }
-
 // FilterBaseTools returns a new slice with base tools removed.
 // Use this to prepare items for the UI wizard.
 func FilterBaseTools(items []SlotItem) []SlotItem {

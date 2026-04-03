@@ -172,11 +172,13 @@ no_slots = "No slots discovered. Run 'axiom init' first."
 
 [slot_wizard]
 dev = "Development"
-dev_desc = "Development environment with common tools"
+dev_desc = "IA, programming languages and tools"
 data = "Data"
-data_desc = "Databases and storage"
+data_desc = "PostgreSQL, MySQL, MongoDB, Redis, SQLite"
 sandbox = "Sandbox"
-sandbox_desc = "Isolated environment for testing"
+sandbox_desc = "Base system only, no extra installations"
+monitoring = "Monitoring"
+monitoring_desc = "Monitoring and alerting tools"
 
 [slots_tui]
 title = "Available Slots"
@@ -194,6 +196,17 @@ available_commands = "Available Commands:"
 cursor_prefix = "❯ "
 item_format = "%s%s  -  %s"
 press_esc = "Press Esc to exit"
+
+[slots]
+select_items = "Select Items"
+summary = "Summary"
+
+[wizard_steps]
+step_format = "Step %d of %d"
+selected_format = "Selected: %d/%d"
+
+[slot_wizard]
+help_category = "Space: toggle | Enter: next | Esc: cancel"
 
 [bunker]
 item_bullet = "•"

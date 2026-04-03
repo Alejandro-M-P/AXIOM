@@ -94,100 +94,29 @@ slots_total = "Total: %d slots | Presiona Esc para salir"
 slots_item_format = "%s%s  [%s]"
 
 [help]
-# Format: %s (prefix) + %s (command name) + %s (description)
 item_format = "%s%s  -  %s"
-available_commands = "Comandos disponibles:"
-no_results = "Sin resultados"
-
-[steps]
-# Format: %d (current step) + %d (total steps)
-step_format = "Paso %d de %d"
-# Format: %d (selected count) + %d (total count)
-selected_format = "Seleccionado: %d/%d"
-# Format: %s (cursor prefix) + %s (checkbox) + %s (item name)
-item_format = "%s%s %s"
-
-[help_commands]
-init = "Inicializar configuración de AXIOM"
-create = "Crear un nuevo búnker"
-build = "Construir entorno con slots"
-list = "Listar y seleccionar búnkeres"
-info = "Mostrar información de un búnker"
-delete = "Eliminar un búnker"
-stop = "Detener un búnker en ejecución"
-prune = "Limpiar búnkeres huérfanos"
-slots = "Descubrer slots disponibles"
-help = "Mostrar esta ayuda"
-
-[create_form]
-select_image = "SELECCIONAR IMAGEN"
-choose_image = "Elige la imagen base para tu búnker:"
-bunker_name = "NOMBRE DEL BÚNKER"
-enter_name = "Ingresa un nombre para tu búnker:"
-confirm_title = "CONFIRMAR"
-confirm_question = "¿Crear búnker con esta configuración?"
-name_label = "Nombre:"
-image_label = "Imagen:"
-create_btn = "CREAR"
-cancel_btn = "CANCELAR"
-navigate = "↑/↓: Navegar | Enter: Confirmar | Esc: Cancelar"
-enter_confirm = "Enter: Confirmar | Esc: Atrás"
-placeholder_name = "nombre-del-bunker"
-cursor_prefix = "❯ "
-image_dev = "axiom-dev (Entorno de desarrollo)"
-image_data = "axiom-data (Datos y Bases de Datos)"
-image_sandbox = "axiom-sandbox (Pruebas/Aislado)"
-
-[bunker_selector]
-navigate = "↑/↓: Navegar | Enter: Seleccionar | Esc: Cancelar"
-selected_format = "Seleccionado: %d/%d"
-default_status = "stopped"
-cursor_prefix = "❯ "
-
-[confirm]
-yes_btn = "SÍ, CONTINUAR"
-no_btn = "NO, CANCELAR"
-placeholder_reason = "Escribe aquí tu justificación..."
-
-[components]
-escape_exit = "Salir"
-yes = "SÍ"
-no = "NO"
-enter_confirm = "[Enter] Confirmar  |  [Esc] Cancelar"
-card_escape = "[ESC] o [Enter] Salir"
-esc_key = "[ESC]"
-esc_shortcut = "[q]"
 
 [slots]
-slot_selection = "Selección de Slots"
-navigate = "↑/↓: Navegar | Space: Toggle | Enter: Confirmar | Esc: Cancelar"
-space_toggle = "Space: toggle  │  Enter: confirm  │  Esc: cancel"
-group_decorator = "━━━ %s ━━━"
-checkbox_unchecked = "[ ]"
-checkbox_checked = "[x]"
-selected_format = "Seleccionado: %d/%d"
-select_slot_type = "Seleccionar Tipo de Slot"
 select_items = "Seleccionar Items"
 summary = "Resumen"
-slots_discovered = "Slots descubiertos en tu proyecto:"
-no_slots = "No se descubrieron slots. Ejecuta 'axiom init' primero."
+
+[wizard_steps]
+step_format = "Paso %d de %d"
+selected_format = "Seleccionados: %d/%d"
 
 [slot_wizard]
+help_category = "Espacio: alternar | Enter: siguiente | Esc: cancelar"
+title = "Configuración de Slot"
+slot_select_desc = "Selecciona tu tipo de entorno"
 dev = "Desarrollo"
-dev_desc = "Entorno de desarrollo con herramientas comunes"
+dev_desc = "IA, lenguajes de programación y herramientas"
 data = "Datos"
-data_desc = "Bases de datos y almacenamiento"
+data_desc = "PostgreSQL, MySQL, MongoDB, Redis, SQLite"
 sandbox = "Sandbox"
-sandbox_desc = "Entorno aislado para pruebas"
-
-[slots_tui]
-title = "Slots Disponibles"
-navigate = "↑/↓: Navegar | Esc: Salir"
-slots_discovered = "Slots descubiertos en tu proyecto:"
-no_slots = "No se descubrieron slots. Ejecuta 'axiom init' primero."
-cursor_prefix = "❯ "
-total_format = "Total: %d slots | Presiona Esc para salir"
-item_format = "%s%s  [%s]"
+sandbox_desc = "Solo el sistema base sin instalaciones"
+monitoring = "Monitorización"
+monitoring_desc = "Herramientas de monitoreo y alertas"
+help_slot_select = "↑/↓: mover | Enter: seleccionar | Esc: cancelar"
 
 [help_tui]
 title = "Ayuda de AXIOM"

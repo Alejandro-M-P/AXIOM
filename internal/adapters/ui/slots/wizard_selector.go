@@ -37,36 +37,36 @@ const (
 
 // WizardModel is the Bubbletea model for wizard-style slot selection.
 type WizardModel struct {
-	presenter      ports.IPresenter
-	phase          WizardPhase
-	selectedSlot   string            // "dev", "data", "sandbox"
-	itemPhase      ItemWizardPhase   // Current step within PhaseItemWizard
-	itemPhaseOrder []ItemWizardPhase // Ordered list of phases for current slot
-	accumulated    map[string]bool   // Selected item IDs across all steps
-	currentItems   []SlotItemDisplay // Items for the current step
-	slotCursor     int               // Cursor for slot selection
-	itemCursor     int               // Cursor for item selection within category
-	width          int
-	height         int
-	done           bool
-	canceled       bool
-	allItems       []slots.SlotItem // All items passed to the wizard (stored for filtering)
+	presenter    ports.IPresenter
+	phase        WizardPhase
+	selectedSlot string            // "dev", "data", "sandbox", or any dynamic category
+	itemPhase    int               // Current subcategory index
+	itemSubcats  []string          // Discovered subcategories for current slot
+	accumulated  map[string]bool   // Selected item IDs across all steps
+	currentItems []SlotItemDisplay // Items for the current step
+	slotCursor   int               // Cursor for slot selection
+	itemCursor   int               // Cursor for item selection within category
+	width        int
+	height       int
+	done         bool
+	canceled     bool
+	allItems     []slots.SlotItem // All items passed to the wizard (stored for filtering)
 }
 
 // NewWizardModel creates a new wizard model.
 func NewWizardModel(pres ports.IPresenter) *WizardModel {
 	return &WizardModel{
-		presenter:      pres,
-		phase:          PhaseSlotSelect,
-		selectedSlot:   "",
-		itemPhase:      ItemPhaseNone,
-		itemPhaseOrder: nil,
-		accumulated:    make(map[string]bool),
-		currentItems:   nil,
-		slotCursor:     0,
-		itemCursor:     0,
-		done:           false,
-		canceled:       false,
+		presenter:    pres,
+		phase:        PhaseSlotSelect,
+		selectedSlot: "",
+		itemPhase:    -1,
+		itemSubcats:  nil,
+		accumulated:  make(map[string]bool),
+		currentItems: nil,
+		slotCursor:   0,
+		itemCursor:   0,
+		done:         false,
+		canceled:     false,
 	}
 }
 
@@ -103,7 +103,39 @@ func (m *WizardModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // handleSlotSelectKey handles keys in the slot selection phase.
 func (m *WizardModel) handleSlotSelectKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	slots := []string{"dev", "data", "sandbox"}
+	// Dynamically discover available categories from allItems
+	categorySet := make(map[string]bool)
+	for _, item := range m.allItems {
+		cat := string(item.Category)
+		if cat != "" {
+			categorySet[cat] = true
+		}
+	}
+
+	// Sort alphabetically — no hardcoded order
+	var slotList []string
+	for cat := range categorySet {
+		slotList = append(slotList, cat)
+	}
+	// Simple alphabetical sort
+	for i := 0; i < len(slotList); i++ {
+		for j := i + 1; j < len(slotList); j++ {
+			if slotList[i] > slotList[j] {
+				slotList[i], slotList[j] = slotList[j], slotList[i]
+			}
+		}
+	}
+
+	// Guard against empty list
+	if len(slotList) == 0 {
+		m.canceled = true
+		return m, tea.Quit
+	}
+
+	// Ensure cursor is within bounds
+	if m.slotCursor >= len(slotList) {
+		m.slotCursor = 0
+	}
 
 	switch msg.Type {
 	case tea.KeyEsc, tea.KeyCtrlC:
@@ -111,21 +143,21 @@ func (m *WizardModel) handleSlotSelectKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.KeyEnter:
-		m.selectedSlot = slots[m.slotCursor]
+		m.selectedSlot = slotList[m.slotCursor]
 		m.setupItemWizard()
-		// If no phases (e.g., SANDBOX slot), skip to summary
-		if len(m.itemPhaseOrder) == 0 {
+		// If no subcategories (e.g., sandbox), skip to summary
+		if len(m.itemSubcats) == 0 {
 			m.phase = PhaseSummary
 		} else {
 			m.phase = PhaseItemWizard
-			m.itemPhase = m.itemPhaseOrder[0]
+			m.itemPhase = 0
 			m.loadCurrentPhaseItems()
 			m.itemCursor = 0
 		}
 		return m, nil
 
 	case tea.KeyDown, tea.KeyTab:
-		if m.slotCursor < len(slots)-1 {
+		if m.slotCursor < len(slotList)-1 {
 			m.slotCursor++
 		}
 		return m, nil
@@ -146,26 +178,24 @@ func (m *WizardModel) handleItemWizardKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyEsc:
 		// Go back to previous step or slot selection
-		currentIndex := m.getCurrentPhaseIndex()
-		if currentIndex > 0 {
+		if m.itemPhase > 0 {
 			// Go back to previous phase
-			m.itemPhase = m.itemPhaseOrder[currentIndex-1]
+			m.itemPhase--
 			m.loadCurrentPhaseItems()
 			m.itemCursor = 0
 		} else {
 			// Go back to slot selection
 			m.phase = PhaseSlotSelect
-			m.itemPhase = ItemPhaseNone
-			m.itemPhaseOrder = nil
+			m.itemPhase = -1
+			m.itemSubcats = nil
 			m.currentItems = nil
 		}
 		return m, nil
 
 	case tea.KeyEnter:
-		currentIndex := m.getCurrentPhaseIndex()
-		if currentIndex < len(m.itemPhaseOrder)-1 {
+		if m.itemPhase < len(m.itemSubcats)-1 {
 			// Go to next phase
-			m.itemPhase = m.itemPhaseOrder[currentIndex+1]
+			m.itemPhase++
 			m.loadCurrentPhaseItems()
 			m.itemCursor = 0
 		} else {
@@ -206,14 +236,9 @@ func (m *WizardModel) handleItemWizardKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// getCurrentPhaseIndex returns the index of the current phase in itemPhaseOrder.
+// getCurrentPhaseIndex returns the index of the current phase.
 func (m *WizardModel) getCurrentPhaseIndex() int {
-	for i, phase := range m.itemPhaseOrder {
-		if phase == m.itemPhase {
-			return i
-		}
-	}
-	return -1
+	return m.itemPhase
 }
 
 // handleSummaryKey handles keys in the summary phase.
@@ -230,23 +255,30 @@ func (m *WizardModel) handleSummaryKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// setupItemWizard configures the item wizard phases based on selected slot.
+// setupItemWizard configures the item wizard phases based on discovered subcategories.
 func (m *WizardModel) setupItemWizard() {
-	switch m.selectedSlot {
-	case "dev":
-		m.itemPhaseOrder = []ItemWizardPhase{
-			ItemPhaseAI,
-			ItemPhaseLanguages,
-			ItemPhaseTools,
+	// Discover unique subcategories for the selected slot
+	subcatSet := make(map[string]bool)
+	for _, item := range m.allItems {
+		if string(item.Category) == m.selectedSlot && item.SubCategory != "" && !item.IsBaseTool {
+			subcatSet[item.SubCategory] = true
 		}
-	case "data":
-		// Solo una fase con todas las DB
-		m.itemPhaseOrder = []ItemWizardPhase{
-			ItemPhaseDataAll,
-		}
-	case "sandbox":
-		m.itemPhaseOrder = []ItemWizardPhase{}
 	}
+
+	// Sort alphabetically — no hardcoded order
+	var subcats []string
+	for sub := range subcatSet {
+		subcats = append(subcats, sub)
+	}
+	for i := 0; i < len(subcats); i++ {
+		for j := i + 1; j < len(subcats); j++ {
+			if subcats[i] > subcats[j] {
+				subcats[i], subcats[j] = subcats[j], subcats[i]
+			}
+		}
+	}
+
+	m.itemSubcats = subcats
 }
 
 // loadCurrentPhaseItems loads items for the current item phase.
@@ -258,14 +290,11 @@ func (m *WizardModel) loadCurrentPhaseItems() {
 			continue
 		}
 
-		// Get name and description from i18n
-		name := m.presenter.GetText("slots." + item.ID + ".name")
-		description := m.presenter.GetText("slots." + item.ID + ".description")
-
+		// Use TOML values directly (name and description come from the slot definition)
 		m.currentItems = append(m.currentItems, SlotItemDisplay{
 			ID:          item.ID,
-			Name:        name,
-			Description: description,
+			Name:        item.Name,
+			Description: item.Description,
 		})
 	}
 }
@@ -283,16 +312,9 @@ func (m *WizardModel) matchesCurrentPhase(item slots.SlotItem) bool {
 		return false
 	}
 
-	switch m.itemPhase {
-	case ItemPhaseAI:
-		return item.SubCategory == "ia"
-	case ItemPhaseLanguages:
-		return item.SubCategory == "languages"
-	case ItemPhaseTools:
-		return item.SubCategory == "tools"
-	case ItemPhaseDataAll:
-		// Mostrar TODOS los items de DATA (postgres, mysql, mongodb, redis, sqlite)
-		return item.Category == "data"
+	// Check if item's subcategory matches the current phase
+	if m.itemPhase >= 0 && m.itemPhase < len(m.itemSubcats) {
+		return item.SubCategory == m.itemSubcats[m.itemPhase]
 	}
 
 	return false
@@ -345,14 +367,41 @@ func (m *WizardModel) viewSlotSelect() string {
 	helpStyle := lipgloss.NewStyle().
 		Foreground(dimColor)
 
-	slotOptions := []struct {
+	// Dynamically discover slot categories from allItems
+	type slotOption struct {
 		id             string
 		nameKey        string
 		descriptionKey string
-	}{
-		{"dev", "slot_wizard.dev", "slot_wizard.dev_desc"},
-		{"data", "slot_wizard.data", "slot_wizard.data_desc"},
-		{"sandbox", "slot_wizard.sandbox", "slot_wizard.sandbox_desc"},
+	}
+
+	// Extract unique categories from items
+	categorySet := make(map[string]bool)
+	for _, item := range m.allItems {
+		cat := string(item.Category)
+		if cat != "" {
+			categorySet[cat] = true
+		}
+	}
+
+	// Sort alphabetically — no hardcoded order
+	var slotOptions []slotOption
+	var cats []string
+	for cat := range categorySet {
+		cats = append(cats, cat)
+	}
+	for i := 0; i < len(cats); i++ {
+		for j := i + 1; j < len(cats); j++ {
+			if cats[i] > cats[j] {
+				cats[i], cats[j] = cats[j], cats[i]
+			}
+		}
+	}
+	for _, cat := range cats {
+		slotOptions = append(slotOptions, slotOption{
+			id:             cat,
+			nameKey:        "slot_wizard." + cat,
+			descriptionKey: "slot_wizard." + cat + "_desc",
+		})
 	}
 
 	var content strings.Builder
@@ -411,7 +460,7 @@ func (m *WizardModel) viewItemWizard() string {
 	// Get current phase title and step info
 	phaseTitle := m.getPhaseTitle()
 	currentStep := m.getCurrentPhaseIndex() + 1
-	totalSteps := len(m.itemPhaseOrder)
+	totalSteps := len(m.itemSubcats)
 
 	// Create header for item wizard phase
 	header := theme.NewHeader(t, m.presenter.GetText("slots.select_items"), phaseTitle, "Space: Toggle | Enter: Next | Esc: Back")
@@ -517,15 +566,9 @@ func (m *WizardModel) viewItemWizard() string {
 
 // getPhaseTitle returns the display title for the current item phase.
 func (m *WizardModel) getPhaseTitle() string {
-	switch m.itemPhase {
-	case ItemPhaseAI:
-		return m.presenter.GetText("slot_wizard.step_ai")
-	case ItemPhaseLanguages:
-		return m.presenter.GetText("slot_wizard.step_languages")
-	case ItemPhaseTools:
-		return m.presenter.GetText("slot_wizard.step_tools")
-	case ItemPhaseDataAll:
-		return m.presenter.GetText("slot_wizard.data_all_title")
+	if m.itemPhase >= 0 && m.itemPhase < len(m.itemSubcats) {
+		subcat := m.itemSubcats[m.itemPhase]
+		return m.presenter.GetText("slots.subcategories." + subcat)
 	}
 	return ""
 }

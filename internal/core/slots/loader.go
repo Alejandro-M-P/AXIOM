@@ -136,57 +136,19 @@ func parseTOML(path string) (*tomlSlot, error) {
 }
 
 // LoadAndRegisterSlots loads slots from TOML files and registers them in the global registry.
-// If items are already registered (via init() functions), it skips loading.
-// Otherwise, it first tries to load from embedded files (for production builds),
-// then falls back to filesystem loading (for development).
+// It always scans the filesystem to support dynamic category discovery.
 // The axiomPath parameter is the root directory of the AXIOM project.
 func LoadAndRegisterSlots(axiomPath string) error {
-	// Check if items are already registered (from init() functions)
-	if ItemCount() > 0 {
-		return nil
-	}
-
-	// Track if we loaded anything
-	loadedCount := 0
-
-	// List of embedded TOML directories to try
-	tomlDirs := []string{
-		"dev/ia/tomls",
-		"dev/languages/tomls",
-		"dev/tools/tomls",
-		"data/tomls",
-		"sandbox/tomls",
-	}
-
-	// Try to load from embedded files first
-	embedWorks := true
-	for _, tomlDir := range tomlDirs {
-		items, err := LoadSlotsFromEmbeddedTOML(tomlDir)
-		if err != nil {
-			embedWorks = false
-			break
-		}
-		for i := range items {
-			RegisterItem(&items[i])
-			loadedCount++
-		}
-	}
-
-	// If embedded loading worked and we got items, we're done
-	if embedWorks && loadedCount > 0 {
-		return nil
-	}
-
-	// Fallback to filesystem loading for development
 	fs := filesystem.NewFSAdapter()
 	return loadFromFilesystem(fs, axiomPath)
 }
 
 // loadFromFilesystem loads slot items from TOML files on the filesystem.
 // This is used as a fallback when embedded files are not available.
+// It dynamically discovers all categories by scanning subdirectories.
 // The axiomPath parameter is the root directory of the AXIOM project.
 func loadFromFilesystem(fs ports.IFileSystem, axiomPath string) error {
-	basePath := filepath.Join(axiomPath, "internal", "slots")
+	basePath := filepath.Join(axiomPath, "internal", "core", "slots")
 
 	// Verify the base path exists
 	if _, err := fs.Stat(basePath); err != nil {
