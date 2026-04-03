@@ -47,6 +47,8 @@ type BunkerManagerInterface interface {
 	Help() error
 	GetUI() ports.IPresenter
 	LoadConfig() (config.EnvConfig, error)
+	Enter(ctx context.Context, name string) error
+	Reset(ctx context.Context) error
 }
 
 // BuildManagerInterface defines the contract for build operations.
@@ -186,11 +188,17 @@ func (r *Router) Handle(args []string) error {
 		// Execute the plan with UI progress tracking (adapter layer)
 		return r.executeBuildPlan(context.Background(), plan)
 	case CmdRebuild:
-		r.bm.GetUI().ShowLog("build.not_implemented")
-		return nil
+		cfg, err := r.bm.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("errors.router.failed_load_config: %w", err)
+		}
+		plan, err := r.bld.Rebuild(context.Background(), cfg)
+		if err != nil || plan == nil {
+			return err
+		}
+		return r.executeBuildPlan(context.Background(), plan)
 	case CmdReset:
-		r.bm.GetUI().ShowLog("reset.not_implemented")
-		return nil
+		return r.bm.Reset(context.Background())
 	case CmdInit:
 		return r.handleInit()
 	case CmdSlots:
@@ -201,7 +209,7 @@ func (r *Router) Handle(args []string) error {
 		if firstArg == "" {
 			return errors.New("errors.router.usage_enter")
 		}
-		return fmt.Errorf("errors.router.enter_not_implemented")
+		return r.bm.Enter(context.Background(), firstArg)
 	default:
 		return &unknownCommandError{cmd: cmd}
 	}

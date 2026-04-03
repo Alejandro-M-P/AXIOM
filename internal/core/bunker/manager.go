@@ -4,6 +4,7 @@ package bunker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
@@ -159,4 +160,81 @@ func (m *Manager) ConfigureGit(ctx context.Context, cfg EnvConfig, projectDir st
 		return nil
 	}
 	return m.git.ConfigureUser(ctx, projectDir, cfg.GitUser, cfg.GitEmail)
+}
+
+// Enter starts an interactive shell session inside an existing bunker.
+func (m *Manager) Enter(ctx context.Context, name string) error {
+	// Verify the bunker exists by listing bunkers
+	bunkers, err := m.runtime.ListBunkers(ctx)
+	if err != nil {
+		return fmt.Errorf("errors.bunker.not_found: %s", name)
+	}
+
+	found := false
+	for _, b := range bunkers {
+		if b.Name == name {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("errors.bunker.not_found: %s", name)
+	}
+
+	// Delegate interactive entry to the runtime adapter
+	// The adapter knows how to invoke distrobox-enter with TTY
+	return m.runtime.ExecuteInBunker(ctx, name)
+}
+
+// Reset destroys all bunkers and images, then cleans configuration.
+// This is a destructive operation that requires user confirmation.
+func (m *Manager) Reset(ctx context.Context) error {
+	// Ask for confirmation before destructive action
+	confirm, err := m.ui.AskConfirmInCard(
+		"reset",
+		nil,
+		nil,
+		"reset.confirm_danger",
+	)
+	if err != nil {
+		return fmt.Errorf("errors.router.confirm_failed: %w", err)
+	}
+	if !confirm {
+		return nil // User cancelled
+	}
+
+	m.ui.ShowLog("reset.starting")
+
+	// 1. List and delete all bunkers
+	bunkers, err := m.runtime.ListBunkers(ctx)
+	if err != nil {
+		m.ui.ShowLog("reset.list_bunkers_failed", err.Error())
+	} else {
+		for _, b := range bunkers {
+			if err := m.runtime.RemoveBunker(ctx, b.Name, true); err != nil {
+				m.ui.ShowLog("reset.delete_bunker_failed", b.Name, err.Error())
+			}
+		}
+	}
+
+	// 2. Delete all known axiom images (dev, data, sandbox + GPU variants)
+	// We check existence before deletion to avoid errors
+	knownImages := []string{
+		"axiom-dev",
+		"axiom-data",
+		"axiom-sandbox",
+		"axiom-dev-rocm",
+		"axiom-data-rocm",
+		"axiom-sandbox-rocm",
+	}
+	for _, img := range knownImages {
+		if exists, _ := m.runtime.ImageExists(ctx, img); exists {
+			if err := m.runtime.RemoveImage(ctx, img, true); err != nil {
+				m.ui.ShowLog("reset.delete_image_failed", img, err.Error())
+			}
+		}
+	}
+
+	m.ui.ShowLog("reset.success")
+	return nil
 }
