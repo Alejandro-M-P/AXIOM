@@ -54,9 +54,9 @@ internal/
 | `axiom info` | ✅ | |
 | `axiom delete-image` | ✅ | |
 | `axiom build` | 🚧 | Wizard para seleccionar slots, construcción de imágenes |
-| `axiom rebuild` | ❌ | No implementado |
-| `axiom reset` | ❌ | No implementado |
-| `axiom enter` | ❌ | No implementado |
+| `axiom rebuild` | ✅ | Reconstruye imagen base |
+| `axiom reset` | ✅ | Borra todos los bunkers e imágenes |
+| `axiom enter` | ✅ | Entra a bunker existente |
 | `axiom init` | ✅ | Wizard TUI |
 | `axiom slots` | ✅ | |
 | `axiom help` | ✅ | |
