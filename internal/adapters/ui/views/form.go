@@ -21,18 +21,6 @@ type BaseModel struct {
 	ui.BaseModel
 }
 
-func NewModel(axiomPath string, envExists bool, lang string, homeDir string) Model {
-
-// Init initializes the model and requests window size
-func (m Model) Init() tea.Cmd {
-	return tea.Batch(textinput.Blink, m.BaseModel.Init())
-}
-
-// Update handles WindowSizeMsg to update dimensions
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Handle window size messages from BaseModel
-	m.BaseModel.Update(msg)
-
 type Step int
 
 const (

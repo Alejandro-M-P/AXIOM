@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	bunkeradapter "github.com/Alejandro-M-P/AXIOM/internal/adapters/bunker"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/runtime"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system"
@@ -40,7 +41,7 @@ func main() {
 	uiAdapter := ui.NewConsoleUI()
 	systemAdapter := system.NewSystemAdapter()
 	gitAdapter := runtime.NewGitAdapter(fsAdapter)
-	bunkerConfigurator := bunker.NewBunkerConfiguratorAdapter(fsAdapter, filepath.Join(rootDir, "configs", "assets"), uiAdapter)
+	bunkerConfigurator := bunkeradapter.NewBunkerConfiguratorAdapter(fsAdapter, filepath.Join(rootDir, "configs", "assets"), uiAdapter)
 
 	// Create managers via DI
 	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter, systemAdapter, gitAdapter, bunkerConfigurator)

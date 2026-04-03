@@ -2,13 +2,12 @@ package main
 
 import (
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/slots"
-	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
 	slotmanager "github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
-// buildSlotAdapter implements build.SlotManagerInterface for the build manager.
-// It converts between build types and slots types.
+// buildSlotAdapter implements ports.SlotManagerInterface for the build manager.
+// It converts between ports types and slots types.
 type buildSlotAdapter struct {
 	manager *slotmanager.SlotManager
 	ui      *slots.SlotSelectorUI
@@ -53,7 +52,7 @@ func newBuildSlotAdapter(manager *slotmanager.SlotManager, pres ports.IPresenter
 	}
 }
 
-// HasSelection implements build.SlotManagerInterface.
+// HasSelection implements ports.SlotManagerInterface.
 func (a *buildSlotAdapter) HasSelection() bool {
 	return a.manager.HasSelection()
 }
@@ -64,15 +63,15 @@ func (a *buildSlotAdapter) GetAvailableItems(category string) ([]slotmanager.Slo
 	return items, nil
 }
 
-// GetSelectedItems implements build.SlotManagerInterface.
-func (a *buildSlotAdapter) GetSelectedItems(category string) ([]build.SlotItem, error) {
+// GetSelectedItems implements ports.SlotManagerInterface.
+func (a *buildSlotAdapter) GetSelectedItems(category string) ([]ports.SlotItem, error) {
 	items, err := a.manager.GetSelectedItems(category)
 	if err != nil {
 		return nil, err
 	}
-	result := make([]build.SlotItem, len(items))
+	result := make([]ports.SlotItem, len(items))
 	for i, item := range items {
-		result[i] = build.SlotItem{
+		result[i] = ports.SlotItem{
 			ID:          item.ID,
 			Name:        item.Name,
 			Description: item.Description,
@@ -83,8 +82,8 @@ func (a *buildSlotAdapter) GetSelectedItems(category string) ([]build.SlotItem, 
 	return result, nil
 }
 
-// RunSlotSelector implements build.SlotManagerInterface.
-func (a *buildSlotAdapter) RunSlotSelector(category string, items []build.SlotItem, preselected []string) ([]string, bool, error) {
+// RunSlotSelector implements ports.SlotManagerInterface.
+func (a *buildSlotAdapter) RunSlotSelector(category string, items []ports.SlotItem, preselected []string) ([]string, bool, error) {
 	slotItems := make([]slotmanager.SlotItem, len(items))
 	for i, item := range items {
 		slotItems[i] = slotmanager.SlotItem{
@@ -98,8 +97,8 @@ func (a *buildSlotAdapter) RunSlotSelector(category string, items []build.SlotIt
 	return a.ui.RunSlotSelectorWithItems(category, slotItems, preselected)
 }
 
-// SaveSelection implements build.SlotManagerInterface.
-func (a *buildSlotAdapter) SaveSelection(selections []build.SlotSelection) error {
+// SaveSelection implements ports.SlotManagerInterface.
+func (a *buildSlotAdapter) SaveSelection(selections []ports.SlotSelection) error {
 	slotSelections := make([]slotmanager.SlotSelection, len(selections))
 	for i, sel := range selections {
 		slotSelections[i] = slotmanager.SlotSelection{
@@ -110,15 +109,15 @@ func (a *buildSlotAdapter) SaveSelection(selections []build.SlotSelection) error
 	return a.manager.SaveSelection(slotSelections)
 }
 
-// LoadSelection implements build.SlotManagerInterface.
-func (a *buildSlotAdapter) LoadSelection() ([]build.SlotSelection, error) {
+// LoadSelection implements ports.SlotManagerInterface.
+func (a *buildSlotAdapter) LoadSelection() ([]ports.SlotSelection, error) {
 	selections, err := a.manager.LoadSelection()
 	if err != nil {
 		return nil, err
 	}
-	result := make([]build.SlotSelection, len(selections))
+	result := make([]ports.SlotSelection, len(selections))
 	for i, sel := range selections {
-		result[i] = build.SlotSelection{
+		result[i] = ports.SlotSelection{
 			Slot:     string(sel.Slot),
 			Selected: sel.Selected,
 		}
@@ -126,5 +125,5 @@ func (a *buildSlotAdapter) LoadSelection() ([]build.SlotSelection, error) {
 	return result, nil
 }
 
-// Ensure buildSlotAdapter implements build.SlotManagerInterface at compile time.
-var _ build.SlotManagerInterface = (*buildSlotAdapter)(nil)
+// Ensure buildSlotAdapter implements ports.SlotManagerInterface at compile time.
+var _ ports.SlotManagerInterface = (*buildSlotAdapter)(nil)
