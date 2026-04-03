@@ -119,7 +119,7 @@ func ensureTutorFile(fs ports.IFileSystem, path string) error {
 		return nil
 	}
 	// O_CREATE = 64 en Go
-	file, err := fs.OpenFile(path, 64, 0600)
+	file, err := fs.CreateFile(path, 0600)
 	if err != nil {
 		return err
 	}

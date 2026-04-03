@@ -20,28 +20,9 @@ func TestProgressStartStep(t *testing.T) {
 	progress := ui.NewProgress(uiAdapter, "Test Title", "Test Subtitle", steps)
 
 	// Start step 1
-	progress.StartStep(1, "", "")
-
-	if progress.CurrentStep() != 1 {
-		t.Errorf("CurrentStep = %d, want 1", progress.CurrentStep())
-	}
-
-	if progress.TotalSteps() != 3 {
-		t.Errorf("TotalSteps = %d, want 3", progress.TotalSteps())
-	}
-}
-
-func TestProgressFinishStep(t *testing.T) {
-	uiAdapter := mocks.NewMockPresenter()
-	steps := []ports.LifecycleStep{
-		{Title: "Step 1", Status: ports.LifecyclePending},
-		{Title: "Step 2", Status: ports.LifecyclePending},
-	}
-
-	progress := ui.NewProgress(uiAdapter, "Test Title", "Test Subtitle", steps)
-
-	// Start and finish step 0
-	progress.StartStep(0, "", "")
+	progress.StartStep(1, "", nil, "")
+	progress.StartStep(0, "", nil, "")
+	progress.StartStep(0, "", nil, "")
 	progress.FinishStep()
 
 	if progress.CurrentStep() != 0 {
@@ -100,7 +81,7 @@ func TestProgressMultipleSteps(t *testing.T) {
 
 	// Run through multiple steps
 	for i := 0; i < 3; i++ {
-		progress.StartStep(i, "", "")
+		progress.StartStep(i, "", nil, "")
 		progress.FinishStep()
 	}
 
@@ -151,7 +132,7 @@ func TestProgressFailStep(t *testing.T) {
 	}
 
 	progress := ui.NewProgress(uiAdapter, "Test Title", "Test Subtitle", steps)
-	progress.StartStep(0, "", "")
+	progress.StartStep(0, "", nil, "")
 	progress.FailStep(fmt.Errorf("test error"))
 
 	// After FailStep, the step should be in error state

@@ -18,7 +18,7 @@ type mockBuildInstaller struct {
 	executeErr error
 }
 
-func (m *mockBuildInstaller) ExecuteBuild(ctx context.Context, items []ports.BuildItem, containerName string, cfg ports.BuildConfig, progress ports.IBuildProgress) error {
+func (m *mockBuildInstaller) ExecuteBuild(ctx context.Context, items []ports.BuildItem, containerName string, cfg ports.BuildConfig, progress ports.IBuildProgress, slotManager ports.SlotManagerInterface) error {
 	m.executed = true
 	m.lastItems = items
 	m.lastCfg = cfg
@@ -191,7 +191,7 @@ func TestBuildReturnsPlan(t *testing.T) {
 
 	// Create a mock slot manager that returns selections
 	mockSlotManager := &mockSlotManagerWithSelection{
-		selections: []build.SlotSelection{{Slot: "sandbox", Selected: []string{}}},
+		selections: []ports.SlotSelection{{Slot: "sandbox", Selected: []string{}}},
 	}
 
 	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, mockSlotManager, buildInstaller)
@@ -233,7 +233,7 @@ func TestBuildInstallerIsCalled(t *testing.T) {
 	buildInstaller := &mockBuildInstaller{}
 
 	mockSlotManager := &mockSlotManagerWithSelection{
-		selections: []build.SlotSelection{{Slot: "dev", Selected: []string{"ollama"}}},
+		selections: []ports.SlotSelection{{Slot: "dev", Selected: []string{"ollama"}}},
 	}
 
 	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, mockSlotManager, buildInstaller)
@@ -268,26 +268,26 @@ func TestBuildInstallerIsCalled(t *testing.T) {
 
 // mockSlotManagerWithSelection implements build.SlotManagerInterface for testing.
 type mockSlotManagerWithSelection struct {
-	selections []build.SlotSelection
+	selections []ports.SlotSelection
 }
 
 func (m *mockSlotManagerWithSelection) HasSelection() bool {
 	return len(m.selections) > 0
 }
 
-func (m *mockSlotManagerWithSelection) GetSelectedItems(category string) ([]build.SlotItem, error) {
+func (m *mockSlotManagerWithSelection) GetSelectedItems(category string) ([]ports.SlotItem, error) {
 	return nil, nil
 }
 
-func (m *mockSlotManagerWithSelection) RunSlotSelector(category string, items []build.SlotItem, preselected []string) ([]string, bool, error) {
+func (m *mockSlotManagerWithSelection) RunSlotSelector(category string, items []ports.SlotItem, preselected []string) ([]string, bool, error) {
 	return nil, true, nil
 }
 
-func (m *mockSlotManagerWithSelection) SaveSelection(selections []build.SlotSelection) error {
+func (m *mockSlotManagerWithSelection) SaveSelection(selections []ports.SlotSelection) error {
 	m.selections = selections
 	return nil
 }
 
-func (m *mockSlotManagerWithSelection) LoadSelection() ([]build.SlotSelection, error) {
+func (m *mockSlotManagerWithSelection) LoadSelection() ([]ports.SlotSelection, error) {
 	return m.selections, nil
 }

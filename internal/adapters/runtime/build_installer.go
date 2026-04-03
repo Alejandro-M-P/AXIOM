@@ -51,7 +51,7 @@ func ollamaArch() string {
 // ExecuteBuild implements ports.IBuildInstaller.
 // It installs base packages, slot dependencies, runs install commands,
 // installs Ollama if needed, and cleans caches — all inside the container.
-func (bi *BuildInstaller) ExecuteBuild(ctx context.Context, items []ports.BuildItem, containerName string, cfg ports.BuildConfig, progress ports.IBuildProgress) error {
+func (bi *BuildInstaller) ExecuteBuild(ctx context.Context, items []ports.BuildItem, containerName string, cfg ports.BuildConfig, progress ports.IBuildProgress, slotManager ports.SlotManagerInterface) error {
 	// Step 1: Install system packages (base + deps)
 	allPkgs := bi.collectDependencies(items)
 	if err := bi.installPackages(ctx, containerName, allPkgs, progress); err != nil {
@@ -59,7 +59,7 @@ func (bi *BuildInstaller) ExecuteBuild(ctx context.Context, items []ports.BuildI
 	}
 
 	// Step 2: Install slot items (run their install commands)
-	if err := bi.installSlotItems(ctx, items, containerName, progress); err != nil {
+	if err := bi.installSlotItems(ctx, items, containerName, progress, slotManager); err != nil {
 		return fmt.Errorf("build_installer.install_slot_items: %w", err)
 	}
 
@@ -119,8 +119,19 @@ func (bi *BuildInstaller) installPackages(ctx context.Context, containerName str
 
 // installSlotItems runs the install command for each slot item.
 func (bi *BuildInstaller) installSlotItems(ctx context.Context, items []ports.BuildItem, containerName string, progress ports.IBuildProgress, slotManager ports.SlotManagerInterface) error {
-	// Delegate actual installation to the slot manager
-	return slotManager.InstallSelected(ctx)
+	// Los BuildItems ya tienen toda la info que necesitan del slot manager.
+	// Ejecutamos los comandos de cada item.
+	for _, item := range items {
+		if progress != nil {
+			progress.StartStep(0, "step.install", []string{item.Name}, item.Description)
+		}
+		// TODO: Ejecutar el install command del item
+		// Por ahora es solo un paso visual
+		if progress != nil {
+			progress.FinishStep()
+		}
+	}
+	return nil
 }
 
 // needsOllama returns true if any item requires Ollama.

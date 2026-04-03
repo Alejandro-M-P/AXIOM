@@ -92,7 +92,7 @@ func (f *FSAdapter) EnsureFileExists(path string, perm os.FileMode) error {
 		return nil
 	}
 	dir := filepath.Dir(path)
-	if err := f.MkdirAll(dir, 0755); err != nil {
+	if err := f.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
 	file, err := os.OpenFile(path, os.O_CREATE, perm)
@@ -100,6 +100,11 @@ func (f *FSAdapter) EnsureFileExists(path string, perm os.FileMode) error {
 		return err
 	}
 	return file.Close()
+}
+
+// CreateFile creates a file with the given permissions, truncating if it exists.
+func (f *FSAdapter) CreateFile(path string, perm os.FileMode) (*os.File, error) {
+	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
 }
 
 // VerifyInterface verifica que el adapter implementa la interfaz correctamente.

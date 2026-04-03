@@ -7,10 +7,19 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
+// toAny converts a string slice to an any slice for i18n parameter passing.
+func toAny(s []string) []any {
+	result := make([]any, len(s))
+	for i, v := range s {
+		result[i] = v
+	}
+	return result
+}
+
 // Progress tracks and renders build progress for the UI.
 // This is the UI adapter implementation of ports.IBuildProgress.
 type Progress struct {
-	ui          ports.IPresenter
+	presenter   ports.IPresenter
 	title       string
 	subtitle    string
 	steps       []ports.LifecycleStep
@@ -21,9 +30,9 @@ type Progress struct {
 }
 
 // NewProgress creates a new Progress tracker.
-func NewProgress(ui ports.IPresenter, title, subtitle string, steps []ports.LifecycleStep) *Progress {
+func NewProgress(presenter ports.IPresenter, title, subtitle string, steps []ports.LifecycleStep) *Progress {
 	return &Progress{
-		ui:         ui,
+		presenter:  presenter,
 		title:      title,
 		subtitle:   subtitle,
 		steps:      steps,
@@ -43,7 +52,7 @@ func (p *Progress) TotalSteps() int {
 
 // StartStep implements ports.IBuildProgress.
 // It marks a step as running and updates internal state.
-func (p *Progress) StartStep(index int, title string, detail string) {
+func (p *Progress) StartStep(index int, titleKey string, titleParams []string, detail string) {
 	p.currentStep = index
 	for i := range p.steps {
 		if i < index && p.steps[i].Status != ports.LifecycleDone {
@@ -51,8 +60,8 @@ func (p *Progress) StartStep(index int, title string, detail string) {
 		}
 		if i == index {
 			p.steps[i].Status = ports.LifecycleRunning
-			if title != "" {
-				p.steps[i].Title = title
+			if titleKey != "" {
+				p.steps[i].Title = p.presenter.GetText(titleKey, toAny(titleParams)...)
 			}
 			if detail != "" {
 				p.steps[i].Detail = detail
@@ -138,7 +147,7 @@ func (p *Progress) RunTask(index int, fn func() error) error {
 
 // RunStep executes a main build step with progress tracking.
 func (p *Progress) RunStep(index int, fn func() error) error {
-	p.StartStep(index, "", "")
+	p.StartStep(index, "", nil, "")
 	if err := fn(); err != nil {
 		p.FailStep(err)
 		return err
@@ -149,7 +158,7 @@ func (p *Progress) RunStep(index int, fn func() error) error {
 
 // RunStepWithDetail executes a main build step with title and detail.
 func (p *Progress) RunStepWithDetail(index int, title, detail string, fn func() error) error {
-	p.StartStep(index, title, detail)
+	p.StartStep(index, title, nil, detail)
 	if err := fn(); err != nil {
 		p.FailStep(err)
 		return err
@@ -165,9 +174,9 @@ func (p *Progress) AppendOutput(line string) {
 
 // render draws the current progress state to the UI.
 func (p *Progress) render() {
-	p.ui.ClearScreen()
-	p.ui.ShowLogo()
-	p.ui.RenderLifecycle(p.title, p.subtitle, p.steps, p.taskTitle, p.taskSteps)
+	p.presenter.ClearScreen()
+	p.presenter.ShowLogo()
+	p.presenter.RenderLifecycle(p.title, p.subtitle, p.steps, p.taskTitle, p.taskSteps)
 }
 
 // RenderError draws the error state to the UI.
@@ -177,9 +186,9 @@ func (p *Progress) RenderError(err error) {
 
 // renderErrorWithContext draws the error state with context information.
 func (p *Progress) renderErrorWithContext(err error, where string) {
-	p.ui.ClearScreen()
-	p.ui.ShowLogo()
-	p.ui.RenderLifecycleError(p.title, p.steps, p.taskTitle, p.taskSteps, err, where)
+	p.presenter.ClearScreen()
+	p.presenter.ShowLogo()
+	p.presenter.RenderLifecycleError(p.title, p.steps, p.taskTitle, p.taskSteps, err, where)
 }
 
 // RunBuildPlan executes a BuildPlan with full progress tracking.

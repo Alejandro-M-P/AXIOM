@@ -39,8 +39,8 @@ type SlotSelection struct {
 // IBuildProgress defines the port for tracking and rendering build progress.
 // The UI layer implements this; the core only signals state changes.
 type IBuildProgress interface {
-	// StartStep marks a step as running and renders.
-	StartStep(index int, title string, detail string)
+	// StartStep marks a step as running and renders. titleKey is an i18n key, titleParams are passed to GetText.
+	StartStep(index int, titleKey string, titleParams []string, detail string)
 	// FinishStep marks the current step as done and renders.
 	FinishStep()
 	// FailStep marks the current step as failed with an error.

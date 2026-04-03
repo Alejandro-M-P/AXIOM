@@ -230,7 +230,7 @@ func (e *unknownCommandError) Error() string {
 func (r *Router) handleCreate() error {
 	ui := r.bm.GetUI()
 
-	// Image/slot options
+	// Image/slot options - dynamically discovered from slots
 	slots := r.slm.DiscoverSlots()
 	var images []string
 	for _, slot := range slots {
@@ -339,7 +339,7 @@ func (r *Router) executeBuildPlan(ctx context.Context, plan *build.BuildPlan) er
 
 	// Execute each step with progress tracking
 	for i, step := range plan.Steps {
-		progress.StartStep(i, step.Title, step.Detail)
+		progress.StartStep(i, step.Title, nil, step.Detail)
 		if err := step.Exec(ctx); err != nil {
 			progress.FailStep(err)
 			if plan.Cleanup != nil {

@@ -37,4 +37,7 @@ type IFileSystem interface {
 
 	// UserHomeDir retorna el directorio home del usuario.
 	UserHomeDir() (string, error)
+
+	// CreateFile crea un archivo vacío con los permisos dados (equivale a abrir con O_CREATE | O_WRONLY | O_TRUNC).
+	CreateFile(path string, perm os.FileMode) (*os.File, error)
 }

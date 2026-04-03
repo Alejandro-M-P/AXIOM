@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
-	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -16,46 +15,12 @@ type Manager struct {
 	ui             ports.IPresenter
 	system         ports.ISystem
 	buildContainer string
-	slotManager    SlotManagerInterface
+	slotManager    ports.SlotManagerInterface
 	installer      ports.IBuildInstaller
 }
 
-// SlotManagerInterface defines the contract for slot operations during build.
-// This avoids importing the slots package directly to prevent circular dependencies.
-type SlotManagerInterface interface {
-	// HasSelection returns true if slot selections exist for any category.
-	HasSelection() bool
-
-	// GetSelectedItems returns the selected slot items for a given category.
-	GetSelectedItems(category string) ([]SlotItem, error)
-
-	// RunSlotSelector presents the slot selection UI and returns selected item IDs.
-	RunSlotSelector(category string, items []SlotItem, preselected []string) ([]string, bool, error)
-
-	// SaveSelection persists the user's slot selections.
-	SaveSelection(selections []SlotSelection) error
-
-	// LoadSelection reads the user's slot selections.
-	LoadSelection() ([]SlotSelection, error)
-}
-
-// SlotItem represents a single installable unit within a slot.
-type SlotItem struct {
-	ID          string
-	Name        string
-	Description string
-	Category    string
-	Deps        []string
-}
-
-// SlotSelection represents a user's selection for a particular slot.
-type SlotSelection struct {
-	Slot     string   `toml:"slot"`
-	Selected []string `toml:"selected"`
-}
-
 // NewManager creates a new build manager.
-func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, buildContainer string, slotManager SlotManagerInterface, installer ports.IBuildInstaller) *Manager {
+func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, buildContainer string, slotManager ports.SlotManagerInterface, installer ports.IBuildInstaller) *Manager {
 	return &Manager{
 		runtime:        runtime,
 		fs:             fs,
@@ -132,7 +97,7 @@ func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) (*BuildPlan, 
 
 // makeBuildPlan creates a BuildPlan with steps based on slot type.
 // The core defines WHAT to do; the adapter decides HOW to execute and render it.
-func (m *Manager) makeBuildPlan(ctx context.Context, buildCtx *BuildContext, slotName string, selections []SlotSelection) *BuildPlan {
+func (m *Manager) makeBuildPlan(ctx context.Context, buildCtx *BuildContext, slotName string, selections []ports.SlotSelection) *BuildPlan {
 	gpuModeText := m.ui.GetText("build.subtitle_host")
 	if buildCtx.Config.ROCMMode == "image" {
 		gpuModeText = m.ui.GetText("build.subtitle_image")
@@ -233,7 +198,7 @@ func (m *Manager) makeBuildPlan(ctx context.Context, buildCtx *BuildContext, slo
 }
 
 // collectBuildItems converts slot selections into BuildItems for the installer.
-func (m *Manager) collectBuildItems(selections []SlotSelection) []ports.BuildItem {
+func (m *Manager) collectBuildItems(selections []ports.SlotSelection) []ports.BuildItem {
 	var items []ports.BuildItem
 	for _, sel := range selections {
 		slotItems, err := m.slotManager.GetSelectedItems(sel.Slot)
@@ -298,7 +263,7 @@ func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) (*BuildPlan
 
 // SaveSlotSelection saves slot selection for the build process.
 func (m *Manager) SaveSlotSelection(selectedSlot string, selectedIDs []string) error {
-	selections := []SlotSelection{{Slot: selectedSlot, Selected: selectedIDs}}
+	selections := []ports.SlotSelection{{Slot: selectedSlot, Selected: selectedIDs}}
 	return m.slotManager.SaveSelection(selections)
 }
 

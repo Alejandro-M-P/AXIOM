@@ -28,6 +28,7 @@ type MockFileSystem struct {
 	ReadFileCalls     []string
 	WriteFileCalls    []WriteFileCall
 	OpenFileCalls     []OpenFileCall
+	CreateFileCalls   []CreateFileCall
 	WalkDirCalls      []string
 	ChmodCalls        []ChmodCall
 	UserHomeDirCalled bool
@@ -57,6 +58,11 @@ type OpenFileCall struct {
 type ChmodCall struct {
 	Path string
 	Mode os.FileMode
+}
+
+type CreateFileCall struct {
+	Path string
+	Perm os.FileMode
 }
 
 // NewMockFileSystem creates a new MockFileSystem with default values.
@@ -184,6 +190,17 @@ func (m *MockFileSystem) UserHomeDir() (string, error) {
 
 	m.UserHomeDirCalled = true
 	return "/home/test", nil
+}
+
+func (m *MockFileSystem) CreateFile(path string, perm os.FileMode) (*os.File, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.CreateFileCalls = append(m.CreateFileCalls, CreateFileCall{Path: path, Perm: perm})
+	// Simula creación de archivo en memoria
+	if _, exists := m.Files[path]; !exists {
+		m.Files[path] = []byte{}
+	}
+	return nil, nil
 }
 
 // mockFileInfo implements os.FileInfo for testing.
