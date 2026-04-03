@@ -144,7 +144,7 @@ func (m *Manager) listAxiomImages(ctx context.Context) ([]string, error) {
 	var images []string
 	seen := make(map[string]bool)
 	for _, b := range bunkers {
-		if strings.HasPrefix(b.Image, "localhost/axiom-") && !seen[b.Image] {
+		if m.runtime.IsAxiomImage(b.Image) && !seen[b.Image] {
 			seen[b.Image] = true
 			images = append(images, b.Image)
 		}
@@ -224,7 +224,7 @@ func listAxiomPodmanImages(ctx context.Context, runtime ports.IBunkerRuntime) ([
 	}
 
 	for _, b := range bunkers {
-		if strings.HasPrefix(b.Image, "localhost/axiom-") && !seen[b.Image] {
+		if runtime.IsAxiomImage(b.Image) && !seen[b.Image] {
 			seen[b.Image] = true
 			images = append(images, b.Image)
 		}

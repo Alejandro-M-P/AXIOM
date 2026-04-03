@@ -170,6 +170,10 @@ func (a *PodmanAdapter) ImageExists(ctx context.Context, image string) (bool, er
 	return true, nil
 }
 
+func (a *PodmanAdapter) IsAxiomImage(image string) bool {
+	return strings.HasPrefix(image, "localhost/axiom-")
+}
+
 func (a *PodmanAdapter) RemoveImage(ctx context.Context, image string, force bool) error {
 	args := a.cmds.RemoveImage(image, force)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)

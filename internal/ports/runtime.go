@@ -46,6 +46,9 @@ type IBunkerRuntime interface {
 	// ImageExists verifica si una imagen existe.
 	ImageExists(ctx context.Context, image string) (bool, error)
 
+	// IsAxiomImage devuelve true si la imagen pertenece a AXIOM.
+	IsAxiomImage(image string) bool
+
 	// RemoveImage elimina una imagen.
 	RemoveImage(ctx context.Context, image string, force bool) error
 

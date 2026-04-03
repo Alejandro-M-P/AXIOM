@@ -20,6 +20,7 @@ var _ interface {
 	ListBunkers(ctx context.Context) ([]domain.Bunker, error)
 	BunkerExists(ctx context.Context, name string) (bool, error)
 	ImageExists(ctx context.Context, image string) (bool, error)
+	IsAxiomImage(image string) bool
 	RemoveImage(ctx context.Context, image string, force bool) error
 	CommitImage(ctx context.Context, containerName, imageName, author, message string) error
 	ContainerState(ctx context.Context, name string) (string, error)
@@ -282,6 +283,11 @@ func (m *MockRuntime) ImageExists(ctx context.Context, image string) (bool, erro
 		}
 	}
 	return false, nil
+}
+
+// IsAxiomImage implements ports.IBunkerRuntime.
+func (m *MockRuntime) IsAxiomImage(image string) bool {
+	return strings.HasPrefix(image, "localhost/axiom-")
 }
 
 // RemoveImage implements ports.IBunkerRuntime.
