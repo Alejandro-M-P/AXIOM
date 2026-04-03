@@ -231,10 +231,10 @@ func (r *Router) handleCreate() error {
 	ui := r.bm.GetUI()
 
 	// Image/slot options
-	images := []string{
-		"axiom-dev",
-		"axiom-data",
-		"axiom-sandbox",
+	slots := r.slm.DiscoverSlots()
+	var images []string
+	for _, slot := range slots {
+		images = append(images, fmt.Sprintf("axiom-%v", slot))
 	}
 
 	// Use TUI form for interactive creation
@@ -260,10 +260,12 @@ func resolveImageName(input string, available []string) string {
 	}
 
 	// Map slot names to images
-	slotMapping := map[string]string{
-		"dev":     "axiom-dev",
-		"data":    "axiom-data",
-		"sandbox": "axiom-sandbox",
+	slotMapping := make(map[string]string)
+	for _, img := range available {
+		if strings.HasPrefix(img, "axiom-") {
+			slot := strings.TrimPrefix(img, "axiom-")
+			slotMapping[slot] = img
+		}
 	}
 
 	if mapped, ok := slotMapping[input]; ok {

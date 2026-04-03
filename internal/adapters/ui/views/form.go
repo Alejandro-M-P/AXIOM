@@ -8,6 +8,7 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/system/gpu"
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/components"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/styles"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
@@ -17,26 +18,20 @@ import (
 
 // BaseModel is embedded in Model for window size handling
 type BaseModel struct {
-	Width  int
-	Height int
+	ui.BaseModel
 }
 
-// Init sends a WindowSizeMsg to get initial dimensions
-func (m *BaseModel) Init() tea.Cmd {
-	return func() tea.Msg {
-		return tea.WindowSizeMsg{}
-	}
+func NewModel(axiomPath string, envExists bool, lang string, homeDir string) Model {
+
+// Init initializes the model and requests window size
+func (m Model) Init() tea.Cmd {
+	return tea.Batch(textinput.Blink, m.BaseModel.Init())
 }
 
 // Update handles WindowSizeMsg to update dimensions
-func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.Width = msg.Width
-		m.Height = msg.Height
-	}
-	return nil, nil
-}
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Handle window size messages from BaseModel
+	m.BaseModel.Update(msg)
 
 type Step int
 

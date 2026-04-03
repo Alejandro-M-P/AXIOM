@@ -197,16 +197,17 @@ func (m createFormModel) View() string {
 
 // getImageDisplayName devuelve un nombre legible para mostrar la imagen.
 func getImageDisplayName(image string) string {
-	switch image {
-	case "axiom-dev":
-		return i18n.GetWizardText("create_form", "image_dev")
-	case "axiom-data":
-		return i18n.GetWizardText("create_form", "image_data")
-	case "axiom-sandbox":
-		return i18n.GetWizardText("create_form", "image_sandbox")
-	default:
-		return image
+	// Quitar el prefijo "axiom-" para obtener la categoría
+	if strings.HasPrefix(image, "axiom-") {
+		category := strings.TrimPrefix(image, "axiom-")
+		// Intentar obtener la traducción desde i18n: create_form.image_{categoria}
+		displayName := i18n.GetWizardText("create_form", "image_"+category)
+		// Si no hay traducción específica, devolver el nombre de la imagen tal cual
+		if displayName != "create_form.image_"+category {
+			return displayName
+		}
 	}
+	return image
 }
 
 // cleanupTerminal forces exit from alternate screen mode and flushes stdout

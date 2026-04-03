@@ -2,6 +2,40 @@ package ports
 
 import "context"
 
+// SlotManagerInterface defines the contract for slot operations during build.
+// This avoids importing the slots package directly to prevent circular dependencies.
+type SlotManagerInterface interface {
+	// HasSelection returns true if slot selections exist for any category.
+	HasSelection() bool
+
+	// GetSelectedItems returns the selected slot items for a given category.
+	GetSelectedItems(category string) ([]SlotItem, error)
+
+	// RunSlotSelector presents the slot selection UI and returns selected item IDs.
+	RunSlotSelector(category string, items []SlotItem, preselected []string) ([]string, bool, error)
+
+	// SaveSelection persists the user's slot selections.
+	SaveSelection(selections []SlotSelection) error
+
+	// LoadSelection reads the user's slot selections.
+	LoadSelection() ([]SlotSelection, error)
+}
+
+// SlotItem represents a single installable unit within a slot.
+type SlotItem struct {
+	ID          string
+	Name        string
+	Description string
+	Category    string
+	Deps        []string
+}
+
+// SlotSelection represents a user's selection for a particular slot.
+type SlotSelection struct {
+	Slot     string   `toml:"slot"`
+	Selected []string `toml:"selected"`
+}
+
 // IBuildProgress defines the port for tracking and rendering build progress.
 // The UI layer implements this; the core only signals state changes.
 type IBuildProgress interface {
@@ -38,5 +72,5 @@ type IBuildInstaller interface {
 	// ExecuteBuild installs base packages, slot dependencies, runs install commands,
 	// installs Ollama if needed, and cleans caches. All execution happens in the
 	// container referenced by the installer's runtime.
-	ExecuteBuild(ctx context.Context, items []BuildItem, containerName string, cfg BuildConfig, progress IBuildProgress) error
+	ExecuteBuild(ctx context.Context, items []BuildItem, containerName string, cfg BuildConfig, progress IBuildProgress, slotManager SlotManagerInterface) error
 }

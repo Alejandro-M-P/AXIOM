@@ -54,9 +54,13 @@ description = "Embedded database"
 name = "Empty"
 description = "Minimal image without installations"
 
-[rust]
-name = "Rust"
-description = "Rust programming language"
+[bunker_bootstrap]
+shell_header = "# AXIOM Shell Bootstrap for bunker: %s\n"
+gfx_export = "export GFX=%s\n"
+
+[bunker_bootstrap]
+shell_header = "# AXIOM Shell Bootstrap for bunker: %s\n"
+gfx_export = "export GFX=%s\n"
 
 [subcategories]
 ia = "AI / LLM Models"

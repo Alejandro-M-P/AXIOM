@@ -2,14 +2,20 @@ package bunker
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/bunker"
 	"github.com/Alejandro-M-P/AXIOM/internal/adapters/filesystem"
+	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/domain"
+	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
+	"github.com/stretchr/testify/mock"
+
+	ui "github.com/Alejandro-M-P/AXIOM/internal/adapters/ui/views"
 )
 
 func TestCreateValidation_EmptyName(t *testing.T) {

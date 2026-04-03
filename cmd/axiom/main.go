@@ -16,14 +16,6 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/core/bunker"
 	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/i18n"
-
-	// Blank imports to trigger slot item registration via init()
-	// This ensures the global registry is populated when the app starts
-	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/data"
-	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/dev/ia"
-	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/dev/languages"
-	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/dev/tools"
-	_ "github.com/Alejandro-M-P/AXIOM/internal/core/slots/sandbox"
 )
 
 func main() {
@@ -48,9 +40,10 @@ func main() {
 	uiAdapter := ui.NewConsoleUI()
 	systemAdapter := system.NewSystemAdapter()
 	gitAdapter := runtime.NewGitAdapter(fsAdapter)
+	bunkerConfigurator := bunker.NewBunkerConfiguratorAdapter(fsAdapter, filepath.Join(rootDir, "configs", "assets"), uiAdapter)
 
 	// Create managers via DI
-	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter, systemAdapter, gitAdapter)
+	bunkerManager := bunker.NewManager(rootDir, runtimeAdapter, fsAdapter, uiAdapter, systemAdapter, gitAdapter, bunkerConfigurator)
 
 	// Load slots from TOML files (in addition to init() registered slots)
 	if err := slots.LoadAndRegisterSlots(rootDir); err != nil {

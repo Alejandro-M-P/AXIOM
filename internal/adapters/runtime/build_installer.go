@@ -118,15 +118,9 @@ func (bi *BuildInstaller) installPackages(ctx context.Context, containerName str
 }
 
 // installSlotItems runs the install command for each slot item.
-// Items are installed via distrobox-enter into the container.
-func (bi *BuildInstaller) installSlotItems(ctx context.Context, items []ports.BuildItem, containerName string, progress ports.IBuildProgress) error {
-	// Each item's install command is defined by the slot registry/engine.
-	// The installer engine already handles this via the slot manager.
-	// This method is a placeholder for items that need direct container
-	// execution beyond the slot installer.
-	_ = items
-	_ = progress
-	return nil
+func (bi *BuildInstaller) installSlotItems(ctx context.Context, items []ports.BuildItem, containerName string, progress ports.IBuildProgress, slotManager ports.SlotManagerInterface) error {
+	// Delegate actual installation to the slot manager
+	return slotManager.InstallSelected(ctx)
 }
 
 // needsOllama returns true if any item requires Ollama.

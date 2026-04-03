@@ -13,24 +13,34 @@ import (
 // Manager orquesta todas las operaciones de búnkeres.
 // Recibe las dependencias (adapters) en su constructor, permitiendo testing y flexibilidad.
 type Manager struct {
-	rootDir string
-	runtime ports.IBunkerRuntime
-	fs      ports.IFileSystem
-	ui      ports.IPresenter
-	system  ports.ISystem
-	git     ports.IGit
-	mu      sync.Mutex // Protege operaciones que pueden tener race conditions
+	rootDir      string
+	runtime      ports.IBunkerRuntime
+	fs           ports.IFileSystem
+	ui           ports.IPresenter
+	system       ports.ISystem
+	git          ports.IGit
+	configurator BunkerConfigurator
+	mu           sync.Mutex // Protege operaciones que pueden tener race conditions
+}
+
+// BunkerConfigurator defines the interface for bunker configuration operations.
+type BunkerConfigurator interface {
+	WriteShellBootstrap(cfg config.EnvConfig, name, envDir, gfxOverride string) error
+	WriteStarshipConfig(envDir, starshipAssetPath string) error
+	CopyTutorToAgents(tutorPath, envDir string) error
+	WriteOpencodeConfig(envDir string) error
 }
 
 // NewManager crea una nueva instancia del Manager con sus dependencias.
-func NewManager(rootDir string, runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, git ports.IGit) *Manager {
+func NewManager(rootDir string, runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, git ports.IGit, configurator BunkerConfigurator) *Manager {
 	return &Manager{
-		rootDir: rootDir,
-		runtime: runtime,
-		fs:      fs,
-		ui:      ui,
-		system:  system,
-		git:     git,
+		rootDir:      rootDir,
+		runtime:      runtime,
+		fs:           fs,
+		ui:           ui,
+		system:       system,
+		git:          git,
+		configurator: configurator,
 	}
 }
 

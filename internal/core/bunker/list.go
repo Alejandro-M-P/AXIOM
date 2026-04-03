@@ -31,7 +31,7 @@ func (m *Manager) list(ctx context.Context) error {
 		return nil
 	}
 
-	selected, err := selectBunkerInteractive("prompts.select_available.title", "prompts.select_available.desc", names)
+	selected, err := selectBunkerInteractive(m.ui, "prompts.select_available.title", "prompts.select_available.desc", names)
 	if err != nil {
 		return err
 	}

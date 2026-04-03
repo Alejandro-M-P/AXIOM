@@ -25,7 +25,7 @@ func (m *Manager) delete(ctx context.Context, name string, force, deleteImage bo
 		if err != nil {
 			return err
 		}
-		selected, err := selectBunkerInteractive("prompts.delete_bunker.title", "prompts.delete_bunker.desc", names)
+		selected, err := selectBunkerInteractive(m.ui, "prompts.delete_bunker.title", "prompts.delete_bunker.desc", names)
 		if err != nil {
 			return err
 		}
@@ -195,19 +195,29 @@ func (m *Manager) listBunkerNames(ctx context.Context, cfg EnvConfig) ([]string,
 	return names, nil
 }
 
-// selectBunkerInteractive permite seleccionar un búnker de forma interactiva.
-// Placeholder - en la implementación real se usaría la UI interactiva.
-// Por ahora retornamos error ya que esta función requiere implementación de UI.
-func selectBunkerInteractive(title, action string, names []string) (string, error) {
+// selectBunkerInteractive permite seleccionar un búnker de forma interactiva utilizando el presenter.
+func selectBunkerInteractive(ui ports.IPresenter, title, action string, names []string) (string, error) {
 	if len(names) == 0 {
 		return "", fmt.Errorf("errors.bunker.no_bunkers_available")
 	}
-	// En una implementación real, esto invocaría la UI de selección
-	// Por ahora retornamos el primero si solo hay uno
 	if len(names) == 1 {
 		return names[0], nil
 	}
-	return "", fmt.Errorf("errors.bunker.interactive_selection_not_implemented")
+
+	// Convertir nombres a map de statuses (todos como "available" por ahora)
+	statuses := make(map[string]string)
+	for _, name := range names {
+		statuses[name] = ui.GetText("common.available") // o un estado más específico si lo necesitamos
+	}
+
+	selected, confirmed, err := ui.AskSelectBunker(names, statuses, title, action)
+	if err != nil {
+		return "", err
+	}
+	if !confirmed {
+		return "", fmt.Errorf("errors.bunker.selection_cancelled")
+	}
+	return selected, nil
 }
 
 // listAxiomPodmanImages lista imágenes usando comando podman directamente.

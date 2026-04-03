@@ -694,18 +694,7 @@ func (m *WizardModel) countTotalSelections() int {
 
 // getSubcategoryTitle returns a human-readable title for a subcategory using i18n.
 func (m *WizardModel) getSubcategoryTitle(subcategory string) string {
-	switch subcategory {
-	case "ia":
-		return m.presenter.GetText("slot_wizard.step_ai")
-	case "languages":
-		return m.presenter.GetText("slot_wizard.step_languages")
-	case "tools":
-		return m.presenter.GetText("slot_wizard.step_tools")
-	case "data":
-		return m.presenter.GetText("slot_wizard.step_data")
-	default:
-		return strings.Title(subcategory)
-	}
+	return m.presenter.GetText("slots.subcategories." + subcategory)
 }
 
 // GetSelectedIDs returns the IDs of all selected items.

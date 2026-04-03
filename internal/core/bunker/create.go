@@ -159,16 +159,16 @@ WaitLoop:
 	}
 
 	gfxOverride := strings.TrimSpace(cfg.GFXVal)
-	if err := writeShellBootstrap(cfg, name, envDir, gfxOverride); err != nil {
+	if err := m.configurator.WriteShellBootstrap(cfg, name, envDir, gfxOverride); err != nil {
 		return err
 	}
-	if err := writeStarshipConfig(envDir); err != nil {
+	if err := m.configurator.WriteStarshipConfig(envDir, filepath.Join(m.rootDir, "configs", "assets", "starship.toml")); err != nil {
 		return err
 	}
-	if err := copyTutorToAgents(config.TutorPath(cfg.BaseDir), envDir); err != nil {
+	if err := m.configurator.CopyTutorToAgents(config.TutorPath(cfg.BaseDir), envDir); err != nil {
 		return err
 	}
-	if err := writeOpencodeConfig(envDir); err != nil {
+	if err := m.configurator.WriteOpencodeConfig(envDir); err != nil {
 		return err
 	}
 
@@ -229,21 +229,4 @@ func (m *Manager) createContainerFlags(cfg EnvConfig, gpuType, name, projectDir,
 		return strings.TrimSpace(volumeStr)
 	}
 	return flags
-}
-
-// Placeholder functions - implementar según necesidad
-func writeShellBootstrap(cfg EnvConfig, name, envDir, gfxOverride string) error {
-	return nil
-}
-
-func writeStarshipConfig(envDir string) error {
-	return nil
-}
-
-func copyTutorToAgents(tutorPath, envDir string) error {
-	return nil
-}
-
-func writeOpencodeConfig(envDir string) error {
-	return nil
 }

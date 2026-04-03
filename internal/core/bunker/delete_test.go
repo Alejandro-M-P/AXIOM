@@ -223,10 +223,28 @@ func TestListBunkerNames_ExcludesDefault(t *testing.T) {
 }
 
 func TestSelectBunkerInteractive_EmptyList(t *testing.T) {
-	_, err := selectBunkerInteractive("title", "action", []string{})
+	_, err := selectBunkerInteractive(mocks.NewMockPresenter(), "title", "action", []string{})
 	if err == nil {
 		t.Error("expected error for empty list")
 	}
+}
+
+func TestSelectBunkerInteractive_SingleBunker(t *testing.T) {
+	name, err := selectBunkerInteractive(mocks.NewMockPresenter(), "title", "action", []string{"only-bunker"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if name != "only-bunker" {
+		t.Errorf("expected 'only-bunker', got '%s'", name)
+	}
+}
+
+func TestSelectBunkerInteractive_MultipleBunkers(t *testing.T) {
+	_, err := selectBunkerInteractive(mocks.NewMockPresenter(), "title", "action", []string{"bunker-1", "bunker-2"})
+	if err == nil {
+		t.Error("expected error for multiple bunkers")
+	}
+}
 }
 
 func TestSelectBunkerInteractive_SingleBunker(t *testing.T) {

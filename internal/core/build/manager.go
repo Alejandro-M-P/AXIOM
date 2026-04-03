@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
@@ -169,7 +170,7 @@ func (m *Manager) makeBuildPlan(ctx context.Context, buildCtx *BuildContext, slo
 		Detail: m.ui.GetText("detail.base_pkgs"),
 		Exec: func(ctx context.Context) error {
 			bcfg := ports.BuildConfig{GPUType: buildCtx.GPUInfo.Type}
-			return m.installer.ExecuteBuild(ctx, buildItems, containerName, bcfg, nil)
+			return m.installer.ExecuteBuild(ctx, buildItems, containerName, bcfg, nil, m.slotManager)
 		},
 	})
 

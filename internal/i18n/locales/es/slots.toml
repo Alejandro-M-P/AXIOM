@@ -58,6 +58,10 @@ description = "Imagen mínima sin instalaciones"
 name = "Rust"
 description = "Lenguaje de programación Rust"
 
+[bunker_bootstrap]
+shell_header = "# AXIOM Shell Bootstrap para búnker: %s\n"
+gfx_export = "export GFX=%s\n"
+
 [subcategories]
 ia = "IA / Modelos LLM"
 languages = "Lenguajes de Programación"
