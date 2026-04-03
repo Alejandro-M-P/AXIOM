@@ -65,6 +65,9 @@ type IBunkerRuntime interface {
 
 	// ExecuteInBunker ejecuta un comando dentro de un bunker.
 	ExecuteInBunker(ctx context.Context, name string, args ...string) error
+
+	// ExecuteWithInput ejecuta un comando dentro de un bunker pasando input por stdin.
+	ExecuteWithInput(ctx context.Context, name, input string, args ...string) error
 }
 
 // NOTE: IDistrobox fue eliminada. Toda la funcionalidad de Distrobox está

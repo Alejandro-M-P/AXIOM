@@ -220,3 +220,13 @@ func (a *PodmanAdapter) ExecuteInBunker(ctx context.Context, name string, args .
 	}
 	return nil
 }
+
+func (a *PodmanAdapter) ExecuteWithInput(ctx context.Context, name, input string, args ...string) error {
+	cmdArgs := a.cmds.ExecuteInBunker(name, args...)
+	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
+	cmd.Stdin = strings.NewReader(input)
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("runtime.execute_failed: %w", err)
+	}
+	return nil
+}

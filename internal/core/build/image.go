@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
@@ -157,8 +156,5 @@ func RunInContainer(ctx context.Context, runtime ports.IBunkerRuntime, container
 
 // RunInContainerWithInput executes a command with stdin input.
 func RunInContainerWithInput(ctx context.Context, runtime ports.IBunkerRuntime, containerName string, input string, args ...string) error {
-	// ExecuteInBunker doesn't support input - this would need a different approach
-	// For now, combine input into a single command
-	cmd := fmt.Sprintf("printf '%s' | %s", input, strings.Join(args, " "))
-	return runtime.ExecuteInBunker(ctx, containerName, "bash", "-c", cmd)
+	return runtime.ExecuteWithInput(ctx, containerName, input, args...)
 }

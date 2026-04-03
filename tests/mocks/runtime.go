@@ -88,8 +88,9 @@ type CommitImageCall struct {
 }
 
 type ExecuteCall struct {
-	Name string
-	Args []string
+	Name  string
+	Args  []string
+	Input string
 }
 
 // NewMockRuntime creates a new MockRuntime with default values.
@@ -360,6 +361,23 @@ func (m *MockRuntime) ExecuteInBunker(ctx context.Context, name string, args ...
 	m.ExecuteCalls = append(m.ExecuteCalls, ExecuteCall{
 		Name: name,
 		Args: args,
+	})
+
+	if m.ExecuteErr != nil {
+		return m.ExecuteErr
+	}
+	return nil
+}
+
+// ExecuteWithInput implements ports.IBunkerRuntime.
+func (m *MockRuntime) ExecuteWithInput(ctx context.Context, name, input string, args ...string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.ExecuteCalls = append(m.ExecuteCalls, ExecuteCall{
+		Name:  name,
+		Args:  args,
+		Input: input,
 	})
 
 	if m.ExecuteErr != nil {
