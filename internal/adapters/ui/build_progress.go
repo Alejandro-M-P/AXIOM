@@ -1,10 +1,14 @@
-package build
+package ui
 
 import (
+	"context"
+
+	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
 // Progress tracks and renders build progress for the UI.
+// This is the UI adapter implementation of ports.IBuildProgress.
 type Progress struct {
 	ui          ports.IPresenter
 	title       string
@@ -37,8 +41,9 @@ func (p *Progress) TotalSteps() int {
 	return p.totalSteps
 }
 
-// StartStep marks a step as running and updates internal state.
-func (p *Progress) StartStep(index int) {
+// StartStep implements ports.IBuildProgress.
+// It marks a step as running and updates internal state.
+func (p *Progress) StartStep(index int, title string, detail string) {
 	p.currentStep = index
 	for i := range p.steps {
 		if i < index && p.steps[i].Status != ports.LifecycleDone {
@@ -46,6 +51,12 @@ func (p *Progress) StartStep(index int) {
 		}
 		if i == index {
 			p.steps[i].Status = ports.LifecycleRunning
+			if title != "" {
+				p.steps[i].Title = title
+			}
+			if detail != "" {
+				p.steps[i].Detail = detail
+			}
 		}
 	}
 	p.taskTitle = ""
@@ -53,7 +64,8 @@ func (p *Progress) StartStep(index int) {
 	p.render()
 }
 
-// FinishStep marks the current step as done and renders.
+// FinishStep implements ports.IBuildProgress.
+// It marks the current step as done and renders.
 func (p *Progress) FinishStep() {
 	if p.currentStep >= 0 && p.currentStep < len(p.steps) {
 		p.steps[p.currentStep].Status = ports.LifecycleDone
@@ -63,12 +75,31 @@ func (p *Progress) FinishStep() {
 	p.render()
 }
 
-// FailStep marks the current step as failed with an error.
+// FailStep implements ports.IBuildProgress.
+// It marks the current step as failed with an error.
 func (p *Progress) FailStep(err error) {
 	if p.currentStep >= 0 && p.currentStep < len(p.steps) {
 		p.steps[p.currentStep].Status = ports.LifecycleError
 	}
 	p.renderErrorWithContext(err, "")
+}
+
+// Render implements ports.IBuildProgress.
+// It forces a re-render of the current state.
+func (p *Progress) Render() {
+	p.render()
+}
+
+// SetTitle updates the build title and re-renders.
+func (p *Progress) SetTitle(title string) {
+	p.title = title
+	p.render()
+}
+
+// SetSubtitle updates the build subtitle and re-renders.
+func (p *Progress) SetSubtitle(subtitle string) {
+	p.subtitle = subtitle
+	p.render()
 }
 
 // StartTaskGroup starts a group of sub-tasks within the current step.
@@ -107,7 +138,18 @@ func (p *Progress) RunTask(index int, fn func() error) error {
 
 // RunStep executes a main build step with progress tracking.
 func (p *Progress) RunStep(index int, fn func() error) error {
-	p.StartStep(index)
+	p.StartStep(index, "", "")
+	if err := fn(); err != nil {
+		p.FailStep(err)
+		return err
+	}
+	p.FinishStep()
+	return nil
+}
+
+// RunStepWithDetail executes a main build step with title and detail.
+func (p *Progress) RunStepWithDetail(index int, title, detail string, fn func() error) error {
+	p.StartStep(index, title, detail)
 	if err := fn(); err != nil {
 		p.FailStep(err)
 		return err
@@ -128,8 +170,8 @@ func (p *Progress) render() {
 	p.ui.RenderLifecycle(p.title, p.subtitle, p.steps, p.taskTitle, p.taskSteps)
 }
 
-// renderError draws the error state to the UI.
-func (p *Progress) renderError(err error) {
+// RenderError draws the error state to the UI.
+func (p *Progress) RenderError(err error) {
 	p.renderErrorWithContext(err, "")
 }
 
@@ -138,4 +180,17 @@ func (p *Progress) renderErrorWithContext(err error, where string) {
 	p.ui.ClearScreen()
 	p.ui.ShowLogo()
 	p.ui.RenderLifecycleError(p.title, p.steps, p.taskTitle, p.taskSteps, err, where)
+}
+
+// RunBuildPlan executes a BuildPlan with full progress tracking.
+// This is the main execution loop that the adapter calls after receiving a plan from the core.
+func RunBuildPlan(ctx context.Context, plan *build.BuildPlan, progress *Progress) error {
+	for i, step := range plan.Steps {
+		if err := progress.RunStepWithDetail(i, step.Title, step.Detail, func() error {
+			return step.Exec(ctx)
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

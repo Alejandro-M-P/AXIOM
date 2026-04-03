@@ -76,16 +76,22 @@ func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPr
 	}
 }
 
-// Build executes the complete build flow for creating a base image.
-// It integrates with the slot system to allow users to select which items to install.
-func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) error {
+// GetUI returns the presenter for use by the router (adapter layer).
+func (m *Manager) GetUI() ports.IPresenter {
+	return m.ui
+}
+
+// Build generates and returns a BuildPlan for the complete build flow.
+// The caller (adapter) is responsible for executing the plan with progress tracking.
+// Pre-flight checks (slot selection, image existence) are performed before plan generation.
+func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) (*BuildPlan, error) {
 	// Load the slot selection that was saved by the router
 	selections, err := m.slotManager.LoadSelection()
 	if err != nil {
-		return fmt.Errorf("errors.build.failed_load_selection: %w", err)
+		return nil, fmt.Errorf("errors.build.failed_load_selection: %w", err)
 	}
 	if len(selections) == 0 {
-		return fmt.Errorf("errors.build.cancelled_no_selection")
+		return nil, fmt.Errorf("errors.build.cancelled_no_selection")
 	}
 
 	// Determine slot name from selection
@@ -95,19 +101,13 @@ func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) error {
 	}
 
 	// Prepare build context - use slot name for image
-	// Pass empty containerName to auto-generate based on slot (axiom-dev, axiom-data, axiom-sandbox)
-	var imageName string
 	buildCtx, err := PrepareBuildContext(ctx, cfg, "", slotName, m.system, m.ui)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Initialize progress display
-	progress := m.newBuildProgress(buildCtx, slotName)
-	progress.render()
-
-	// Check if the slot image already exists (AFTER Progress UI is shown)
-	imageName = buildCtx.ImageName
+	// Pre-flight: Check if the slot image already exists
+	imageName := buildCtx.ImageName
 	exists, err := m.runtime.ImageExists(ctx, imageName)
 	if err != nil {
 		m.ui.ShowLog("build.image_check_failed", err.Error())
@@ -123,113 +123,127 @@ func (m *Manager) Build(ctx context.Context, cfg config.EnvConfig) error {
 			"build.image_exists_confirm",
 		)
 		if err != nil {
-			return fmt.Errorf("errors.build.failed_ask_confirmation: %w", err)
+			return nil, fmt.Errorf("errors.build.failed_ask_confirmation: %w", err)
 		}
 		if !confirm {
-			return fmt.Errorf("errors.build.cancelled_image_exists")
+			return nil, fmt.Errorf("errors.build.cancelled_image_exists")
 		}
 		// Delete existing image
 		if err := m.runtime.RemoveImage(ctx, imageName, true); err != nil {
-			return fmt.Errorf("errors.build.failed_remove_image: %w", err)
+			return nil, fmt.Errorf("errors.build.failed_remove_image: %w", err)
 		}
 	}
 
-	// Step 0: Prepare shared directories
-	if err := progress.RunStep(0, func() error {
-		return PrepareSharedDirectories(ctx, m.fs, buildCtx.Config)
-	}); err != nil {
-		progress.renderErrorWithContext(err, config.AIConfigDir(buildCtx.Config.BaseDir))
-		return err
+	// Build the execution plan
+	plan := m.makeBuildPlan(ctx, buildCtx, slotName, selections)
+	return plan, nil
+}
+
+// makeBuildPlan creates a BuildPlan with steps based on slot type.
+// The core defines WHAT to do; the adapter decides HOW to execute and render it.
+func (m *Manager) makeBuildPlan(ctx context.Context, buildCtx *BuildContext, slotName string, selections []SlotSelection) *BuildPlan {
+	gpuModeText := m.ui.GetText("build.subtitle_host")
+	if buildCtx.Config.ROCMMode == "image" {
+		gpuModeText = m.ui.GetText("build.subtitle_image")
 	}
 
-	// Step 1: Recreate build container
 	containerName := buildCtx.ContainerName
-	if err := progress.RunStep(1, func() error {
-		return RecreateBuildContainer(ctx, m.runtime, m.fs, containerName, buildCtx.BuildWorkspaceDir, buildCtx.Config, buildCtx.GPUInfo.Type)
-	}); err != nil {
-		progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
-		return err
-	}
-
-	// Track cleanup
 	cleanupDone := false
-	defer func() {
-		if cleanupDone {
-			return
-		}
-		_ = m.runtime.RemoveBunker(ctx, containerName, true)
-		_ = removePathWritable(m.fs, buildCtx.BuildWorkspaceDir)
-	}()
 
-	// Step 2: Install system base (always needed)
-	if err := progress.RunStep(2, func() error {
-		return m.installSystemBase(ctx, buildCtx)
-	}); err != nil {
-		progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
-		return err
-	}
+	var steps []BuildStep
 
-	// Step 3-4: Install slot-specific items based on selection
-	// DEV: install dev tools and AI stack
-	// DATA: install data stack (databases)
-	// SANDBOX: no additional installations
+	// Common step 0: Prepare shared directories
+	steps = append(steps, BuildStep{
+		Title:  m.ui.GetText("step.prepare_dirs"),
+		Detail: config.AIConfigDir(buildCtx.Config.BaseDir),
+		Exec: func(ctx context.Context) error {
+			return PrepareSharedDirectories(ctx, m.fs, buildCtx.Config)
+		},
+	})
+
+	// Common step 1: Recreate build container
+	steps = append(steps, BuildStep{
+		Title:  m.ui.GetText("step.recreate_container"),
+		Detail: buildCtx.BuildWorkspaceDir,
+		Exec: func(ctx context.Context) error {
+			return RecreateBuildContainer(ctx, m.runtime, m.fs, containerName, buildCtx.BuildWorkspaceDir, buildCtx.Config, buildCtx.GPUInfo.Type)
+		},
+	})
+
+	// Common step 2: Install system base
+	steps = append(steps, BuildStep{
+		Title:  m.ui.GetText("step.install_base"),
+		Detail: m.ui.GetText("detail.base_pkgs"),
+		Exec: func(ctx context.Context) error {
+			return m.installSystemBase(ctx, buildCtx)
+		},
+	})
+
+	// Slot-specific steps
 	switch slotName {
 	case "dev":
-		// Install dev tools
-		if err := progress.RunStep(3, func() error {
-			return m.installSlotItems(ctx, buildCtx, "dev", selections)
-		}); err != nil {
-			progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
-			return err
-		}
-		// Install AI stack
-		if err := progress.RunStep(4, func() error {
-			return m.installModelStack(ctx, buildCtx)
-		}); err != nil {
-			progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
-			return err
-		}
+		// Step 3: Install dev tools
+		steps = append(steps, BuildStep{
+			Title:  m.ui.GetText("step.install_dev"),
+			Detail: m.ui.GetText("detail.dev_tools"),
+			Exec: func(ctx context.Context) error {
+				return m.installSlotItems(ctx, buildCtx, "dev", selections)
+			},
+		})
+		// Step 4: Install AI stack
+		steps = append(steps, BuildStep{
+			Title:  m.ui.GetText("step.install_ai"),
+			Detail: m.ui.GetText("detail.ai_stack"),
+			Exec: func(ctx context.Context) error {
+				return m.installModelStack(ctx, buildCtx)
+			},
+		})
 	case "data":
-		// Install data stack (databases)
-		if err := progress.RunStep(3, func() error {
-			return m.installSlotItems(ctx, buildCtx, "data", selections)
-		}); err != nil {
-			progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
-			return err
-		}
-		// No step 4 for data - will export directly
+		// Step 3: Install data stack (databases)
+		steps = append(steps, BuildStep{
+			Title:  m.ui.GetText("step.install_data"),
+			Detail: m.ui.GetText("detail.data_stack"),
+			Exec: func(ctx context.Context) error {
+				return m.installSlotItems(ctx, buildCtx, "data", selections)
+			},
+		})
 	case "sandbox":
-		// Sandbox: only system base, skip steps 3 and 4
-		// No additional installations
+		// Sandbox: only system base, no additional installations
 	}
 
-	// Calculate export step index (varies by slot)
-	exportStep := 3
-	if slotName == "dev" {
-		exportStep = 5
-	} else if slotName == "data" {
-		exportStep = 4
-	}
+	// Final step: Export image and cleanup
+	steps = append(steps, BuildStep{
+		Title:  m.ui.GetText("step.export_image"),
+		Detail: buildCtx.ImageName,
+		Exec: func(ctx context.Context) error {
+			if err := m.exportBuildImage(ctx, buildCtx); err != nil {
+				return err
+			}
+			if err := DestroyBuildContainer(ctx, m.runtime, m.fs, containerName, buildCtx.BuildWorkspaceDir); err != nil {
+				return err
+			}
+			cleanupDone = true
+			return nil
+		},
+	})
 
-	// Export image and cleanup (containerName already defined above)
-	if err := progress.RunStep(exportStep, func() error {
-		if err := m.exportBuildImage(ctx, buildCtx); err != nil {
-			return err
-		}
-		if err := DestroyBuildContainer(ctx, m.runtime, m.fs, containerName, buildCtx.BuildWorkspaceDir); err != nil {
-			return err
-		}
-		cleanupDone = true
-		return nil
-	}); err != nil {
-		progress.renderErrorWithContext(err, buildCtx.BuildWorkspaceDir)
-		return err
-	}
+	title := m.ui.GetText("build.title", buildCtx.ImageName)
+	subtitle := m.ui.GetText("build.subtitle_base", buildCtx.GPUInfo.Type, gpuModeText)
 
-	progress.subtitle = m.ui.GetText("build.success_sub", buildCtx.ImageName)
-	progress.render()
-	m.ui.ShowLog("build.success", buildCtx.ImageName)
-	return nil
+	return &BuildPlan{
+		Title:    title,
+		Subtitle: subtitle,
+		Steps:    steps,
+		Cleanup: func() {
+			if !cleanupDone {
+				_ = m.runtime.RemoveBunker(ctx, containerName, true)
+				_ = removePathWritable(m.fs, buildCtx.BuildWorkspaceDir)
+			}
+		},
+		OnSuccess: func() {
+			m.ui.ShowLog("build.success", buildCtx.ImageName)
+		},
+	}
 }
 
 // runSlotSelectionUI presents the slot selection UI to the user.
@@ -333,11 +347,12 @@ func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, 
 }
 
 // Rebuild rebuilds an existing image after asking for confirmation.
-func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
+// Returns a BuildPlan for the caller to execute with progress tracking.
+func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) (*BuildPlan, error) {
 	// Use empty containerName to auto-generate based on slot (axiom-dev, axiom-data, axiom-sandbox)
 	buildCtx, err := PrepareBuildContext(ctx, cfg, "", "dev", m.system, m.ui)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	targetImage := buildCtx.ImageName
@@ -352,23 +367,13 @@ func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
 		"rebuild.confirm",
 	)
 	if !confirm {
-		return nil
+		return nil, nil
 	}
 
-	steps := []ports.LifecycleStep{
-		{Title: m.ui.GetText("rebuild.step_rm_image"), Detail: targetImage, Status: ports.LifecycleRunning},
-	}
-	m.ui.ClearScreen()
-	m.ui.ShowLogo()
-	m.ui.RenderLifecycle(m.ui.GetText("rebuild.title"), m.ui.GetText("rebuild.subtitle"), steps, "", nil)
-
-	// Remove image via host command
+	// Remove existing image
 	_ = m.runtime.RemoveImage(ctx, targetImage, true)
-	steps[0].Status = ports.LifecycleDone
-	m.ui.ClearScreen()
-	m.ui.ShowLogo()
-	m.ui.RenderLifecycle(m.ui.GetText("rebuild.title"), m.ui.GetText("rebuild.subtitle"), steps, "", nil)
 
+	// Return the build plan (same as Build)
 	return m.Build(ctx, cfg)
 }
 
@@ -376,52 +381,6 @@ func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
 func (m *Manager) SaveSlotSelection(selectedSlot string, selectedIDs []string) error {
 	selections := []SlotSelection{{Slot: selectedSlot, Selected: selectedIDs}}
 	return m.slotManager.SaveSelection(selections)
-}
-
-// newBuildProgress creates a progress tracker for the build.
-// It generates different steps based on the slot type (dev, data, sandbox).
-func (m *Manager) newBuildProgress(ctx *BuildContext, slotName string) *Progress {
-	gpuModeText := m.ui.GetText("build.subtitle_host")
-	if ctx.Config.ROCMMode == "image" {
-		gpuModeText = m.ui.GetText("build.subtitle_image")
-	}
-
-	// Build steps dynamically based on slot type
-	var steps []ports.LifecycleStep
-
-	// Common steps: prepare dirs, recreate container, system base
-	steps = append(steps, ports.LifecycleStep{
-		Title: m.ui.GetText("step.prepare_dirs"), Detail: config.AIConfigDir(ctx.Config.BaseDir), Status: ports.LifecyclePending})
-	steps = append(steps, ports.LifecycleStep{
-		Title: m.ui.GetText("step.recreate_container"), Detail: ctx.BuildWorkspaceDir, Status: ports.LifecyclePending})
-	steps = append(steps, ports.LifecycleStep{
-		Title: m.ui.GetText("step.install_base"), Detail: m.ui.GetText("detail.base_pkgs"), Status: ports.LifecyclePending})
-
-	// Slot-specific steps
-	switch slotName {
-	case "dev":
-		// Dev: install dev tools + AI stack
-		steps = append(steps, ports.LifecycleStep{
-			Title: m.ui.GetText("step.install_dev"), Detail: m.ui.GetText("detail.dev_tools"), Status: ports.LifecyclePending})
-		steps = append(steps, ports.LifecycleStep{
-			Title: m.ui.GetText("step.install_ai"), Detail: m.ui.GetText("detail.ai_stack"), Status: ports.LifecyclePending})
-	case "data":
-		// Data: install data stack (databases)
-		steps = append(steps, ports.LifecycleStep{
-			Title: m.ui.GetText("step.install_data"), Detail: m.ui.GetText("detail.data_stack"), Status: ports.LifecyclePending})
-	case "sandbox":
-		// Sandbox: only system base, no additional installations
-		// No extra steps - just base system
-	}
-
-	// Always: export image
-	steps = append(steps, ports.LifecycleStep{
-		Title: m.ui.GetText("step.export_image"), Detail: ctx.ImageName, Status: ports.LifecyclePending})
-
-	title := m.ui.GetText("build.title", ctx.ImageName)
-	subtitle := m.ui.GetText("build.subtitle_base", ctx.GPUInfo.Type, gpuModeText)
-
-	return NewProgress(m.ui, title, subtitle, steps)
 }
 
 // installSystemBase delegates to the exported function with proper executor.

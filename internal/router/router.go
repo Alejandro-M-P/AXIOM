@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Alejandro-M-P/AXIOM/internal/adapters/ui"
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
@@ -49,9 +51,10 @@ type BunkerManagerInterface interface {
 
 // BuildManagerInterface defines the contract for build operations.
 type BuildManagerInterface interface {
-	Build(ctx context.Context, cfg config.EnvConfig) error
-	Rebuild(ctx context.Context, cfg config.EnvConfig) error
+	Build(ctx context.Context, cfg config.EnvConfig) (*build.BuildPlan, error)
+	Rebuild(ctx context.Context, cfg config.EnvConfig) (*build.BuildPlan, error)
 	SaveSlotSelection(selectedSlot string, selectedIDs []string) error
+	GetUI() ports.IPresenter
 }
 
 // SlotManagerInterface defines the contract for slot operations.
@@ -174,8 +177,14 @@ func (r *Router) Handle(args []string) error {
 			return fmt.Errorf("errors.router.failed_save_slot_selection: %w", err)
 		}
 
-		// Execute build with slot integration
-		return r.bld.Build(context.Background(), cfg)
+		// Generate the build plan from the core
+		plan, err := r.bld.Build(context.Background(), cfg)
+		if err != nil {
+			return err
+		}
+
+		// Execute the plan with UI progress tracking (adapter layer)
+		return r.executeBuildPlan(context.Background(), plan)
 	case CmdRebuild:
 		r.bm.GetUI().ShowLog("build.not_implemented")
 		return nil
@@ -302,5 +311,49 @@ func (r *Router) handleInit() error {
 	if !completed {
 		return fmt.Errorf("errors.router.init_cancelled")
 	}
+	return nil
+}
+
+// executeBuildPlan runs a BuildPlan with UI progress tracking.
+// This is the adapter-layer responsibility: the core returns the plan, the router executes it.
+func (r *Router) executeBuildPlan(ctx context.Context, plan *build.BuildPlan) error {
+	if plan == nil {
+		return nil
+	}
+
+	// Create progress tracker with lifecycle steps from the plan
+	lifecycleSteps := make([]ports.LifecycleStep, len(plan.Steps))
+	for i, step := range plan.Steps {
+		lifecycleSteps[i] = ports.LifecycleStep{
+			Title:  step.Title,
+			Detail: step.Detail,
+			Status: ports.LifecyclePending,
+		}
+	}
+
+	uiAdapter := r.bld.GetUI()
+	progress := ui.NewProgress(uiAdapter, plan.Title, plan.Subtitle, lifecycleSteps)
+	progress.Render()
+
+	// Execute each step with progress tracking
+	for i, step := range plan.Steps {
+		progress.StartStep(i, step.Title, step.Detail)
+		if err := step.Exec(ctx); err != nil {
+			progress.FailStep(err)
+			if plan.Cleanup != nil {
+				plan.Cleanup()
+			}
+			return err
+		}
+		progress.FinishStep()
+	}
+
+	// Success
+	if plan.OnSuccess != nil {
+		plan.OnSuccess()
+	}
+	progress.SetSubtitle(uiAdapter.GetText("build.success_sub", plan.Title))
+	progress.Render()
+
 	return nil
 }

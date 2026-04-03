@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
+	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
 	"github.com/Alejandro-M-P/AXIOM/internal/core/slots"
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/internal/router"
@@ -200,19 +201,32 @@ type mockBuildManager struct {
 	buildErr    error
 	rebuildErr  error
 	buildCalled bool
+	plan        *build.BuildPlan
 }
 
-func (m *mockBuildManager) Build(ctx context.Context, cfg config.EnvConfig) error {
+func (m *mockBuildManager) Build(ctx context.Context, cfg config.EnvConfig) (*build.BuildPlan, error) {
 	m.buildCalled = true
-	return m.buildErr
+	if m.plan != nil {
+		return m.plan, m.buildErr
+	}
+	// Return a minimal plan for tests
+	return &build.BuildPlan{
+		Title:    "Test Build",
+		Subtitle: "Test",
+		Steps:    []build.BuildStep{},
+	}, m.buildErr
 }
 
-func (m *mockBuildManager) Rebuild(ctx context.Context, cfg config.EnvConfig) error {
-	return m.rebuildErr
+func (m *mockBuildManager) Rebuild(ctx context.Context, cfg config.EnvConfig) (*build.BuildPlan, error) {
+	return nil, m.rebuildErr
 }
 
 func (m *mockBuildManager) SaveSlotSelection(selectedSlot string, selectedIDs []string) error {
 	return nil
+}
+
+func (m *mockBuildManager) GetUI() ports.IPresenter {
+	return &mockUI{}
 }
 
 // mockSlotManager implements SlotManagerInterface for testing
