@@ -3,7 +3,7 @@ name = "opencode-ai"
 description = "Asistente de código AI basado en LLMs locales"
 category = "dev"
 subcategory = "ia"
-dependencies = []
+dependencies = ["nodejs"]
 
 [install]
 cmd = "npm install -g opencode-ai"

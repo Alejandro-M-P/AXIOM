@@ -75,11 +75,11 @@ func main() {
 	// Create build slot adapter and wire it up
 	buildSlotAdapter := newBuildSlotAdapter(slotManager, uiAdapter)
 
-	// Create slot installer for build manager
-	buildSlotInstaller := build.NewSlotInstaller(slotManager)
+	// Create build installer (adapter layer — handles pacman, Ollama, etc.)
+	buildInstaller := runtime.NewBuildInstaller(runtimeAdapter)
 
 	// Create build manager with the slot adapter and installer
-	buildManager := build.NewManager(runtimeAdapter, fsAdapter, uiAdapter, systemAdapter, "axiom-build", buildSlotAdapter, buildSlotInstaller)
+	buildManager := build.NewManager(runtimeAdapter, fsAdapter, uiAdapter, systemAdapter, "axiom-build", buildSlotAdapter, buildInstaller)
 
 	// Create slot UI adapter for router
 	slotUI := slotui.NewSlotSelectorUI(slotManager, uiAdapter)

@@ -3,7 +3,7 @@ name = "gentle-ai"
 description = "Framework de agentes AI con memoria persistente"
 category = "dev"
 subcategory = "ia"
-dependencies = []
+dependencies = ["homebrew"]
 
 [install]
 cmd = "curl -fsSL https://github.com/gentle-ai/gentle/releases/latest/download/gentle-linux-amd64 -o /tmp/gentle && mkdir -p \"$HOME/.local/bin\" && mv /tmp/gentle \"$HOME/.local/bin/gentle\" && chmod +x \"$HOME/.local/bin/gentle\""

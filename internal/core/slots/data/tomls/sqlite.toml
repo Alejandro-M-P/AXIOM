@@ -3,7 +3,7 @@ name = "SQLite"
 description = "Base de datos embebida, sin servidor"
 category = "data"
 subcategory = "databases"
-dependencies = []
+dependencies = ["sqlite"]
 
 [install]
 cmd = "sudo pacman -S --noconfirm sqlite"

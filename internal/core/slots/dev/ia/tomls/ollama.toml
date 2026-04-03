@@ -3,7 +3,7 @@ name = "Ollama"
 description = "Ejecuta modelos LLM localmente (Llama, Mistral, etc.)"
 category = "dev"
 subcategory = "ia"
-dependencies = []
+dependencies = ["curl", "tar", "zstd"]
 
 [install]
 cmd = "curl -fsSL https://ollama.com/download/ollama-linux-amd64.tar.zst -o /tmp/ollama.tar.zst && tar -xzf /tmp/ollama.tar.zst -C /usr && rm -f /tmp/ollama.tar.zst"

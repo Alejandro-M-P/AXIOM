@@ -3,7 +3,7 @@ name = "Starship"
 description = "Prompt minimalista para cualquier shell"
 category = "dev"
 subcategory = "tools"
-dependencies = []
+dependencies = ["starship"]
 
 [install]
 cmd = "curl -sS https://starship.rs/install.sh | sh"

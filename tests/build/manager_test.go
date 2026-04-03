@@ -6,8 +6,24 @@ import (
 
 	"github.com/Alejandro-M-P/AXIOM/internal/config"
 	"github.com/Alejandro-M-P/AXIOM/internal/core/build"
+	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 	"github.com/Alejandro-M-P/AXIOM/tests/mocks"
 )
+
+// mockBuildInstaller implements ports.IBuildInstaller for testing.
+type mockBuildInstaller struct {
+	executed   bool
+	lastItems  []ports.BuildItem
+	lastCfg    ports.BuildConfig
+	executeErr error
+}
+
+func (m *mockBuildInstaller) ExecuteBuild(ctx context.Context, items []ports.BuildItem, containerName string, cfg ports.BuildConfig, progress ports.IBuildProgress) error {
+	m.executed = true
+	m.lastItems = items
+	m.lastCfg = cfg
+	return m.executeErr
+}
 
 func TestNewManager(t *testing.T) {
 	runtime := mocks.NewMockRuntime()
@@ -15,8 +31,9 @@ func TestNewManager(t *testing.T) {
 	ui := mocks.NewMockPresenter()
 	mockSystem := mocks.NewMockSystem()
 	buildContainer := "test-container"
+	buildInstaller := &mockBuildInstaller{}
 
-	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, nil, nil)
+	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, nil, buildInstaller)
 
 	if mgr == nil {
 		t.Fatal("NewManager returned nil")
@@ -29,8 +46,9 @@ func TestManagerFields(t *testing.T) {
 	ui := mocks.NewMockPresenter()
 	mockSystem := mocks.NewMockSystem()
 	buildContainer := "test-container"
+	buildInstaller := &mockBuildInstaller{}
 
-	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, nil, nil)
+	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, nil, buildInstaller)
 
 	if mgr == nil {
 		t.Fatal("Manager should not be nil")
@@ -43,8 +61,9 @@ func TestManagerGetUI(t *testing.T) {
 	ui := mocks.NewMockPresenter()
 	mockSystem := mocks.NewMockSystem()
 	buildContainer := "test-container"
+	buildInstaller := &mockBuildInstaller{}
 
-	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, nil, nil)
+	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, nil, buildInstaller)
 
 	if mgr.GetUI() != ui {
 		t.Fatal("GetUI should return the presenter passed to NewManager")
@@ -168,13 +187,14 @@ func TestBuildReturnsPlan(t *testing.T) {
 	ui := mocks.NewMockPresenter()
 	mockSystem := mocks.NewMockSystem()
 	buildContainer := "test-container"
+	buildInstaller := &mockBuildInstaller{}
 
 	// Create a mock slot manager that returns selections
 	mockSlotManager := &mockSlotManagerWithSelection{
 		selections: []build.SlotSelection{{Slot: "sandbox", Selected: []string{}}},
 	}
 
-	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, mockSlotManager, nil)
+	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, mockSlotManager, buildInstaller)
 
 	ctx := context.Background()
 	cfg := config.EnvConfig{
@@ -200,6 +220,49 @@ func TestBuildReturnsPlan(t *testing.T) {
 	// Sandbox has only 4 steps: prepare_dirs, recreate_container, install_base, export_image
 	if len(plan.Steps) != 4 {
 		t.Errorf("Sandbox BuildPlan should have 4 steps, got %d", len(plan.Steps))
+	}
+}
+
+// TestBuildInstallerIsCalled verifies that the installer's ExecuteBuild is called during build.
+func TestBuildInstallerIsCalled(t *testing.T) {
+	runtime := mocks.NewMockRuntime()
+	fs := mocks.NewMockFileSystem()
+	ui := mocks.NewMockPresenter()
+	mockSystem := mocks.NewMockSystem()
+	buildContainer := "test-container"
+	buildInstaller := &mockBuildInstaller{}
+
+	mockSlotManager := &mockSlotManagerWithSelection{
+		selections: []build.SlotSelection{{Slot: "dev", Selected: []string{"ollama"}}},
+	}
+
+	mgr := build.NewManager(runtime, fs, ui, mockSystem, buildContainer, mockSlotManager, buildInstaller)
+
+	ctx := context.Background()
+	cfg := config.EnvConfig{
+		BaseDir:   "/tmp/test",
+		AxiomPath: "/tmp/test/axiom",
+		ROCMMode:  "",
+		GPUType:   "generic",
+	}
+
+	plan, err := mgr.Build(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Build() returned unexpected error: %v", err)
+	}
+
+	// Execute the install_base step (step index 2) to trigger the installer
+	if len(plan.Steps) < 3 {
+		t.Fatalf("Expected at least 3 steps, got %d", len(plan.Steps))
+	}
+
+	installStep := plan.Steps[2]
+	if err := installStep.Exec(ctx); err != nil {
+		t.Fatalf("Install step failed: %v", err)
+	}
+
+	if !buildInstaller.executed {
+		t.Error("BuildInstaller.ExecuteBuild should have been called")
 	}
 }
 

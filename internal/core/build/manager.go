@@ -8,16 +8,6 @@ import (
 	"github.com/Alejandro-M-P/AXIOM/internal/ports"
 )
 
-// containerCommandRunner adapts a container exec function to ICommandRunner.
-type containerCommandRunner struct {
-	exec func(ctx context.Context, cmd string, args ...string) error
-}
-
-func (a *containerCommandRunner) RunShell(ctx context.Context, cmd string) ([]byte, error) {
-	err := a.exec(ctx, cmd)
-	return nil, err
-}
-
 // Manager orchestrates build operations.
 type Manager struct {
 	runtime        ports.IBunkerRuntime
@@ -26,7 +16,7 @@ type Manager struct {
 	system         ports.ISystem
 	buildContainer string
 	slotManager    SlotManagerInterface
-	installer      ports.ISlotInstaller
+	installer      ports.IBuildInstaller
 }
 
 // SlotManagerInterface defines the contract for slot operations during build.
@@ -64,7 +54,7 @@ type SlotSelection struct {
 }
 
 // NewManager creates a new build manager.
-func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, buildContainer string, slotManager SlotManagerInterface, installer ports.ISlotInstaller) *Manager {
+func NewManager(runtime ports.IBunkerRuntime, fs ports.IFileSystem, ui ports.IPresenter, system ports.ISystem, buildContainer string, slotManager SlotManagerInterface, installer ports.IBuildInstaller) *Manager {
 	return &Manager{
 		runtime:        runtime,
 		fs:             fs,
@@ -150,6 +140,9 @@ func (m *Manager) makeBuildPlan(ctx context.Context, buildCtx *BuildContext, slo
 	containerName := buildCtx.ContainerName
 	cleanupDone := false
 
+	// Collect BuildItems from slot selections for the installer
+	buildItems := m.collectBuildItems(selections)
+
 	var steps []BuildStep
 
 	// Common step 0: Prepare shared directories
@@ -170,42 +163,34 @@ func (m *Manager) makeBuildPlan(ctx context.Context, buildCtx *BuildContext, slo
 		},
 	})
 
-	// Common step 2: Install system base
+	// Common step 2: Install everything via the adapter's BuildInstaller
 	steps = append(steps, BuildStep{
 		Title:  m.ui.GetText("step.install_base"),
 		Detail: m.ui.GetText("detail.base_pkgs"),
 		Exec: func(ctx context.Context) error {
-			return m.installSystemBase(ctx, buildCtx)
+			bcfg := ports.BuildConfig{GPUType: buildCtx.GPUInfo.Type}
+			return m.installer.ExecuteBuild(ctx, buildItems, containerName, bcfg, nil)
 		},
 	})
 
-	// Slot-specific steps
+	// Slot-specific display steps (no installation logic - installer handles it)
 	switch slotName {
 	case "dev":
-		// Step 3: Install dev tools
 		steps = append(steps, BuildStep{
 			Title:  m.ui.GetText("step.install_dev"),
 			Detail: m.ui.GetText("detail.dev_tools"),
-			Exec: func(ctx context.Context) error {
-				return m.installSlotItems(ctx, buildCtx, "dev", selections)
-			},
+			Exec:   func(ctx context.Context) error { return nil },
 		})
-		// Step 4: Install AI stack
 		steps = append(steps, BuildStep{
 			Title:  m.ui.GetText("step.install_ai"),
 			Detail: m.ui.GetText("detail.ai_stack"),
-			Exec: func(ctx context.Context) error {
-				return m.installModelStack(ctx, buildCtx)
-			},
+			Exec:   func(ctx context.Context) error { return nil },
 		})
 	case "data":
-		// Step 3: Install data stack (databases)
 		steps = append(steps, BuildStep{
 			Title:  m.ui.GetText("step.install_data"),
 			Detail: m.ui.GetText("detail.data_stack"),
-			Exec: func(ctx context.Context) error {
-				return m.installSlotItems(ctx, buildCtx, "data", selections)
-			},
+			Exec:   func(ctx context.Context) error { return nil },
 		})
 	case "sandbox":
 		// Sandbox: only system base, no additional installations
@@ -246,104 +231,37 @@ func (m *Manager) makeBuildPlan(ctx context.Context, buildCtx *BuildContext, slo
 	}
 }
 
-// runSlotSelectionUI presents the slot selection UI to the user.
-func (m *Manager) runSlotSelectionUI() ([]SlotSelection, error) {
-	// For now, run DEV slot selection first
-	// In a full implementation, this would cycle through all categories
-	items, err := m.slotManager.GetSelectedItems("dev")
-	if err != nil {
-		return nil, fmt.Errorf("errors.build.failed_get_dev_items: %w", err)
-	}
-
-	// Run the slot selector (no preselection from previous runs)
-	selectedIDs, confirmed, err := m.slotManager.RunSlotSelector("dev", items, nil)
-	if err != nil {
-		return nil, fmt.Errorf("errors.build.slot_selector_failed: %w", err)
-	}
-	if !confirmed {
-		return nil, fmt.Errorf("errors.build.slot_selection_cancelled")
-	}
-
-	// Return as SlotSelection
-	return []SlotSelection{
-		{Slot: "dev", Selected: selectedIDs},
-	}, nil
-}
-
-// installSlotItems installs items from a specific slot category using the slot manager.
-func (m *Manager) installSlotItems(ctx context.Context, buildCtx *BuildContext, category string, selections []SlotSelection) error {
-	// Find selection for this category
-	var categorySel SlotSelection
-	found := false
+// collectBuildItems converts slot selections into BuildItems for the installer.
+func (m *Manager) collectBuildItems(selections []SlotSelection) []ports.BuildItem {
+	var items []ports.BuildItem
 	for _, sel := range selections {
-		if sel.Slot == category {
-			categorySel = sel
-			found = true
-			break
+		slotItems, err := m.slotManager.GetSelectedItems(sel.Slot)
+		if err != nil {
+			continue
 		}
-	}
-	if !found || len(categorySel.Selected) == 0 {
-		m.ui.ShowLog("build.no_items_selected", category)
-		return nil
-	}
-
-	// Get items for this category
-	items, err := m.slotManager.GetSelectedItems(category)
-	if err != nil {
-		return fmt.Errorf("errors.build.failed_get_items: %w", err)
-	}
-
-	// Filter to only selected items
-	var selectedItems []SlotItem
-	for _, item := range items {
-		for _, selID := range categorySel.Selected {
-			if item.ID == selID {
-				selectedItems = append(selectedItems, item)
-				break
+		for _, item := range slotItems {
+			// Check if this item was selected
+			selected := false
+			for _, selID := range sel.Selected {
+				if item.ID == selID {
+					selected = true
+					break
+				}
 			}
-		}
-	}
-
-	if len(selectedItems) == 0 {
-		return nil
-	}
-
-	// Create exec function for running commands in container
-	containerName := buildCtx.ContainerName
-	exec := func(ctx context.Context, cmd string, args ...string) error {
-		allArgs := []string{cmd}
-		allArgs = append(allArgs, args...)
-		return RunInContainer(ctx, m.runtime, containerName, allArgs...)
-	}
-
-	// Adapter to convert exec function to ICommandRunner
-	commandRunner := &containerCommandRunner{exec: exec}
-
-	// Install each selected item
-	for _, item := range selectedItems {
-		m.ui.ShowLog("build.installing_item", item.Name)
-
-		// Convert to ports.SlotItem
-		portItem := ports.SlotItem{
-			ID:          item.ID,
-			Name:        item.Name,
-			Description: item.Description,
-			Category:    item.Category,
-			Deps:        item.Deps,
-		}
-
-		// Use installer if available, otherwise fallback to generic exec
-		if m.installer != nil {
-			if err := m.installer.Install(ctx, portItem, commandRunner); err != nil {
-				return fmt.Errorf("errors.build.install_item_failed: %s: %w", item.ID, err)
+			if !selected {
+				continue
 			}
-		} else {
-			// Fallback: just run a dummy command to satisfy the requirement
-			_, _ = commandRunner.RunShell(ctx, fmt.Sprintf("echo 'Installing %s'", item.ID))
+			items = append(items, ports.BuildItem{
+				ID:          item.ID,
+				Name:        item.Name,
+				Description: item.Description,
+				Category:    item.Category,
+				Deps:        item.Deps,
+				NeedsOllama: item.ID == "ollama" || item.Category == "ia",
+			})
 		}
 	}
-
-	return nil
+	return items
 }
 
 // Rebuild rebuilds an existing image after asking for confirmation.
@@ -381,40 +299,6 @@ func (m *Manager) Rebuild(ctx context.Context, cfg config.EnvConfig) (*BuildPlan
 func (m *Manager) SaveSlotSelection(selectedSlot string, selectedIDs []string) error {
 	selections := []SlotSelection{{Slot: selectedSlot, Selected: selectedIDs}}
 	return m.slotManager.SaveSelection(selections)
-}
-
-// installSystemBase delegates to the exported function with proper executor.
-func (m *Manager) installSystemBase(ctx context.Context, buildCtx *BuildContext) error {
-	containerName := buildCtx.ContainerName
-	exec := func(ctx context.Context, cmd string, args ...string) error {
-		allArgs := []string{cmd}
-		allArgs = append(allArgs, args...)
-		return RunInContainer(ctx, m.runtime, containerName, allArgs...)
-	}
-	return InstallSystemBase(ctx, containerName, buildCtx, m.ui, exec)
-}
-
-// installDeveloperTools delegates to the exported function.
-func (m *Manager) installDeveloperTools(ctx context.Context, buildCtx *BuildContext) error {
-	containerName := buildCtx.ContainerName
-	exec := func(ctx context.Context, cmd string, args ...string) error {
-		allArgs := []string{cmd}
-		allArgs = append(allArgs, args...)
-		return RunInContainer(ctx, m.runtime, containerName, allArgs...)
-	}
-	return InstallDeveloperTools(ctx, containerName, buildCtx, m.ui, exec)
-}
-
-// installModelStack delegates to the exported function.
-func (m *Manager) installModelStack(ctx context.Context, buildCtx *BuildContext) error {
-	containerName := buildCtx.ContainerName
-	exec := func(ctx context.Context, cmd string, args ...string) error {
-		allArgs := []string{cmd}
-		allArgs = append(allArgs, args...)
-		return RunInContainer(ctx, m.runtime, containerName, allArgs...)
-	}
-	modelConfig := ModelStackConfig{GPUType: buildCtx.GPUInfo.Type}
-	return InstallModelStack(ctx, containerName, buildCtx, modelConfig, m.ui, exec)
 }
 
 // exportBuildImage commits the container to an image using the runtime.

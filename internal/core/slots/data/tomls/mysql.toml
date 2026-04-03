@@ -3,7 +3,7 @@ name = "MySQL"
 description = "Sistema de base de datos relacional open source"
 category = "data"
 subcategory = "databases"
-dependencies = []
+dependencies = ["mariadb"]
 
 [install]
 cmd = "sudo pacman -S --noconfirm mysql"

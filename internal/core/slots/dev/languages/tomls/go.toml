@@ -3,7 +3,7 @@ name = "Go"
 description = "Lenguaje de programación Go"
 category = "dev"
 subcategory = "languages"
-dependencies = []
+dependencies = ["go"]
 
 [install]
 cmd = "sudo pacman -S --noconfirm go"

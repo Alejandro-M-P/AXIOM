@@ -3,7 +3,6 @@ package build
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -93,16 +92,4 @@ func BaseImageName(presenter ports.IPresenter, gpuType string) string {
 		gpuType = "generic"
 	}
 	return presenter.GetText("build.image_name", gpuType)
-}
-
-// OllamaArch returns the architecture suffix for Ollama downloads.
-func OllamaArch() (string, error) {
-	switch runtime.GOARCH {
-	case "amd64":
-		return "amd64", nil
-	case "arm64":
-		return "arm64", nil
-	default:
-		return "", fmt.Errorf("errors.build.gpu.unsupported_arch")
-	}
 }
